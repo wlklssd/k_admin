@@ -1,6 +1,10 @@
 .idea
 .vscode
 .DS_Store
+.env
+.env.*
+!.env.example
+AGENTS.md
 demo/config.json
 demo/config
 demo/deploy.yml
@@ -15,3 +19,5 @@ adm/build
 template/login/assets/login
 uploads
 go-admin.exe
+通用管理后台框架功能规划.md
+tips/

@@ -27,17 +27,18 @@ func main() {
 
 	r := gin.New()
 	e := engine.Default()
+	addr := ":" + getenv("PEZMAX_APP_PORT", "9033")
 
 	// ③ 配置
 	cfg := config.Config{
 		Env: config.EnvLocal,
 		Databases: config.DatabaseList{
 			"default": {
-				Host:            "127.0.0.1",
-				Port:            "5432",
-				User:            "postgres",
-				Pwd:             "password",
-				Name:            "pezmax",
+				Host:            getenv("PEZMAX_DB_HOST", "127.0.0.1"),
+				Port:            getenv("PEZMAX_DB_PORT", "15432"),
+				User:            getenv("PEZMAX_DB_USER", "postgres"),
+				Pwd:             getenv("PEZMAX_DB_PASSWORD", "pezmax_dev_pwd"),
+				Name:            getenv("PEZMAX_DB_NAME", "pezmax"),
 				Driver:          config.DriverPostgresql,
 				MaxIdleConns:    50,
 				MaxOpenConns:    150,
@@ -65,11 +66,23 @@ func main() {
 
 	r.Static("/uploads", "./uploads")
 
-	go func() { _ = r.Run(":9033") }()
+	go func() {
+		if err := r.Run(addr); err != nil {
+			log.Printf("server stopped: %v", err)
+		}
+	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	log.Print("closing database connection")
 	e.PostgresqlConnection().Close()
+}
+
+func getenv(key string, fallback string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	return value
 }

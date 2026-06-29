@@ -1,51 +1,48 @@
-version: "3.3"
+name: pezmax-go-admin
+
 services:
-  mysql:
-    image: mysql:5.6
-    container_name: mysql
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql:/data
-    networks:
-      - goadmin
-    environment:
-      - MYSQL_ROOT_PASSWORD=goadmin
   postgres:
-    image: postgres:latest
-    container_name: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres:/data
-    networks:
-      - goadmin
+    image: postgres:11-alpine
+    container_name: pezmax-go-admin-postgres
+    restart: unless-stopped
     environment:
-      - POSTGRES_PASSWORD=goadmin
-  goadmin:
-    image: josingcjx/goadmin:1.1
-    tty: true
-    container_name: goadmin
-    volumes:
-      - .:/home/goadmin
-    networks:
-      - goadmin
-    command:
-      - /bin/bash
-  portainer:
-    image: portainer/portainer:latest
-    container_name: portainer
-    restart: always
+      POSTGRES_DB: ${PEZMAX_DB_NAME:-pezmax}
+      POSTGRES_USER: ${PEZMAX_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${PEZMAX_DB_PASSWORD:-pezmax_dev_pwd}
+      TZ: Asia/Shanghai
+      PGTZ: Asia/Shanghai
     ports:
-      - "9000:9000"
-    networks:
-      - goadmin
+      - "${PEZMAX_DB_PORT:-15432}:5432"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer:/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./tests/data/admin_pg.sql:/docker-entrypoint-initdb.d/10-admin_pg.sql:ro
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: pezmax-go-admin-adminer
+    restart: unless-stopped
+    profiles:
+      - tools
+    ports:
+      - "${PEZMAX_ADMINER_PORT:-18080}:8080"
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 networks:
-  goadmin: {}
+  backend:
+    name: pezmax-go-admin-backend
+
 volumes:
-  portainer: {}
-  postgres: {}
-  mysql: {}
+  postgres_data:
+    name: pezmax-go-admin-postgres-data
