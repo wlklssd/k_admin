@@ -25,6 +25,31 @@ services:
       retries: 5
       start_period: 20s
 
+  redis:
+    image: redis:7-alpine
+    container_name: pezmax-go-admin-redis
+    restart: unless-stopped
+    environment:
+      PEZMAX_REDIS_PASSWORD: ${PEZMAX_REDIS_PASSWORD:-pezmax_redis_pwd}
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${PEZMAX_REDIS_PASSWORD:-pezmax_redis_pwd}
+    ports:
+      - "${PEZMAX_REDIS_PORT:-16379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${PEZMAX_REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   adminer:
     image: adminer:4.8.1
     container_name: pezmax-go-admin-adminer
@@ -46,3 +71,5 @@ networks:
 volumes:
   postgres_data:
     name: pezmax-go-admin-postgres-data
+  redis_data:
+    name: pezmax-go-admin-redis-data

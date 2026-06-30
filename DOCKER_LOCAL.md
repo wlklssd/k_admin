@@ -5,7 +5,7 @@
 ## 启动
 
 ```powershell
-docker compose up -d postgres
+docker compose up -d postgres redis
 go run .
 ```
 
@@ -17,6 +17,10 @@ Go 服务默认使用以下配置：
 - 数据库：`pezmax`
 - 用户名：`postgres`
 - 密码：`pezmax_dev_pwd`
+- Redis 地址：`127.0.0.1`
+- Redis 端口：`16379`
+- Redis 密码：`pezmax_redis_pwd`
+- Redis DB：`0`
 
 首次启动时，Docker 会把 `tests/data/admin_pg.sql` 导入到 `pezmax` 数据库中。该导入只会在数据库 volume 为空时执行。
 
@@ -39,7 +43,9 @@ docker compose --profile tools up -d adminer
 ```powershell
 docker compose ps
 docker compose logs -f postgres
+docker compose logs -f redis
 docker compose exec postgres psql -U postgres -d pezmax
+docker compose exec redis redis-cli -a pezmax_redis_pwd ping
 go build .
 ```
 
@@ -49,5 +55,5 @@ go build .
 
 ```powershell
 docker compose down -v
-docker compose up -d postgres
+docker compose up -d postgres redis
 ```
