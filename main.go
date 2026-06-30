@@ -27,18 +27,18 @@ func main() {
 
 	r := gin.New()
 	e := engine.Default()
-	addr := ":" + getenv("PEZMAX_APP_PORT", "9033")
+	addr := ":" + getenv("KADMIN_APP_PORT", "9033")
 
 	// ③ 配置
 	cfg := config.Config{
 		Env: config.EnvLocal,
 		Databases: config.DatabaseList{
 			"default": {
-				Host:            getenv("PEZMAX_DB_HOST", "127.0.0.1"),
-				Port:            getenv("PEZMAX_DB_PORT", "15432"),
-				User:            getenv("PEZMAX_DB_USER", "postgres"),
-				Pwd:             getenv("PEZMAX_DB_PASSWORD", "pezmax_dev_pwd"),
-				Name:            getenv("PEZMAX_DB_NAME", "pezmax"),
+				Host:            getenv("KADMIN_DB_HOST", "127.0.0.1"),
+				Port:            getenv("KADMIN_DB_PORT", "15432"),
+				User:            getenv("KADMIN_DB_USER", "postgres"),
+				Pwd:             getenv("KADMIN_DB_PASSWORD", "kadmin_dev_pwd"),
+				Name:            getenv("KADMIN_DB_NAME", "kadmin"),
 				Driver:          config.DriverPostgresql,
 				MaxIdleConns:    50,
 				MaxOpenConns:    150,
@@ -80,9 +80,8 @@ func main() {
 }
 
 func getenv(key string, fallback string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
-	return value
+	return fallback
 }

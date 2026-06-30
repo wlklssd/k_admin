@@ -1,18 +1,18 @@
-name: pezmax-go-admin
+name: kadmin-go-admin
 
 services:
   postgres:
     image: postgres:11-alpine
-    container_name: pezmax-go-admin-postgres
+    container_name: kadmin-go-admin-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${PEZMAX_DB_NAME:-pezmax}
-      POSTGRES_USER: ${PEZMAX_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${PEZMAX_DB_PASSWORD:-pezmax_dev_pwd}
+      POSTGRES_DB: ${KADMIN_DB_NAME:-kadmin}
+      POSTGRES_USER: ${KADMIN_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${KADMIN_DB_PASSWORD:-kadmin_dev_pwd}
       TZ: Asia/Shanghai
       PGTZ: Asia/Shanghai
     ports:
-      - "${PEZMAX_DB_PORT:-15432}:5432"
+      - "${KADMIN_DB_PORT:-15432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./tests/data/admin_pg.sql:/docker-entrypoint-initdb.d/10-admin_pg.sql:ro
@@ -27,24 +27,24 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: pezmax-go-admin-redis
+    container_name: kadmin-go-admin-redis
     restart: unless-stopped
     environment:
-      PEZMAX_REDIS_PASSWORD: ${PEZMAX_REDIS_PASSWORD:-pezmax_redis_pwd}
+      KADMIN_REDIS_PASSWORD: ${KADMIN_REDIS_PASSWORD:-kadmin_redis_pwd}
     command:
       - redis-server
       - --appendonly
       - "yes"
       - --requirepass
-      - ${PEZMAX_REDIS_PASSWORD:-pezmax_redis_pwd}
+      - ${KADMIN_REDIS_PASSWORD:-kadmin_redis_pwd}
     ports:
-      - "${PEZMAX_REDIS_PORT:-16379}:6379"
+      - "${KADMIN_REDIS_PORT:-16379}:6379"
     volumes:
       - redis_data:/data
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"$${PEZMAX_REDIS_PASSWORD}\" ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${KADMIN_REDIS_PASSWORD}\" ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,12 +52,12 @@ services:
 
   adminer:
     image: adminer:4.8.1
-    container_name: pezmax-go-admin-adminer
+    container_name: kadmin-go-admin-adminer
     restart: unless-stopped
     profiles:
       - tools
     ports:
-      - "${PEZMAX_ADMINER_PORT:-18080}:8080"
+      - "${KADMIN_ADMINER_PORT:-18080}:8080"
     networks:
       - backend
     depends_on:
@@ -66,10 +66,10 @@ services:
 
 networks:
   backend:
-    name: pezmax-go-admin-backend
+    name: kadmin-go-admin-backend
 
 volumes:
   postgres_data:
-    name: pezmax-go-admin-postgres-data
+    name: kadmin-go-admin-postgres-data
   redis_data:
-    name: pezmax-go-admin-redis-data
+    name: kadmin-go-admin-redis-data

@@ -3,9 +3,9 @@
     <div v-if="!session.token" class="login-view">
       <section class="login-panel" aria-label="登录">
         <div class="login-brand">
-          <span class="brand-mark">P</span>
+          <span class="brand-mark">K</span>
           <div>
-            <strong>PezMax Admin</strong>
+            <strong>KAdmin</strong>
             <span>Ant Design Vue</span>
           </div>
         </div>
@@ -66,8 +66,8 @@
         breakpoint="lg"
       >
         <div class="side-logo">
-          <span class="brand-mark">P</span>
-          <strong v-if="!collapsed">PezMax Admin</strong>
+          <span class="brand-mark">K</span>
+          <strong v-if="!collapsed">KAdmin</strong>
         </div>
         <a-menu
           v-model:selectedKeys="selectedKeys"
@@ -157,6 +157,7 @@ import NotFoundView from './components/NotFoundView.vue';
 import ResourceWorkbench from './components/ResourceWorkbench.vue';
 import SettingsView from './components/SettingsView.vue';
 import { demoUser } from './mock';
+import { getStoredToken, removeStoredToken, setStoredToken } from './utils/storage';
 
 const theme = {
   token: {
@@ -180,7 +181,7 @@ const session = reactive<{
   token: string;
   user: UserInfo | typeof demoUser | null;
 }>({
-  token: localStorage.getItem('pezmax_admin_token') || '',
+  token: getStoredToken(),
   user: null,
 });
 
@@ -249,7 +250,7 @@ function enterDemo() {
 function persistToken(token: string) {
   session.token = token;
   if (loginForm.remember || token === 'demo-token') {
-    localStorage.setItem('pezmax_admin_token', token);
+    setStoredToken(token);
   }
 }
 
@@ -279,7 +280,7 @@ async function handleUserMenu(event: { key: string }) {
     if (session.token && session.token !== 'demo-token') {
       await logout().catch(() => undefined);
     }
-    localStorage.removeItem('pezmax_admin_token');
+    removeStoredToken();
     session.token = '';
     session.user = null;
     selectedKeys.value = ['dashboard'];
@@ -325,7 +326,7 @@ onMounted(async () => {
   try {
     await hydrateUser();
   } catch {
-    localStorage.removeItem('pezmax_admin_token');
+    removeStoredToken();
     session.token = '';
   }
 });

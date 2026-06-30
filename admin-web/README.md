@@ -1,4 +1,4 @@
-# PezMax Admin Web
+# KAdmin Web
 
 独立 Vue 管理端，使用 Vue 3、Vite 和 Ant Design Vue。默认通过 Vite 代理访问后端 `/api`，不会改动 GoAdmin 原生 `/admin` 后台。
 
