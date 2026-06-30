@@ -21,3 +21,5 @@ uploads
 go-admin.exe
 通用管理后台框架功能规划.md
 tips/
+admin-web/node_modules/
+admin-web/dist/
