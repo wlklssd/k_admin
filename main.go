@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	// ① 引入框架适配器（自注册）
@@ -47,8 +48,11 @@ func main() {
 		},
 		UrlPrefix: "admin", // 所有后台路由在 /admin/ 下
 		Store:     config.Store{Path: "./uploads", Prefix: "uploads"},
-		Language:  language.CN, // 中文
-		Debug:     true,
+		Extra: config.ExtraInfo{
+			"minio": minioConfig(),
+		},
+		Language: language.CN, // 中文
+		Debug:    true,
 	}
 
 	// ④ 初始化引擎
@@ -84,4 +88,30 @@ func getenv(key string, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func getenvBool(key string, fallback bool) bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	switch value {
+	case "1", "true", "t", "yes", "y", "on":
+		return true
+	case "0", "false", "f", "no", "n", "off":
+		return false
+	case "":
+		return fallback
+	default:
+		return fallback
+	}
+}
+
+func minioConfig() map[string]interface{} {
+	return map[string]interface{}{
+		"enabled":           getenvBool("KADMIN_MINIO_ENABLED", false),
+		"endpoint":          getenv("KADMIN_MINIO_ENDPOINT", "127.0.0.1:19000"),
+		"internal_endpoint": getenv("KADMIN_MINIO_INTERNAL_ENDPOINT", "minio:9000"),
+		"access_key":        getenv("KADMIN_MINIO_ACCESS_KEY", "kadmin_minio"),
+		"secret_key":        getenv("KADMIN_MINIO_SECRET_KEY", "kadmin_minio_pwd"),
+		"bucket":            getenv("KADMIN_MINIO_BUCKET", "kadmin"),
+		"use_ssl":           getenvBool("KADMIN_MINIO_USE_SSL", false),
+	}
 }
