@@ -257,11 +257,7 @@ func (s *Store) updateRoleMenus(c *gin.Context) {
 		if menuID == 0 {
 			continue
 		}
-		_, err := db.WithDriver(s.conn).Table("goadmin_role_menu").Insert(dialect.H{
-			"role_id": roleID,
-			"menu_id": menuID,
-		})
-		if err != nil {
+		if err := s.insertRoleMenu(roleID, menuID); err != nil {
 			fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -296,11 +292,7 @@ func (s *Store) updateRoleUsers(c *gin.Context) {
 		if userID == 0 || userID == 1 {
 			continue
 		}
-		_, err := db.WithDriver(s.conn).Table("goadmin_role_users").Insert(dialect.H{
-			"role_id": roleID,
-			"user_id": userID,
-		})
-		if err != nil {
+		if err := s.insertRoleUser(roleID, userID); err != nil {
 			fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -552,6 +544,24 @@ func slugFromName(name string) string {
 
 func nowString() string {
 	return time.Now().Format("2006-01-02 15:04:05")
+}
+
+func (s *Store) insertRoleMenu(roleID, menuID int64) error {
+	_, err := s.conn.Exec(
+		"INSERT INTO `goadmin_role_menu` (`role_id`, `menu_id`) VALUES (?, ?)",
+		roleID,
+		menuID,
+	)
+	return err
+}
+
+func (s *Store) insertRoleUser(roleID, userID int64) error {
+	_, err := s.conn.Exec(
+		"INSERT INTO `goadmin_role_users` (`role_id`, `user_id`) VALUES (?, ?)",
+		roleID,
+		userID,
+	)
+	return err
 }
 
 func uniqueInt64(values []int64) []int64 {
