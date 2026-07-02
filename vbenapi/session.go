@@ -55,7 +55,7 @@ func (s *Store) currentUser(c *gin.Context) (models.UserModel, bool) {
 	}
 
 	user = user.WithRoles().WithPermissions().WithMenus()
-	return user, user.HasMenu()
+	return user, user.HasMenu() || isAdminUser(user.UserName)
 }
 
 func (s *Store) issueToken(userID int64) (string, time.Time, error) {

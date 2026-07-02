@@ -52,7 +52,7 @@ func (s *Store) menus(c *gin.Context) {
 	}
 
 	allowed := make(map[int64]bool)
-	if user.IsSuperAdmin() {
+	if user.IsSuperAdmin() || isAdminUser(user.UserName) {
 		for _, row := range rows {
 			allowed[toInt64(row["id"])] = true
 		}

@@ -12,5 +12,6 @@ func registerGeneratedRoutes(api *gin.RouterGroup, s *Store) {
 }
 
 func registerCustomModuleRoutes(api *gin.RouterGroup, s *Store) {
+	registerRBACRoutes(api, s)
 	// Hand-written business API routes should be registered here.
 }

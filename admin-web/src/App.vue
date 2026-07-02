@@ -120,7 +120,7 @@
 
         <a-layout-content class="app-content">
           <DashboardView v-if="activePage === 'dashboard'" />
-          <ResourceWorkbench v-else-if="activePage === 'components'" />
+          <RbacWorkbench v-else-if="activePage === 'rbac'" />
           <SettingsView v-else-if="activePage === 'settings'" />
           <NotFoundView v-else @go-home="navigateTo('dashboard')" />
         </a-layout-content>
@@ -131,13 +131,13 @@
 
 <script setup lang="ts">
 import {
-  AppstoreOutlined,
   BellOutlined,
   DashboardOutlined,
   LockOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  SafetyCertificateOutlined,
   SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue';
@@ -147,7 +147,7 @@ import { computed, h, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { getUserInfo, getUserMenu, login, logout, type UserInfo } from './api/auth';
 import DashboardView from './components/DashboardView.vue';
 import NotFoundView from './components/NotFoundView.vue';
-import ResourceWorkbench from './components/ResourceWorkbench.vue';
+import RbacWorkbench from './components/RbacWorkbench.vue';
 import SettingsView from './components/SettingsView.vue';
 import { demoUser } from './mock';
 import { getStoredToken, removeStoredToken, setStoredToken } from './utils/storage';
@@ -184,9 +184,9 @@ const menuItems = [
     label: '工作台',
   },
   {
-    key: 'components',
-    icon: () => h(AppstoreOutlined),
-    label: '组件工作台',
+    key: 'rbac',
+    icon: () => h(SafetyCertificateOutlined),
+    label: '权限管理',
   },
   {
     key: 'settings',
@@ -197,13 +197,13 @@ const menuItems = [
 
 const titleMap: Record<string, string> = {
   dashboard: '工作台',
-  components: '组件工作台',
+  rbac: '权限管理',
   settings: '系统设置',
   'not-found': '页面不存在',
 };
 const pagePaths: Record<string, string> = {
   dashboard: '/dashboard',
-  components: '/components',
+  rbac: '/rbac',
   settings: '/settings',
 };
 const pathPages: Record<string, string> = Object.fromEntries(

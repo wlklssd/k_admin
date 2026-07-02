@@ -50,6 +50,9 @@ func roleSlugs(user models.UserModel) []string {
 			roles = append(roles, role.Slug)
 		}
 	}
+	if isAdminUser(user.UserName) {
+		roles = append(roles, "admin")
+	}
 	if len(roles) == 0 && user.IsSuperAdmin() {
 		roles = append(roles, "super")
 	}
@@ -58,6 +61,10 @@ func roleSlugs(user models.UserModel) []string {
 
 func accessCodes(user models.UserModel) []string {
 	set := make(map[string]bool)
+	if isAdminUser(user.UserName) {
+		set["*"] = true
+		set["admin"] = true
+	}
 	for _, role := range roleSlugs(user) {
 		set[role] = true
 	}

@@ -273,6 +273,31 @@ select {
   margin-bottom: 16px;
 }
 
+.toolbar-input {
+  margin-bottom: 12px;
+}
+
+.muted-text {
+  margin: 2px 0 0;
+  color: #64748b;
+}
+
+.role-list {
+  max-height: 620px;
+  overflow: auto;
+}
+
+.role-list-item {
+  padding-inline: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.role-list-item:hover,
+.role-list-item.active {
+  background: #f0f6ff;
+}
+
 .not-found-panel {
   min-height: calc(100vh - 104px);
   display: grid;
