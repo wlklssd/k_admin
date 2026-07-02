@@ -1,3 +1,5 @@
+import { getStoredToken } from '../utils/storage';
+
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 export interface ApiEnvelope<T> {
@@ -15,7 +17,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     headers.set('Content-Type', 'application/json');
   }
 
-  const token = localStorage.getItem('pezmax_admin_token');
+  const token = getStoredToken();
   if (token && token !== 'demo-token') {
     headers.set('Authorization', `Bearer ${token}`);
   }

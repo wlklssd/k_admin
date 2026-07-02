@@ -3,9 +3,9 @@
     <div v-if="!session.token" class="login-view">
       <section class="login-panel" aria-label="登录">
         <div class="login-brand">
-          <span class="brand-mark">P</span>
+          <span class="brand-mark">K</span>
           <div>
-            <strong>PezMax Admin</strong>
+            <strong>KAdmin</strong>
             <span>Ant Design Vue</span>
           </div>
         </div>
@@ -66,8 +66,8 @@
         breakpoint="lg"
       >
         <div class="side-logo">
-          <span class="brand-mark">P</span>
-          <strong v-if="!collapsed">PezMax Admin</strong>
+          <span class="brand-mark">K</span>
+          <strong v-if="!collapsed">KAdmin</strong>
         </div>
         <a-menu
           v-model:selectedKeys="selectedKeys"
@@ -91,13 +91,6 @@
           </div>
 
           <div class="header-actions">
-            <a-input-search
-              v-model:value="quickKeyword"
-              class="quick-search"
-              placeholder="搜索"
-              allow-clear
-              @search="handleQuickSearch"
-            />
             <a-badge :count="noticeCount" size="small">
               <a-button shape="circle" class="icon-btn" @click="noticeCount = 0">
                 <BellOutlined />
@@ -127,7 +120,7 @@
 
         <a-layout-content class="app-content">
           <DashboardView v-if="activePage === 'dashboard'" />
-          <ResourceWorkbench v-else-if="activePage === 'components'" />
+          <RbacWorkbench v-else-if="activePage === 'rbac'" />
           <SettingsView v-else-if="activePage === 'settings'" />
           <NotFoundView v-else @go-home="navigateTo('dashboard')" />
         </a-layout-content>
@@ -138,13 +131,13 @@
 
 <script setup lang="ts">
 import {
-  AppstoreOutlined,
   BellOutlined,
   DashboardOutlined,
   LockOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  SafetyCertificateOutlined,
   SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue';
@@ -154,9 +147,10 @@ import { computed, h, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { getUserInfo, getUserMenu, login, logout, type UserInfo } from './api/auth';
 import DashboardView from './components/DashboardView.vue';
 import NotFoundView from './components/NotFoundView.vue';
-import ResourceWorkbench from './components/ResourceWorkbench.vue';
+import RbacWorkbench from './components/RbacWorkbench.vue';
 import SettingsView from './components/SettingsView.vue';
 import { demoUser } from './mock';
+import { getStoredToken, removeStoredToken, setStoredToken } from './utils/storage';
 
 const theme = {
   token: {
@@ -174,13 +168,12 @@ const loginLoading = ref(false);
 const collapsed = ref(false);
 const selectedKeys = ref(['dashboard']);
 const activePage = ref('dashboard');
-const quickKeyword = ref('');
 const noticeCount = ref(3);
 const session = reactive<{
   token: string;
   user: UserInfo | typeof demoUser | null;
 }>({
-  token: localStorage.getItem('pezmax_admin_token') || '',
+  token: getStoredToken(),
   user: null,
 });
 
@@ -191,9 +184,9 @@ const menuItems = [
     label: '工作台',
   },
   {
-    key: 'components',
-    icon: () => h(AppstoreOutlined),
-    label: '组件工作台',
+    key: 'rbac',
+    icon: () => h(SafetyCertificateOutlined),
+    label: '权限管理',
   },
   {
     key: 'settings',
@@ -204,13 +197,13 @@ const menuItems = [
 
 const titleMap: Record<string, string> = {
   dashboard: '工作台',
-  components: '组件工作台',
+  rbac: '权限管理',
   settings: '系统设置',
   'not-found': '页面不存在',
 };
 const pagePaths: Record<string, string> = {
   dashboard: '/dashboard',
-  components: '/components',
+  rbac: '/rbac',
   settings: '/settings',
 };
 const pathPages: Record<string, string> = Object.fromEntries(
@@ -249,7 +242,7 @@ function enterDemo() {
 function persistToken(token: string) {
   session.token = token;
   if (loginForm.remember || token === 'demo-token') {
-    localStorage.setItem('pezmax_admin_token', token);
+    setStoredToken(token);
   }
 }
 
@@ -266,20 +259,12 @@ function handleMenuClick(event: { key: string }) {
   navigateTo(event.key);
 }
 
-function handleQuickSearch(value: string) {
-  if (!value) {
-    return;
-  }
-  navigateTo('components');
-  message.info(`已定位：${value}`);
-}
-
 async function handleUserMenu(event: { key: string }) {
   if (event.key === 'logout') {
     if (session.token && session.token !== 'demo-token') {
       await logout().catch(() => undefined);
     }
-    localStorage.removeItem('pezmax_admin_token');
+    removeStoredToken();
     session.token = '';
     session.user = null;
     selectedKeys.value = ['dashboard'];
@@ -325,7 +310,7 @@ onMounted(async () => {
   try {
     await hydrateUser();
   } catch {
-    localStorage.removeItem('pezmax_admin_token');
+    removeStoredToken();
     session.token = '';
   }
 });

@@ -92,7 +92,7 @@ interface SettingsForm {
 }
 
 const defaultSettings: SettingsForm = {
-  appName: 'PezMax Admin',
+  appName: 'KAdmin',
   apiPrefix: '/api',
   storage: 'local',
   sessionMinutes: 120,

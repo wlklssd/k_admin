@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	// ① 引入框架适配器（自注册）
@@ -27,18 +28,18 @@ func main() {
 
 	r := gin.New()
 	e := engine.Default()
-	addr := ":" + getenv("PEZMAX_APP_PORT", "9033")
+	addr := ":" + getenv("KADMIN_APP_PORT", "9033")
 
 	// ③ 配置
 	cfg := config.Config{
 		Env: config.EnvLocal,
 		Databases: config.DatabaseList{
 			"default": {
-				Host:            getenv("PEZMAX_DB_HOST", "127.0.0.1"),
-				Port:            getenv("PEZMAX_DB_PORT", "15432"),
-				User:            getenv("PEZMAX_DB_USER", "postgres"),
-				Pwd:             getenv("PEZMAX_DB_PASSWORD", "pezmax_dev_pwd"),
-				Name:            getenv("PEZMAX_DB_NAME", "pezmax"),
+				Host:            getenv("KADMIN_DB_HOST", "127.0.0.1"),
+				Port:            getenv("KADMIN_DB_PORT", "15432"),
+				User:            getenv("KADMIN_DB_USER", "postgres"),
+				Pwd:             getenv("KADMIN_DB_PASSWORD", "kadmin_dev_pwd"),
+				Name:            getenv("KADMIN_DB_NAME", "kadmin"),
 				Driver:          config.DriverPostgresql,
 				MaxIdleConns:    50,
 				MaxOpenConns:    150,
@@ -47,8 +48,11 @@ func main() {
 		},
 		UrlPrefix: "admin", // 所有后台路由在 /admin/ 下
 		Store:     config.Store{Path: "./uploads", Prefix: "uploads"},
-		Language:  language.CN, // 中文
-		Debug:     true,
+		Extra: config.ExtraInfo{
+			"minio": minioConfig(),
+		},
+		Language: language.CN, // 中文
+		Debug:    true,
 	}
 
 	// ④ 初始化引擎
@@ -80,9 +84,34 @@ func main() {
 }
 
 func getenv(key string, fallback string) string {
-	value := os.Getenv(key)
-	if value == "" {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func getenvBool(key string, fallback bool) bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	switch value {
+	case "1", "true", "t", "yes", "y", "on":
+		return true
+	case "0", "false", "f", "no", "n", "off":
+		return false
+	case "":
+		return fallback
+	default:
 		return fallback
 	}
-	return value
+}
+
+func minioConfig() map[string]interface{} {
+	return map[string]interface{}{
+		"enabled":           getenvBool("KADMIN_MINIO_ENABLED", false),
+		"endpoint":          getenv("KADMIN_MINIO_ENDPOINT", "127.0.0.1:19000"),
+		"internal_endpoint": getenv("KADMIN_MINIO_INTERNAL_ENDPOINT", "minio:9000"),
+		"access_key":        getenv("KADMIN_MINIO_ACCESS_KEY", "kadmin_minio"),
+		"secret_key":        getenv("KADMIN_MINIO_SECRET_KEY", "kadmin_minio_pwd"),
+		"bucket":            getenv("KADMIN_MINIO_BUCKET", "kadmin"),
+		"use_ssl":           getenvBool("KADMIN_MINIO_USE_SSL", false),
+	}
 }
