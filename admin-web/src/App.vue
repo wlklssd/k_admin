@@ -91,13 +91,6 @@
           </div>
 
           <div class="header-actions">
-            <a-input-search
-              v-model:value="quickKeyword"
-              class="quick-search"
-              placeholder="搜索"
-              allow-clear
-              @search="handleQuickSearch"
-            />
             <a-badge :count="noticeCount" size="small">
               <a-button shape="circle" class="icon-btn" @click="noticeCount = 0">
                 <BellOutlined />
@@ -175,7 +168,6 @@ const loginLoading = ref(false);
 const collapsed = ref(false);
 const selectedKeys = ref(['dashboard']);
 const activePage = ref('dashboard');
-const quickKeyword = ref('');
 const noticeCount = ref(3);
 const session = reactive<{
   token: string;
@@ -265,14 +257,6 @@ async function hydrateUser() {
 
 function handleMenuClick(event: { key: string }) {
   navigateTo(event.key);
-}
-
-function handleQuickSearch(value: string) {
-  if (!value) {
-    return;
-  }
-  navigateTo('components');
-  message.info(`已定位：${value}`);
 }
 
 async function handleUserMenu(event: { key: string }) {

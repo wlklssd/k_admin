@@ -106,7 +106,7 @@ select {
   overflow: hidden;
 }
 
-.app-header {
+.app-shell .ant-layout-header.app-header {
   height: 64px;
   padding: 0 20px;
   display: flex;
@@ -114,6 +114,7 @@ select {
   justify-content: space-between;
   gap: 16px;
   background: #fff;
+  color: #1f2937;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -134,10 +135,6 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.quick-search {
-  width: 240px;
 }
 
 .user-menu {
@@ -296,7 +293,6 @@ select {
 
   .header-left,
   .header-actions,
-  .quick-search,
   .control-md,
   .control-lg {
     width: 100%;
