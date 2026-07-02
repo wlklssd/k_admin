@@ -10,10 +10,6 @@
           <ReloadOutlined />
           刷新
         </a-button>
-        <a-button type="primary" @click="openRoleDrawer()">
-          <PlusOutlined />
-          新建权限组
-        </a-button>
       </a-space>
     </section>
 
@@ -22,7 +18,10 @@
         <section class="panel">
           <div class="panel-title">
             <h2>权限组</h2>
-            <a-tag color="blue">{{ roles.length }} 组</a-tag>
+            <a-button size="small" type="primary" @click="openRoleDrawer()">
+              <PlusOutlined />
+              新建权限组
+            </a-button>
           </div>
           <a-input
             v-model:value="roleKeyword"
@@ -98,7 +97,7 @@
               message="admin 最高权限用户不受菜单和权限限制，管理员组仅展示当前系统权限全集。"
             />
 
-            <a-tabs v-model:active-key="activeTab">
+            <a-tabs v-model:active-key="activeTab" class="rbac-tabs">
               <a-tab-pane key="menus" tab="菜单权限">
                 <div class="table-toolbar">
                   <span class="muted-text">配置该权限组可见和可访问的后台菜单</span>
@@ -134,9 +133,10 @@
                 </div>
                 <a-transfer
                   v-model:target-keys="selectedUserKeys"
+                  class="rbac-transfer"
                   :data-source="transferUsers"
                   :disabled="selectedRole.isAdmin"
-                  :list-style="{ width: '45%', height: '360px' }"
+                  :list-style="{ height: '360px' }"
                   :render="(item) => item.title"
                   :titles="['可选员工', '组内员工']"
                   show-search
