@@ -120,6 +120,7 @@
 
         <a-layout-content class="app-content">
           <DashboardView v-if="activePage === 'dashboard'" />
+          <UserManagementView v-else-if="activePage === 'users'" />
           <RbacWorkbench v-else-if="activePage === 'rbac'" />
           <SettingsView v-else-if="activePage === 'settings'" />
           <NotFoundView v-else @go-home="navigateTo('dashboard')" />
@@ -139,6 +140,7 @@ import {
   MenuUnfoldOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
+  TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
@@ -149,6 +151,7 @@ import DashboardView from './components/DashboardView.vue';
 import NotFoundView from './components/NotFoundView.vue';
 import RbacWorkbench from './components/RbacWorkbench.vue';
 import SettingsView from './components/SettingsView.vue';
+import UserManagementView from './components/UserManagementView.vue';
 import { demoUser } from './mock';
 import { getStoredToken, removeStoredToken, setStoredToken } from './utils/storage';
 
@@ -184,6 +187,11 @@ const menuItems = [
     label: '工作台',
   },
   {
+    key: 'users',
+    icon: () => h(TeamOutlined),
+    label: '用户管理',
+  },
+  {
     key: 'rbac',
     icon: () => h(SafetyCertificateOutlined),
     label: '权限管理',
@@ -197,12 +205,14 @@ const menuItems = [
 
 const titleMap: Record<string, string> = {
   dashboard: '工作台',
+  users: '用户管理',
   rbac: '权限管理',
   settings: '系统设置',
   'not-found': '页面不存在',
 };
 const pagePaths: Record<string, string> = {
   dashboard: '/dashboard',
+  users: '/users',
   rbac: '/rbac',
   settings: '/settings',
 };
@@ -221,6 +231,7 @@ async function handleLogin() {
     const token = data.accessToken || data.token;
     if (!token) {
       throw new Error('登录接口未返回 token');
+      //提醒重新登陆
     }
     persistToken(token);
     await hydrateUser();
