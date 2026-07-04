@@ -86,12 +86,7 @@
         </a-space>
       </div>
 
-      <a-alert
-        class="form-alert"
-        type="info"
-        show-icon
-        message="注册或新增账号只要求账号和密码；昵称、头像和角色可在创建后继续维护。"
-      />
+
 
       <a-table
         row-key="id"

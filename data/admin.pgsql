@@ -134,6 +134,52 @@ CREATE TABLE public.goadmin_site (
 ALTER TABLE public.goadmin_site OWNER TO postgres;
 
 --
+-- Name: goadmin_department_myid_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.goadmin_department_myid_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 99999999
+    CACHE 1;
+
+
+ALTER TABLE public.goadmin_department_myid_seq OWNER TO postgres;
+
+--
+-- Name: goadmin_department; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.goadmin_department (
+    id integer DEFAULT nextval('public.goadmin_department_myid_seq'::regclass) NOT NULL,
+    name character varying(100) NOT NULL,
+    code character varying(100) DEFAULT ''::character varying NOT NULL,
+    description character varying(3000),
+    sort integer DEFAULT 0 NOT NULL,
+    status integer DEFAULT 1 NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.goadmin_department OWNER TO postgres;
+
+--
+-- Name: goadmin_department_roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.goadmin_department_roles (
+    department_id integer NOT NULL,
+    role_id integer NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.goadmin_department_roles OWNER TO postgres;
+
+--
 -- Name: goadmin_permissions_myid_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -342,6 +388,22 @@ COPY public.goadmin_site (id, key, value, description, state, created_at, update
 
 
 --
+-- Data for Name: goadmin_department; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.goadmin_department (id, name, code, description, sort, status, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: goadmin_department_roles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.goadmin_department_roles (department_id, role_id, created_at, updated_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: goadmin_permissions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -489,6 +551,13 @@ SELECT pg_catalog.setval('public.goadmin_site_myid_seq', 1, true);
 
 
 --
+-- Name: goadmin_department_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.goadmin_department_myid_seq', 1, false);
+
+
+--
 -- Name: goadmin_session_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -540,6 +609,36 @@ ALTER TABLE ONLY public.goadmin_roles
 
 ALTER TABLE ONLY public.goadmin_site
     ADD CONSTRAINT goadmin_site_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: goadmin_department goadmin_department_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.goadmin_department
+    ADD CONSTRAINT goadmin_department_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: goadmin_department_roles goadmin_department_roles_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.goadmin_department_roles
+    ADD CONSTRAINT goadmin_department_roles_unique UNIQUE (department_id, role_id);
+
+
+--
+-- Name: goadmin_department_code_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX goadmin_department_code_index ON public.goadmin_department USING btree (code);
+
+
+--
+-- Name: goadmin_department_roles_role_id_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX goadmin_department_roles_role_id_index ON public.goadmin_department_roles USING btree (role_id);
 
 
 --
