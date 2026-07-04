@@ -3,18 +3,8 @@
     <section class="page-heading">
       <div>
         <h1>用户管理</h1>
-        <p>维护管理员账号、昵称、头像、密码与角色分配</p>
+        <p>维护管理员账号、昵称、头像、密码与职位分配</p>
       </div>
-      <a-space wrap>
-        <a-button @click="loadUsers">
-          <ReloadOutlined />
-          刷新
-        </a-button>
-        <a-button type="primary" @click="openUserDrawer()">
-          <PlusOutlined />
-          新增用户
-        </a-button>
-      </a-space>
     </section>
 
     <section class="panel">
@@ -23,9 +13,35 @@
           <a-input
             v-model:value="filters.keyword"
             allow-clear
-            class="control-lg"
+            class="control-md"
             placeholder="账号 / 昵称"
-            @press-enter="loadUsers"
+            @press-enter="searchUsers"
+          >
+            <template #prefix>
+              <SearchOutlined />
+            </template>
+          </a-input>
+        </a-form-item>
+        <a-form-item label="部门">
+          <a-input
+            v-model:value="filters.department"
+            allow-clear
+            class="control-md"
+            placeholder="部门名称"
+            @press-enter="searchUsers"
+          >
+            <template #prefix>
+              <SearchOutlined />
+            </template>
+          </a-input>
+        </a-form-item>
+        <a-form-item label="职位">
+          <a-input
+            v-model:value="filters.role"
+            allow-clear
+            class="control-md"
+            placeholder="职位名称"
+            @press-enter="searchUsers"
           >
             <template #prefix>
               <SearchOutlined />
@@ -34,7 +50,7 @@
         </a-form-item>
         <a-form-item>
           <a-space wrap>
-            <a-button type="primary" @click="loadUsers">
+            <a-button type="primary" @click="searchUsers">
               <SearchOutlined />
               查询
             </a-button>
@@ -49,23 +65,16 @@
 
     <section class="panel">
       <div class="table-toolbar">
+        <span class="muted-text">按条件筛选用户，并在行内维护单个用户</span>
         <a-space wrap>
-          <a-button :disabled="selectedRowKeys.length !== 1" @click="editSelected">
-            <EditOutlined />
-            编辑
+          <a-button type="primary" @click="openUserDrawer()">
+            <PlusOutlined />
+            新增用户
           </a-button>
-          <a-button :disabled="selectedRowKeys.length !== 1" @click="openPasswordModal()">
-            <KeyOutlined />
-            重置密码
+          <a-button @click="loadUsers">
+            <ReloadOutlined />
+            刷新
           </a-button>
-          <a-popconfirm title="确认删除选中的用户？" @confirm="removeSelected">
-            <a-button danger :disabled="selectedRowKeys.length === 0 || selectedHasAdmin">
-              <DeleteOutlined />
-              删除
-            </a-button>
-          </a-popconfirm>
-        </a-space>
-        <a-space wrap>
           <a-button @click="openImportModal">
             <UploadOutlined />
             导入
@@ -90,12 +99,13 @@
 
       <a-table
         row-key="id"
+        class="compact-user-table"
+        size="small"
         :columns="columns"
         :data-source="users"
         :loading="loading"
         :pagination="pagination"
-        :row-selection="{ selectedRowKeys, onChange: onSelectChange }"
-        :scroll="{ x: 920 }"
+        :scroll="{ x: 980 }"
         @change="handleTableChange"
       >
         <template #bodyCell="{ column, record }">
@@ -108,6 +118,15 @@
                 <strong>{{ record.name || record.username }}</strong>
                 <span>{{ record.username }}</span>
               </div>
+            </a-space>
+          </template>
+
+          <template v-else-if="column.key === 'departments'">
+            <a-space :size="4" wrap>
+              <a-tag v-for="department in record.departments" :key="department">
+                {{ department }}
+              </a-tag>
+              <a-tag v-if="record.departments.length === 0">未分配</a-tag>
             </a-space>
           </template>
 
@@ -158,13 +177,13 @@
         <a-form-item label="头像 URL" name="avatar">
           <a-input v-model:value="userForm.avatar" placeholder="可选" />
         </a-form-item>
-        <a-form-item label="角色">
+        <a-form-item label="职位">
           <a-select
             v-model:value="userForm.roleIds"
             mode="multiple"
             :disabled="editingUser?.id === 1"
             :options="roleOptions"
-            placeholder="请选择角色"
+            placeholder="请选择职位"
           />
         </a-form-item>
       </a-form>
@@ -234,10 +253,7 @@
 <script setup lang="ts">
 import {
   ClearOutlined,
-  DeleteOutlined,
   DownloadOutlined,
-  EditOutlined,
-  KeyOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -270,7 +286,6 @@ const savingPassword = ref(false);
 const importing = ref(false);
 const users = ref<ManagedUser[]>([]);
 const roles = ref<RbacRole[]>([]);
-const selectedRowKeys = ref<number[]>([]);
 const userDrawerOpen = ref(false);
 const passwordModalOpen = ref(false);
 const importModalOpen = ref(false);
@@ -282,6 +297,8 @@ const passwordFormRef = ref<FormInstance>();
 
 const filters = reactive({
   keyword: '',
+  department: '',
+  role: '',
 });
 
 const userForm = reactive({
@@ -312,11 +329,11 @@ const pagination = reactive({
 });
 
 const columns = [
-  { title: '用户', key: 'user', width: 240, fixed: 'left' },
-  { title: '角色', key: 'roles', width: 260 },
-  { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 180 },
-  { title: '更新时间', dataIndex: 'updatedAt', key: 'updatedAt', width: 180 },
-  { title: '操作', key: 'action', width: 210, fixed: 'right' },
+  { title: '用户', key: 'user', width: 220, fixed: 'left' },
+  { title: '部门', key: 'departments', width: 220 },
+  { title: '职位', key: 'roles', width: 260 },
+  { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 160 },
+  { title: '操作', key: 'action', width: 190, fixed: 'right' },
 ];
 
 const userRules = computed(() => ({
@@ -343,8 +360,6 @@ const roleOptions = computed(() =>
   })),
 );
 
-const selectedHasAdmin = computed(() => selectedRowKeys.value.includes(1));
-
 onMounted(() => {
   void Promise.all([loadUsers(), loadRoles()]);
 });
@@ -352,9 +367,18 @@ onMounted(() => {
 async function loadUsers() {
   loading.value = true;
   try {
-    const data = await getUsers(filters.keyword.trim());
-    users.value = data.items || [];
-    selectedRowKeys.value = [];
+    const data = await getUsers({
+      keyword: filters.keyword.trim(),
+      department: filters.department.trim(),
+      role: filters.role.trim(),
+    });
+    users.value = (data.items || []).map((user) => ({
+      ...user,
+      roleIds: user.roleIds || [],
+      roles: user.roles || [],
+      departmentIds: user.departmentIds || [],
+      departments: user.departments || [],
+    }));
   } catch (error) {
     message.error(error instanceof Error ? error.message : '加载用户失败');
   } finally {
@@ -373,12 +397,15 @@ async function loadRoles() {
 
 function resetSearch() {
   filters.keyword = '';
+  filters.department = '';
+  filters.role = '';
   pagination.current = 1;
   void loadUsers();
 }
 
-function onSelectChange(keys: number[]) {
-  selectedRowKeys.value = keys;
+function searchUsers() {
+  pagination.current = 1;
+  void loadUsers();
 }
 
 function handleTableChange(pager: TablePagination) {
@@ -394,13 +421,6 @@ function openUserDrawer(record?: ManagedUser) {
   userForm.avatar = record?.avatar || '';
   userForm.roleIds = record?.roleIds ? [...record.roleIds] : [];
   userDrawerOpen.value = true;
-}
-
-function editSelected() {
-  const record = users.value.find((item) => item.id === selectedRowKeys.value[0]);
-  if (record) {
-    openUserDrawer(record);
-  }
 }
 
 async function submitUser() {
@@ -432,8 +452,7 @@ async function submitUser() {
 }
 
 function openPasswordModal(record?: ManagedUser) {
-  passwordUser.value =
-    record || users.value.find((item) => item.id === selectedRowKeys.value[0]) || null;
+  passwordUser.value = record || null;
   passwordForm.password = '';
   if (!passwordUser.value) {
     return;
@@ -465,19 +484,6 @@ async function removeUser(record: ManagedUser) {
   } catch (error) {
     message.error(error instanceof Error ? error.message : '删除用户失败');
   }
-}
-
-async function removeSelected() {
-  const records = users.value.filter((item) => selectedRowKeys.value.includes(item.id));
-  if (records.some((item) => item.id === 1)) {
-    message.warning('admin 用户不能删除');
-    return;
-  }
-  for (const record of records) {
-    await deleteUser(record.id);
-  }
-  await loadUsers();
-  message.success('用户已删除');
 }
 
 function openImportModal() {

@@ -17,14 +17,21 @@ import (
 )
 
 type managedUser struct {
-	ID        int64    `json:"id"`
-	Username  string   `json:"username"`
-	Name      string   `json:"name"`
-	Avatar    string   `json:"avatar"`
-	RoleIDs   []int64  `json:"roleIds"`
-	Roles     []string `json:"roles"`
-	CreatedAt string   `json:"createdAt"`
-	UpdatedAt string   `json:"updatedAt"`
+	ID            int64    `json:"id"`
+	Username      string   `json:"username"`
+	Name          string   `json:"name"`
+	Avatar        string   `json:"avatar"`
+	RoleIDs       []int64  `json:"roleIds"`
+	Roles         []string `json:"roles"`
+	DepartmentIDs []int64  `json:"departmentIds"`
+	Departments   []string `json:"departments"`
+	CreatedAt     string   `json:"createdAt"`
+	UpdatedAt     string   `json:"updatedAt"`
+}
+
+type managedUserDepartment struct {
+	ID   int64
+	Name string
 }
 
 type managedUserListResponse struct {
@@ -68,11 +75,12 @@ func (s *Store) listManagedUsers(c *gin.Context) {
 	}
 
 	keyword := strings.ToLower(strings.TrimSpace(c.Query("keyword")))
-	if keyword != "" {
+	departmentKeyword := strings.ToLower(strings.TrimSpace(c.Query("department")))
+	roleKeyword := strings.ToLower(strings.TrimSpace(c.Query("role")))
+	if keyword != "" || departmentKeyword != "" || roleKeyword != "" {
 		filtered := make([]managedUser, 0, len(users))
 		for _, user := range users {
-			if strings.Contains(strings.ToLower(user.Username), keyword) ||
-				strings.Contains(strings.ToLower(user.Name), keyword) {
+			if matchesManagedUserFilter(user, keyword, departmentKeyword, roleKeyword) {
 				filtered = append(filtered, user)
 			}
 		}
@@ -368,6 +376,10 @@ func (s *Store) loadManagedUsers() ([]managedUser, error) {
 	if err != nil {
 		return nil, err
 	}
+	departmentIDsByUser, departmentNamesByUser, err := s.loadUserDepartments(roleIDsByUser)
+	if err != nil {
+		return nil, err
+	}
 
 	users := make([]managedUser, 0, len(rows))
 	for _, row := range rows {
@@ -381,17 +393,67 @@ func (s *Store) loadManagedUsers() ([]managedUser, error) {
 			roleNames = []string{"Administrator"}
 		}
 		users = append(users, managedUser{
-			ID:        id,
-			Username:  toString(row["username"]),
-			Name:      toString(row["name"]),
-			Avatar:    toString(row["avatar"]),
-			RoleIDs:   roleIDs,
-			Roles:     roleNames,
-			CreatedAt: toString(row["created_at"]),
-			UpdatedAt: toString(row["updated_at"]),
+			ID:            id,
+			Username:      toString(row["username"]),
+			Name:          toString(row["name"]),
+			Avatar:        toString(row["avatar"]),
+			RoleIDs:       roleIDs,
+			Roles:         roleNames,
+			DepartmentIDs: uniqueInt64(departmentIDsByUser[id]),
+			Departments:   departmentNamesByUser[id],
+			CreatedAt:     toString(row["created_at"]),
+			UpdatedAt:     toString(row["updated_at"]),
 		})
 	}
 	return users, nil
+}
+
+func (s *Store) loadUserDepartments(roleIDsByUser map[int64][]int64) (map[int64][]int64, map[int64][]string, error) {
+	rows, err := db.WithDriver(s.conn).
+		Table("goadmin_department_roles").
+		LeftJoin("goadmin_department", "goadmin_department.id", "=", "goadmin_department_roles.department_id").
+		Select("goadmin_department_roles.department_id", "goadmin_department_roles.role_id", "goadmin_department.name", "goadmin_department.code").
+		All()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	departmentsByRole := make(map[int64][]managedUserDepartment)
+	for _, row := range rows {
+		departmentID := toInt64(row["department_id"])
+		roleID := toInt64(row["role_id"])
+		name := toString(row["name"])
+		if name == "" {
+			name = toString(row["code"])
+		}
+		if departmentID == 0 || roleID == 0 || name == "" {
+			continue
+		}
+		departmentsByRole[roleID] = append(departmentsByRole[roleID], managedUserDepartment{
+			ID:   departmentID,
+			Name: name,
+		})
+	}
+
+	departmentIDsByUser := make(map[int64][]int64)
+	departmentNamesByUser := make(map[int64][]string)
+	for userID, roleIDs := range roleIDsByUser {
+		seenID := make(map[int64]bool)
+		seenName := make(map[string]bool)
+		for _, roleID := range uniqueInt64(roleIDs) {
+			for _, department := range departmentsByRole[roleID] {
+				if !seenID[department.ID] {
+					departmentIDsByUser[userID] = append(departmentIDsByUser[userID], department.ID)
+					seenID[department.ID] = true
+				}
+				if !seenName[department.Name] {
+					departmentNamesByUser[userID] = append(departmentNamesByUser[userID], department.Name)
+					seenName[department.Name] = true
+				}
+			}
+		}
+	}
+	return departmentIDsByUser, departmentNamesByUser, nil
 }
 
 func (s *Store) usernameExists(username string, exceptID int64) (bool, error) {
@@ -436,6 +498,30 @@ func normalizeUserPayload(req *userPayload) {
 	req.Name = strings.TrimSpace(req.Name)
 	req.Avatar = strings.TrimSpace(req.Avatar)
 	req.RoleIDs = uniqueInt64(req.RoleIDs)
+}
+
+func matchesManagedUserFilter(user managedUser, keyword, departmentKeyword, roleKeyword string) bool {
+	if keyword != "" &&
+		!strings.Contains(strings.ToLower(user.Username), keyword) &&
+		!strings.Contains(strings.ToLower(user.Name), keyword) {
+		return false
+	}
+	if departmentKeyword != "" && !containsKeyword(user.Departments, departmentKeyword) {
+		return false
+	}
+	if roleKeyword != "" && !containsKeyword(user.Roles, roleKeyword) {
+		return false
+	}
+	return true
+}
+
+func containsKeyword(items []string, keyword string) bool {
+	for _, item := range items {
+		if strings.Contains(strings.ToLower(item), keyword) {
+			return true
+		}
+	}
+	return false
 }
 
 func validatePassword(password string) error {

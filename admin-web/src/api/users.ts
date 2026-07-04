@@ -10,6 +10,8 @@ export interface ManagedUser {
   avatar?: string;
   roleIds: number[];
   roles: string[];
+  departmentIds: number[];
+  departments: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -27,9 +29,19 @@ export interface UserPayload {
   roleIds?: number[];
 }
 
-export function getUsers(keyword = '') {
-  const params = keyword ? `?keyword=${encodeURIComponent(keyword)}` : '';
-  return request<ManagedUserListResponse>(`/api/users${params}`);
+export interface UserListFilters {
+  keyword?: string;
+  department?: string;
+  role?: string;
+}
+
+export function getUsers(filters: UserListFilters = {}) {
+  const params = new URLSearchParams();
+  if (filters.keyword) params.set('keyword', filters.keyword);
+  if (filters.department) params.set('department', filters.department);
+  if (filters.role) params.set('role', filters.role);
+  const query = params.toString();
+  return request<ManagedUserListResponse>(`/api/users${query ? `?${query}` : ''}`);
 }
 
 export function createUser(payload: UserPayload & { password: string }) {

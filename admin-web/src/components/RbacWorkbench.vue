@@ -99,10 +99,6 @@
                 <div class="table-toolbar">
                   <span class="muted-text">配置该部门下包含哪些职位，职位即现有权限组</span>
                   <a-space>
-                    <a-button @click="openRoleDrawer()">
-                      <PlusOutlined />
-                      新建职位
-                    </a-button>
                     <a-button type="primary" :loading="savingDepartmentRoles" @click="saveDepartmentRoles">
                       保存部门职位
                     </a-button>
