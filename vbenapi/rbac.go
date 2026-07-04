@@ -24,6 +24,19 @@ type rbacRole struct {
 	UpdatedAt string     `json:"updatedAt"`
 }
 
+type rbacDepartment struct {
+	ID          int64      `json:"id"`
+	Name        string     `json:"name"`
+	Code        string     `json:"code"`
+	Description string     `json:"description"`
+	Sort        int64      `json:"sort"`
+	Status      int64      `json:"status"`
+	RoleIDs     []int64    `json:"roleIds"`
+	Roles       []rbacRole `json:"roles"`
+	CreatedAt   string     `json:"createdAt"`
+	UpdatedAt   string     `json:"updatedAt"`
+}
+
 type rbacMenu struct {
 	ID       int64      `json:"id"`
 	ParentID int64      `json:"parentId"`
@@ -55,9 +68,26 @@ type roleUsersPayload struct {
 	UserIDs []int64 `json:"userIds"`
 }
 
+type departmentPayload struct {
+	Name        string `json:"name"`
+	Code        string `json:"code"`
+	Description string `json:"description"`
+	Sort        int64  `json:"sort"`
+	Status      int64  `json:"status"`
+}
+
+type departmentRolesPayload struct {
+	RoleIDs []int64 `json:"roleIds"`
+}
+
 func registerRBACRoutes(api *gin.RouterGroup, s *Store) {
 	rbacGroup := api.Group("/rbac", s.requireAuth(), s.requireAdmin())
 	rbacGroup.GET("/overview", s.rbacOverview)
+	rbacGroup.GET("/departments", s.rbacDepartments)
+	rbacGroup.POST("/departments", s.createDepartment)
+	rbacGroup.PUT("/departments/:id", s.updateDepartment)
+	rbacGroup.DELETE("/departments/:id", s.deleteDepartment)
+	rbacGroup.PUT("/departments/:id/roles", s.updateDepartmentRoles)
 	rbacGroup.GET("/roles", s.rbacRoles)
 	rbacGroup.POST("/roles", s.createRole)
 	rbacGroup.PUT("/roles/:id", s.updateRole)
@@ -106,11 +136,26 @@ func (s *Store) rbacOverview(c *gin.Context) {
 		fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	departments, err := s.loadRBACDepartments()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	success(c, gin.H{
-		"roles": roles,
-		"menus": menus,
-		"users": users,
+		"roles":       roles,
+		"menus":       menus,
+		"users":       users,
+		"departments": departments,
 	})
+}
+
+func (s *Store) rbacDepartments(c *gin.Context) {
+	departments, err := s.loadRBACDepartments()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, departments)
 }
 
 func (s *Store) rbacRoles(c *gin.Context) {
@@ -138,6 +183,130 @@ func (s *Store) rbacUsers(c *gin.Context) {
 		return
 	}
 	success(c, users)
+}
+
+func (s *Store) createDepartment(c *gin.Context) {
+	var req departmentPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fail(c, http.StatusBadRequest, "invalid department payload")
+		return
+	}
+	normalizeDepartmentPayload(&req)
+	if req.Name == "" {
+		fail(c, http.StatusBadRequest, "department name is required")
+		return
+	}
+	if req.Status == 0 {
+		req.Status = 1
+	}
+
+	id, err := db.WithDriver(s.conn).Table("goadmin_department").Insert(dialect.H{
+		"name":        req.Name,
+		"code":        req.Code,
+		"description": req.Description,
+		"sort":        req.Sort,
+		"status":      req.Status,
+	})
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	department, err := s.loadRBACDepartment(id)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, department)
+}
+
+func (s *Store) updateDepartment(c *gin.Context) {
+	departmentID, ok := pathID(c)
+	if !ok {
+		return
+	}
+
+	var req departmentPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fail(c, http.StatusBadRequest, "invalid department payload")
+		return
+	}
+	normalizeDepartmentPayload(&req)
+	if req.Name == "" {
+		fail(c, http.StatusBadRequest, "department name is required")
+		return
+	}
+	if req.Status == 0 {
+		req.Status = 1
+	}
+
+	_, err := db.WithDriver(s.conn).
+		Table("goadmin_department").
+		Where("id", "=", departmentID).
+		Update(dialect.H{
+			"name":        req.Name,
+			"code":        req.Code,
+			"description": req.Description,
+			"sort":        req.Sort,
+			"status":      req.Status,
+			"updated_at":  nowString(),
+		})
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	department, err := s.loadRBACDepartment(departmentID)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, department)
+}
+
+func (s *Store) deleteDepartment(c *gin.Context) {
+	departmentID, ok := pathID(c)
+	if !ok {
+		return
+	}
+
+	_ = db.WithDriver(s.conn).Table("goadmin_department_roles").Where("department_id", "=", departmentID).Delete()
+	if err := db.WithDriver(s.conn).Table("goadmin_department").Where("id", "=", departmentID).Delete(); err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, true)
+}
+
+func (s *Store) updateDepartmentRoles(c *gin.Context) {
+	departmentID, ok := pathID(c)
+	if !ok {
+		return
+	}
+
+	var req departmentRolesPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fail(c, http.StatusBadRequest, "invalid department role payload")
+		return
+	}
+
+	_ = db.WithDriver(s.conn).Table("goadmin_department_roles").Where("department_id", "=", departmentID).Delete()
+	for _, roleID := range uniqueInt64(req.RoleIDs) {
+		if roleID == 0 {
+			continue
+		}
+		if err := s.insertDepartmentRole(departmentID, roleID); err != nil {
+			fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	department, err := s.loadRBACDepartment(departmentID)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, department)
 }
 
 func (s *Store) createRole(c *gin.Context) {
@@ -229,6 +398,7 @@ func (s *Store) deleteRole(c *gin.Context) {
 	_ = db.WithDriver(s.conn).Table("goadmin_role_menu").Where("role_id", "=", roleID).Delete()
 	_ = db.WithDriver(s.conn).Table("goadmin_role_permissions").Where("role_id", "=", roleID).Delete()
 	_ = db.WithDriver(s.conn).Table("goadmin_role_users").Where("role_id", "=", roleID).Delete()
+	_ = db.WithDriver(s.conn).Table("goadmin_department_roles").Where("role_id", "=", roleID).Delete()
 	if err := db.WithDriver(s.conn).Table("goadmin_roles").Where("id", "=", roleID).Delete(); err != nil {
 		fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -317,6 +487,66 @@ func (s *Store) loadRBACRole(id int64) (rbacRole, error) {
 		}
 	}
 	return rbacRole{}, nil
+}
+
+func (s *Store) loadRBACDepartment(id int64) (rbacDepartment, error) {
+	departments, err := s.loadRBACDepartments()
+	if err != nil {
+		return rbacDepartment{}, err
+	}
+	for _, department := range departments {
+		if department.ID == id {
+			return department, nil
+		}
+	}
+	return rbacDepartment{}, nil
+}
+
+func (s *Store) loadRBACDepartments() ([]rbacDepartment, error) {
+	rows, err := db.WithDriver(s.conn).
+		Table("goadmin_department").
+		OrderBy("sort", "asc").
+		All()
+	if err != nil {
+		return nil, err
+	}
+
+	roleIDsByDepartment, err := s.loadDepartmentRoleIDs()
+	if err != nil {
+		return nil, err
+	}
+	roles, err := s.loadRBACRoles()
+	if err != nil {
+		return nil, err
+	}
+	rolesByID := make(map[int64]rbacRole)
+	for _, role := range roles {
+		rolesByID[role.ID] = role
+	}
+
+	departments := make([]rbacDepartment, 0, len(rows))
+	for _, row := range rows {
+		id := toInt64(row["id"])
+		roleIDs := uniqueInt64(roleIDsByDepartment[id])
+		department := rbacDepartment{
+			ID:          id,
+			Name:        toString(row["name"]),
+			Code:        toString(row["code"]),
+			Description: toString(row["description"]),
+			Sort:        toInt64(row["sort"]),
+			Status:      toInt64(row["status"]),
+			RoleIDs:     roleIDs,
+			CreatedAt:   toString(row["created_at"]),
+			UpdatedAt:   toString(row["updated_at"]),
+		}
+		for _, roleID := range roleIDs {
+			if role, ok := rolesByID[roleID]; ok {
+				department.Roles = append(department.Roles, role)
+			}
+		}
+		departments = append(departments, department)
+	}
+	return departments, nil
 }
 
 func (s *Store) loadRBACRoles() ([]rbacRole, error) {
@@ -455,6 +685,19 @@ func (s *Store) loadRoleUserIDs() (map[int64][]int64, error) {
 	return res, nil
 }
 
+func (s *Store) loadDepartmentRoleIDs() (map[int64][]int64, error) {
+	rows, err := db.WithDriver(s.conn).Table("goadmin_department_roles").All()
+	if err != nil {
+		return nil, err
+	}
+	res := make(map[int64][]int64)
+	for _, row := range rows {
+		departmentID := toInt64(row["department_id"])
+		res[departmentID] = append(res[departmentID], toInt64(row["role_id"]))
+	}
+	return res, nil
+}
+
 func (s *Store) loadMenuMap() (map[int64]rbacMenu, error) {
 	rows, err := db.WithDriver(s.conn).Table("goadmin_menu").All()
 	if err != nil {
@@ -546,6 +789,15 @@ func nowString() string {
 	return time.Now().Format("2006-01-02 15:04:05")
 }
 
+func normalizeDepartmentPayload(req *departmentPayload) {
+	req.Name = strings.TrimSpace(req.Name)
+	req.Code = strings.TrimSpace(req.Code)
+	req.Description = strings.TrimSpace(req.Description)
+	if req.Sort < 0 {
+		req.Sort = 0
+	}
+}
+
 func (s *Store) insertRoleMenu(roleID, menuID int64) error {
 	_, err := s.conn.Exec(
 		"INSERT INTO `goadmin_role_menu` (`role_id`, `menu_id`) VALUES (?, ?)",
@@ -560,6 +812,15 @@ func (s *Store) insertRoleUser(roleID, userID int64) error {
 		"INSERT INTO `goadmin_role_users` (`role_id`, `user_id`) VALUES (?, ?)",
 		roleID,
 		userID,
+	)
+	return err
+}
+
+func (s *Store) insertDepartmentRole(departmentID, roleID int64) error {
+	_, err := s.conn.Exec(
+		"INSERT INTO `goadmin_department_roles` (`department_id`, `role_id`) VALUES (?, ?)",
+		departmentID,
+		roleID,
 	)
 	return err
 }

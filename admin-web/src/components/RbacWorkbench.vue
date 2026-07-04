@@ -3,7 +3,7 @@
     <section class="page-heading">
       <div>
         <h1>权限管理</h1>
-        <p>检查权限组、菜单授权和组内员工分配</p>
+        <p>按部门配置职位，职位的人员分配在用户管理中维护</p>
       </div>
       <a-space wrap>
         <a-button @click="loadOverview">
@@ -14,20 +14,20 @@
     </section>
 
     <a-row :gutter="[16, 16]">
-      <a-col :xs="24" :lg="9">
+      <a-col :xs="24" :lg="8">
         <section class="panel">
           <div class="panel-title">
-            <h2>权限组</h2>
-            <a-button size="small" type="primary" @click="openRoleDrawer()">
+            <h2>部门</h2>
+            <a-button size="small" type="primary" @click="openDepartmentDrawer()">
               <PlusOutlined />
-              新建权限组
+              新建部门
             </a-button>
           </div>
           <a-input
-            v-model:value="roleKeyword"
+            v-model:value="departmentKeyword"
             allow-clear
             class="toolbar-input"
-            placeholder="搜索权限组"
+            placeholder="搜索部门"
           >
             <template #prefix>
               <SearchOutlined />
@@ -35,29 +35,29 @@
           </a-input>
           <a-list
             class="role-list"
-            :data-source="filteredRoles"
+            :data-source="filteredDepartments"
             :loading="loading"
             item-layout="horizontal"
           >
             <template #renderItem="{ item }">
               <a-list-item
-                :class="['role-list-item', { active: item.id === selectedRoleId }]"
-                @click="selectRole(item.id)"
+                :class="['role-list-item', { active: item.id === selectedDepartmentId }]"
+                @click="selectDepartment(item.id)"
               >
                 <a-list-item-meta>
                   <template #avatar>
-                    <a-avatar :style="{ backgroundColor: item.isAdmin ? '#d46b08' : '#1677ff' }">
+                    <a-avatar :style="{ backgroundColor: item.status === 1 ? '#1677ff' : '#8c8c8c' }">
                       {{ item.name.slice(0, 1) }}
                     </a-avatar>
                   </template>
                   <template #title>
                     <a-space :size="6">
                       <span>{{ item.name }}</span>
-                      <a-tag v-if="item.isAdmin" color="gold">最高权限</a-tag>
+                      <a-tag v-if="item.status !== 1">停用</a-tag>
                     </a-space>
                   </template>
                   <template #description>
-                    {{ item.slug }} · {{ item.userIds.length }} 人 · {{ item.menuIds.length }} 菜单
+                    {{ item.code || '未设置编码' }} · {{ item.roleIds.length }} 个职位
                   </template>
                 </a-list-item-meta>
               </a-list-item>
@@ -66,22 +66,27 @@
         </section>
       </a-col>
 
-      <a-col :xs="24" :lg="15">
+      <a-col :xs="24" :lg="16">
         <section class="panel">
-          <a-empty v-if="!selectedRole" description="请选择权限组" />
+          <a-empty v-if="!selectedDepartment" description="请选择部门" />
           <template v-else>
             <div class="panel-title">
               <div>
-                <h2>{{ selectedRole.name }}</h2>
-                <p class="muted-text">{{ selectedRole.slug }}</p>
+                <h2>{{ selectedDepartment.name }}</h2>
+                <p class="muted-text">
+                  {{ selectedDepartment.code || '未设置编码' }}
+                  <template v-if="selectedDepartment.description">
+                    · {{ selectedDepartment.description }}
+                  </template>
+                </p>
               </div>
               <a-space wrap>
-                <a-button :disabled="selectedRole.isAdmin" @click="openRoleDrawer(selectedRole)">
+                <a-button @click="openDepartmentDrawer(selectedDepartment)">
                   <EditOutlined />
-                  改名
+                  编辑部门
                 </a-button>
-                <a-popconfirm title="确认删除该权限组？" @confirm="removeRole">
-                  <a-button danger :disabled="selectedRole.isAdmin">
+                <a-popconfirm title="确认删除该部门？" @confirm="removeDepartment">
+                  <a-button danger>
                     <DeleteOutlined />
                     删除
                   </a-button>
@@ -89,58 +94,65 @@
               </a-space>
             </div>
 
-            <a-alert
-              v-if="selectedRole.isAdmin"
-              class="form-alert"
-              type="info"
-              show-icon
-              message="admin 最高权限用户不受菜单和权限限制，管理员组仅展示当前系统权限全集。"
-            />
-
             <a-tabs v-model:active-key="activeTab" class="rbac-tabs">
-              <a-tab-pane key="menus" tab="菜单权限">
+              <a-tab-pane key="departmentRoles" tab="部门职位">
                 <div class="table-toolbar">
-                  <span class="muted-text">配置该权限组可见和可访问的后台菜单</span>
+                  <span class="muted-text">配置该部门下包含哪些职位，职位即现有权限组</span>
+                  <a-space>
+                    <a-button @click="openRoleDrawer()">
+                      <PlusOutlined />
+                      新建职位
+                    </a-button>
+                    <a-button type="primary" :loading="savingDepartmentRoles" @click="saveDepartmentRoles">
+                      保存部门职位
+                    </a-button>
+                  </a-space>
+                </div>
+                <a-transfer
+                  v-model:target-keys="selectedDepartmentRoleKeys"
+                  class="rbac-transfer"
+                  :data-source="transferRoles"
+                  :list-style="{ height: '360px' }"
+                  :render="(item) => item.title"
+                  :titles="['可选职位', '部门职位']"
+                  show-search
+                />
+              </a-tab-pane>
+
+              <a-tab-pane key="roleMenus" tab="职位菜单权限">
+                <div class="table-toolbar">
+                  <a-select
+                    v-model:value="selectedRoleId"
+                    class="control-lg"
+                    :options="departmentRoleOptions"
+                    placeholder="选择部门下的职位"
+                  />
                   <a-button
                     type="primary"
-                    :disabled="selectedRole.isAdmin"
+                    :disabled="!selectedRole || selectedRole.isAdmin"
                     :loading="savingMenus"
                     @click="saveMenus"
                   >
                     保存菜单权限
                   </a-button>
                 </div>
-                <a-tree
-                  v-model:checkedKeys="checkedMenuKeys"
-                  checkable
-                  default-expand-all
-                  :disabled="selectedRole.isAdmin"
-                  :tree-data="menuTreeData"
-                />
-              </a-tab-pane>
-
-              <a-tab-pane key="users" tab="组内员工">
-                <div class="table-toolbar">
-                  <span class="muted-text">调配该权限组下的人员，admin 用户固定保留最高权限</span>
-                  <a-button
-                    type="primary"
+                <a-empty v-if="!selectedRole" description="请先在部门职位中选择或添加职位" />
+                <template v-else>
+                  <a-alert
+                    v-if="selectedRole.isAdmin"
+                    class="form-alert"
+                    type="info"
+                    show-icon
+                    message="admin 最高权限职位不受菜单限制，仅展示当前系统权限全集。"
+                  />
+                  <a-tree
+                    v-model:checkedKeys="checkedMenuKeys"
+                    checkable
+                    default-expand-all
                     :disabled="selectedRole.isAdmin"
-                    :loading="savingUsers"
-                    @click="saveUsers"
-                  >
-                    保存员工分配
-                  </a-button>
-                </div>
-                <a-transfer
-                  v-model:target-keys="selectedUserKeys"
-                  class="rbac-transfer"
-                  :data-source="transferUsers"
-                  :disabled="selectedRole.isAdmin"
-                  :list-style="{ height: '360px' }"
-                  :render="(item) => item.title"
-                  :titles="['可选员工', '组内员工']"
-                  show-search
-                />
+                    :tree-data="menuTreeData"
+                  />
+                </template>
               </a-tab-pane>
             </a-tabs>
           </template>
@@ -148,31 +160,47 @@
 
         <section class="panel">
           <div class="panel-title">
-            <h2>员工与权限组</h2>
-            <a-tag>{{ users.length }} 人</a-tag>
+            <h2>职位</h2>
+            <a-button size="small" type="primary" @click="openRoleDrawer()">
+              <PlusOutlined />
+              新建职位
+            </a-button>
           </div>
           <a-table
             row-key="id"
             size="small"
-            :columns="userColumns"
-            :data-source="users"
-            :pagination="{ pageSize: 6, showTotal: (total: number) => `共 ${total} 人` }"
+            :columns="roleColumns"
+            :data-source="roles"
+            :pagination="{ pageSize: 6, showTotal: (total: number) => `共 ${total} 个职位` }"
             :scroll="{ x: 720 }"
           >
             <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'name'">
+              <template v-if="column.key === 'role'">
                 <a-space>
-                  <a-avatar>{{ (record.name || record.username).slice(0, 1) }}</a-avatar>
+                  <a-avatar :style="{ backgroundColor: record.isAdmin ? '#d46b08' : '#1677ff' }">
+                    {{ record.name.slice(0, 1) }}
+                  </a-avatar>
                   <div class="name-cell">
-                    <strong>{{ record.name || record.username }}</strong>
-                    <span>{{ record.username }}</span>
+                    <strong>{{ record.name }}</strong>
+                    <span>{{ record.slug }}</span>
                   </div>
                 </a-space>
               </template>
-              <template v-else-if="column.key === 'roles'">
+              <template v-else-if="column.key === 'summary'">
                 <a-space :size="4" wrap>
-                  <a-tag v-for="role in record.roles" :key="role">{{ role }}</a-tag>
-                  <a-tag v-if="record.username === 'admin'" color="gold">最高权限</a-tag>
+                  <a-tag>{{ record.menuIds.length }} 菜单</a-tag>
+                  <a-tag>{{ record.userIds.length }} 人</a-tag>
+                  <a-tag v-if="record.isAdmin" color="gold">最高权限</a-tag>
+                </a-space>
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <a-space>
+                  <a-button size="small" :disabled="record.isAdmin" @click="openRoleDrawer(record)">
+                    改名
+                  </a-button>
+                  <a-popconfirm title="确认删除该职位？" @confirm="removeRole(record)">
+                    <a-button size="small" danger :disabled="record.isAdmin">删除</a-button>
+                  </a-popconfirm>
                 </a-space>
               </template>
             </template>
@@ -182,16 +210,64 @@
     </a-row>
 
     <a-drawer
+      v-model:open="departmentDrawerOpen"
+      :title="editingDepartment ? '编辑部门' : '新建部门'"
+      width="420"
+      :destroy-on-close="true"
+    >
+      <a-form
+        ref="departmentFormRef"
+        :model="departmentForm"
+        :rules="departmentRules"
+        layout="vertical"
+      >
+        <a-form-item label="部门名称" name="name">
+          <a-input v-model:value="departmentForm.name" placeholder="例如：运营部" />
+        </a-form-item>
+        <a-form-item label="部门编码" name="code">
+          <a-input v-model:value="departmentForm.code" placeholder="例如：operation" />
+        </a-form-item>
+        <a-form-item label="排序" name="sort">
+          <a-input-number v-model:value="departmentForm.sort" class="full-width" :min="0" />
+        </a-form-item>
+        <a-form-item label="状态" name="status">
+          <a-select
+            v-model:value="departmentForm.status"
+            :options="[
+              { label: '启用', value: 1 },
+              { label: '停用', value: 2 },
+            ]"
+          />
+        </a-form-item>
+        <a-form-item label="描述" name="description">
+          <a-textarea
+            v-model:value="departmentForm.description"
+            :rows="3"
+            placeholder="可选，描述部门职责"
+          />
+        </a-form-item>
+      </a-form>
+      <template #extra>
+        <a-space>
+          <a-button @click="departmentDrawerOpen = false">取消</a-button>
+          <a-button type="primary" :loading="savingDepartment" @click="submitDepartment">
+            保存
+          </a-button>
+        </a-space>
+      </template>
+    </a-drawer>
+
+    <a-drawer
       v-model:open="roleDrawerOpen"
-      :title="editingRole ? '编辑权限组' : '新建权限组'"
+      :title="editingRole ? '编辑职位' : '新建职位'"
       width="420"
       :destroy-on-close="true"
     >
       <a-form ref="roleFormRef" :model="roleForm" :rules="roleRules" layout="vertical">
-        <a-form-item label="权限组名称" name="name">
+        <a-form-item label="职位名称" name="name">
           <a-input v-model:value="roleForm.name" placeholder="例如：运营人员" />
         </a-form-item>
-        <a-form-item label="权限标识" name="slug">
+        <a-form-item label="职位标识" name="slug">
           <a-input v-model:value="roleForm.slug" placeholder="例如：operator" />
         </a-form-item>
       </a-form>
@@ -217,15 +293,18 @@ import { message, type FormInstance } from 'ant-design-vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import {
+  createDepartment,
   createRole,
+  deleteDepartment,
   deleteRole,
   getRbacOverview,
+  updateDepartment,
+  updateDepartmentRoles,
   updateRole,
   updateRoleMenus,
-  updateRoleUsers,
+  type RbacDepartment,
   type RbacMenu,
   type RbacRole,
-  type RbacUser,
 } from '../api/rbac';
 
 type TreeNode = {
@@ -235,44 +314,67 @@ type TreeNode = {
 };
 
 const loading = ref(false);
+const savingDepartment = ref(false);
+const savingDepartmentRoles = ref(false);
 const savingRole = ref(false);
 const savingMenus = ref(false);
-const savingUsers = ref(false);
+const departments = ref<RbacDepartment[]>([]);
 const roles = ref<RbacRole[]>([]);
 const menus = ref<RbacMenu[]>([]);
-const users = ref<RbacUser[]>([]);
+const selectedDepartmentId = ref<number>();
 const selectedRoleId = ref<number>();
-const roleKeyword = ref('');
-const activeTab = ref('menus');
+const departmentKeyword = ref('');
+const activeTab = ref('departmentRoles');
 const checkedMenuKeys = ref<number[]>([]);
-const selectedUserKeys = ref<string[]>([]);
+const selectedDepartmentRoleKeys = ref<string[]>([]);
+const departmentDrawerOpen = ref(false);
 const roleDrawerOpen = ref(false);
+const editingDepartment = ref<RbacDepartment | null>(null);
 const editingRole = ref<RbacRole | null>(null);
+const departmentFormRef = ref<FormInstance>();
 const roleFormRef = ref<FormInstance>();
+
+const departmentForm = reactive({
+  name: '',
+  code: '',
+  description: '',
+  sort: 0,
+  status: 1,
+});
+
 const roleForm = reactive({
   name: '',
   slug: '',
 });
 
-const roleRules = {
-  name: [{ required: true, message: '请输入权限组名称' }],
-  slug: [{ required: true, message: '请输入权限标识' }],
+const departmentRules = {
+  name: [{ required: true, message: '请输入部门名称' }],
 };
 
-const userColumns = [
-  { title: '员工', key: 'name', width: 240 },
-  { title: '权限组', key: 'roles', width: 360 },
+const roleRules = {
+  name: [{ required: true, message: '请输入职位名称' }],
+  slug: [{ required: true, message: '请输入职位标识' }],
+};
+
+const roleColumns = [
+  { title: '职位', key: 'role', width: 260, fixed: 'left' },
+  { title: '权限概览', key: 'summary', width: 260 },
+  { title: '操作', key: 'action', width: 180, fixed: 'right' },
 ];
 
-const filteredRoles = computed(() => {
-  const keyword = roleKeyword.value.trim().toLowerCase();
-  if (!keyword) return roles.value;
-  return roles.value.filter(
-    (role) =>
-      role.name.toLowerCase().includes(keyword) ||
-      role.slug.toLowerCase().includes(keyword),
+const filteredDepartments = computed(() => {
+  const keyword = departmentKeyword.value.trim().toLowerCase();
+  if (!keyword) return departments.value;
+  return departments.value.filter(
+    (department) =>
+      department.name.toLowerCase().includes(keyword) ||
+      department.code.toLowerCase().includes(keyword),
   );
 });
+
+const selectedDepartment = computed(() =>
+  departments.value.find((department) => department.id === selectedDepartmentId.value),
+);
 
 const selectedRole = computed(() =>
   roles.value.find((role) => role.id === selectedRoleId.value),
@@ -280,22 +382,41 @@ const selectedRole = computed(() =>
 
 const menuTreeData = computed(() => toTreeData(menus.value));
 
-const transferUsers = computed(() =>
-  users.value
-    .filter((user) => user.username !== 'admin')
-    .map((user) => ({
-      key: String(user.id),
-      title: `${user.name || user.username}（${user.username}）`,
-      description: user.roles.join('、'),
-    })),
+const transferRoles = computed(() =>
+  roles.value.map((role) => ({
+    key: String(role.id),
+    title: `${role.name}（${role.slug}）`,
+    description: `${role.menuIds.length} 个菜单权限`,
+  })),
 );
 
-watch(selectedRole, (role) => {
-  checkedMenuKeys.value = role?.menuIds ? [...role.menuIds] : [];
-  selectedUserKeys.value = role?.userIds
-    ? role.userIds.filter((id) => id !== 1).map(String)
-    : [];
+const departmentRoleOptions = computed(() => {
+  if (!selectedDepartment.value) return [];
+  return selectedDepartment.value.roleIds
+    .map((roleId) => roles.value.find((role) => role.id === roleId))
+    .filter((role): role is RbacRole => Boolean(role))
+    .map((role) => ({
+      label: `${role.name}（${role.slug}）`,
+      value: role.id,
+    }));
 });
+
+watch(selectedDepartment, (department) => {
+  selectedDepartmentRoleKeys.value = department?.roleIds
+    ? department.roleIds.map(String)
+    : [];
+  if (!department || !department.roleIds.includes(selectedRoleId.value || 0)) {
+    selectedRoleId.value = department?.roleIds[0];
+  }
+});
+
+watch(
+  selectedRole,
+  (role) => {
+    checkedMenuKeys.value = role?.menuIds ? [...role.menuIds] : [];
+  },
+  { immediate: true },
+);
 
 onMounted(() => {
   void loadOverview();
@@ -305,11 +426,20 @@ async function loadOverview() {
   loading.value = true;
   try {
     const data = await getRbacOverview();
+    departments.value = data.departments || [];
     roles.value = data.roles || [];
     menus.value = data.menus || [];
-    users.value = data.users || [];
-    if (!selectedRoleId.value || !roles.value.some((role) => role.id === selectedRoleId.value)) {
-      selectedRoleId.value = roles.value[0]?.id;
+    if (
+      !selectedDepartmentId.value ||
+      !departments.value.some((department) => department.id === selectedDepartmentId.value)
+    ) {
+      selectedDepartmentId.value = departments.value[0]?.id;
+    }
+    if (
+      selectedDepartment.value &&
+      !selectedDepartment.value.roleIds.includes(selectedRoleId.value || 0)
+    ) {
+      selectedRoleId.value = selectedDepartment.value.roleIds[0];
     }
   } catch (error) {
     message.error(error instanceof Error ? error.message : '加载权限数据失败');
@@ -318,8 +448,74 @@ async function loadOverview() {
   }
 }
 
-function selectRole(roleId: number) {
-  selectedRoleId.value = roleId;
+function selectDepartment(departmentId: number) {
+  selectedDepartmentId.value = departmentId;
+}
+
+function openDepartmentDrawer(department?: RbacDepartment) {
+  editingDepartment.value = department || null;
+  departmentForm.name = department?.name || '';
+  departmentForm.code = department?.code || '';
+  departmentForm.description = department?.description || '';
+  departmentForm.sort = department?.sort || 0;
+  departmentForm.status = department?.status || 1;
+  departmentDrawerOpen.value = true;
+}
+
+async function submitDepartment() {
+  await departmentFormRef.value?.validate();
+  savingDepartment.value = true;
+  try {
+    const payload = {
+      name: departmentForm.name.trim(),
+      code: departmentForm.code.trim(),
+      description: departmentForm.description.trim(),
+      sort: Number(departmentForm.sort) || 0,
+      status: Number(departmentForm.status) || 1,
+    };
+    const department = editingDepartment.value
+      ? await updateDepartment(editingDepartment.value.id, payload)
+      : await createDepartment(payload);
+    await loadOverview();
+    selectedDepartmentId.value = department.id;
+    departmentDrawerOpen.value = false;
+    message.success('部门已保存');
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '保存部门失败');
+  } finally {
+    savingDepartment.value = false;
+  }
+}
+
+async function removeDepartment() {
+  if (!selectedDepartment.value) return;
+  try {
+    await deleteDepartment(selectedDepartment.value.id);
+    selectedDepartmentId.value = undefined;
+    selectedRoleId.value = undefined;
+    await loadOverview();
+    message.success('部门已删除');
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '删除部门失败');
+  }
+}
+
+async function saveDepartmentRoles() {
+  if (!selectedDepartment.value) return;
+  savingDepartmentRoles.value = true;
+  try {
+    const roleIds = selectedDepartmentRoleKeys.value.map(Number);
+    await updateDepartmentRoles(selectedDepartment.value.id, roleIds);
+    await loadOverview();
+    selectedRoleId.value = roleIds.includes(selectedRoleId.value || 0)
+      ? selectedRoleId.value
+      : roleIds[0];
+    message.success('部门职位已保存');
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '保存部门职位失败');
+  } finally {
+    savingDepartmentRoles.value = false;
+  }
 }
 
 function openRoleDrawer(role?: RbacRole) {
@@ -333,6 +529,10 @@ async function submitRole() {
   await roleFormRef.value?.validate();
   savingRole.value = true;
   try {
+    const currentDepartmentId = editingRole.value ? undefined : selectedDepartment.value?.id;
+    const currentDepartmentRoleIds = editingRole.value
+      ? []
+      : [...(selectedDepartment.value?.roleIds || [])];
     const payload = {
       name: roleForm.name.trim(),
       slug: roleForm.slug.trim(),
@@ -340,26 +540,36 @@ async function submitRole() {
     const role = editingRole.value
       ? await updateRole(editingRole.value.id, payload)
       : await createRole(payload);
+    if (currentDepartmentId) {
+      await updateDepartmentRoles(currentDepartmentId, [
+        ...new Set([...currentDepartmentRoleIds, role.id]),
+      ]);
+    }
     await loadOverview();
+    if (currentDepartmentId) {
+      selectedDepartmentId.value = currentDepartmentId;
+    }
     selectedRoleId.value = role.id;
     roleDrawerOpen.value = false;
-    message.success('权限组已保存');
+    message.success('职位已保存');
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '保存权限组失败');
+    message.error(error instanceof Error ? error.message : '保存职位失败');
   } finally {
     savingRole.value = false;
   }
 }
 
-async function removeRole() {
-  if (!selectedRole.value || selectedRole.value.isAdmin) return;
+async function removeRole(role: RbacRole) {
+  if (role.isAdmin) return;
   try {
-    await deleteRole(selectedRole.value.id);
-    selectedRoleId.value = undefined;
+    await deleteRole(role.id);
+    if (selectedRoleId.value === role.id) {
+      selectedRoleId.value = undefined;
+    }
     await loadOverview();
-    message.success('权限组已删除');
+    message.success('职位已删除');
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '删除权限组失败');
+    message.error(error instanceof Error ? error.message : '删除职位失败');
   }
 }
 
@@ -374,20 +584,6 @@ async function saveMenus() {
     message.error(error instanceof Error ? error.message : '保存菜单权限失败');
   } finally {
     savingMenus.value = false;
-  }
-}
-
-async function saveUsers() {
-  if (!selectedRole.value || selectedRole.value.isAdmin) return;
-  savingUsers.value = true;
-  try {
-    await updateRoleUsers(selectedRole.value.id, selectedUserKeys.value.map(Number));
-    await loadOverview();
-    message.success('员工分配已保存');
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '保存员工分配失败');
-  } finally {
-    savingUsers.value = false;
   }
 }
 
