@@ -404,8 +404,8 @@ func (s *Store) loadManagedUsers() ([]managedUser, error) {
 			Roles:         roleNames,
 			DepartmentIDs: uniqueInt64(departmentIDsByUser[id]),
 			Departments:   departmentNamesByUser[id],
-			CreatedAt:     toString(row["created_at"]),
-			UpdatedAt:     toString(row["updated_at"]),
+			CreatedAt:     toDateTimeString(row["created_at"]),
+			UpdatedAt:     toDateTimeString(row["updated_at"]),
 		})
 	}
 	return users, nil
