@@ -3,7 +3,7 @@
     <section class="page-heading">
       <div>
         <h1>用户管理</h1>
-        <p>维护管理员账号、昵称、头像、密码与职位分配</p>
+        <p>维护账号与职位分配</p>
       </div>
     </section>
 
@@ -174,8 +174,29 @@
         <a-form-item label="昵称" name="name">
           <a-input v-model:value="userForm.name" placeholder="可留空，默认使用账号" />
         </a-form-item>
-        <a-form-item label="头像 URL" name="avatar">
-          <a-input v-model:value="userForm.avatar" placeholder="可选" />
+        <a-form-item label="头像" name="avatar">
+          <div class="avatar-uploader">
+            <a-avatar :size="64" :src="userForm.avatar">
+              {{ avatarInitial }}
+            </a-avatar>
+            <a-space wrap>
+              <a-upload
+                accept="image/*"
+                :before-upload="beforeAvatarUpload"
+                :disabled="avatarUploading"
+                :show-upload-list="false"
+              >
+                <a-button :loading="avatarUploading">
+                  <UploadOutlined />
+                  上传头像
+                </a-button>
+              </a-upload>
+              <a-button v-if="userForm.avatar" :disabled="avatarUploading" @click="clearAvatar">
+                <DeleteOutlined />
+                清除
+              </a-button>
+            </a-space>
+          </div>
         </a-form-item>
         <a-form-item label="职位">
           <a-select
@@ -253,6 +274,7 @@
 <script setup lang="ts">
 import {
   ClearOutlined,
+  DeleteOutlined,
   DownloadOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -271,6 +293,7 @@ import {
   importUsers,
   resetUserPassword,
   updateUser,
+  uploadUserAvatar,
   type ManagedUser,
   type UserImportExportFormat,
 } from '../api/users';
@@ -283,6 +306,7 @@ type TablePagination = {
 const loading = ref(false);
 const savingUser = ref(false);
 const savingPassword = ref(false);
+const avatarUploading = ref(false);
 const importing = ref(false);
 const users = ref<ManagedUser[]>([]);
 const roles = ref<RbacRole[]>([]);
@@ -360,6 +384,10 @@ const roleOptions = computed(() =>
   })),
 );
 
+const avatarInitial = computed(() =>
+  (userForm.name || userForm.username || 'U').slice(0, 1).toUpperCase(),
+);
+
 onMounted(() => {
   void Promise.all([loadUsers(), loadRoles()]);
 });
@@ -421,6 +449,33 @@ function openUserDrawer(record?: ManagedUser) {
   userForm.avatar = record?.avatar || '';
   userForm.roleIds = record?.roleIds ? [...record.roleIds] : [];
   userDrawerOpen.value = true;
+}
+
+const beforeAvatarUpload: UploadProps['beforeUpload'] = async (file) => {
+  if (!file.type.startsWith('image/')) {
+    message.warning('请选择图片文件');
+    return false;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    message.warning('头像图片不能超过 2MB');
+    return false;
+  }
+
+  avatarUploading.value = true;
+  try {
+    const data = await uploadUserAvatar(file);
+    userForm.avatar = data.url;
+    message.success(data.storage === 'minio' ? '头像已上传至 MinIO' : '头像已上传至本地');
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '上传头像失败');
+  } finally {
+    avatarUploading.value = false;
+  }
+  return false;
+};
+
+function clearAvatar() {
+  userForm.avatar = '';
 }
 
 async function submitUser() {

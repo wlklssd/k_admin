@@ -29,6 +29,12 @@ export interface UserPayload {
   roleIds?: number[];
 }
 
+export interface UploadedAvatar {
+  url: string;
+  storage: 'minio' | 'local';
+  name: string;
+}
+
 export interface UserListFilters {
   keyword?: string;
   department?: string;
@@ -68,6 +74,15 @@ export function resetUserPassword(id: number, password: string) {
   return request<boolean>(`/api/users/${id}/password`, {
     method: 'PUT',
     body: JSON.stringify({ password }),
+  });
+}
+
+export function uploadUserAvatar(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request<UploadedAvatar>('/api/users/avatar', {
+    method: 'POST',
+    body: formData,
   });
 }
 

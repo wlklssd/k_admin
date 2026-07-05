@@ -331,6 +331,17 @@ select {
   margin-inline-end: 0;
 }
 
+.avatar-uploader {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar-uploader .ant-avatar {
+  flex: 0 0 auto;
+}
+
 .form-alert {
   margin-bottom: 16px;
 }
@@ -435,5 +446,10 @@ select {
 
   .panel {
     padding: 12px;
+  }
+
+  .avatar-uploader {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

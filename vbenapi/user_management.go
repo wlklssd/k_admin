@@ -57,9 +57,12 @@ type importUsersPayload struct {
 }
 
 func registerUserManagementRoutes(api *gin.RouterGroup, s *Store) {
+	api.GET("/uploads/*path", s.serveUploadedFile)
+
 	usersGroup := api.Group("/users", s.requireAuth(), s.requireAdmin())
 	usersGroup.GET("", s.listManagedUsers)
 	usersGroup.POST("", s.createManagedUser)
+	usersGroup.POST("/avatar", s.uploadUserAvatar)
 	usersGroup.GET("/export", s.exportManagedUsers)
 	usersGroup.POST("/import", s.importManagedUsers)
 	usersGroup.PUT("/:id", s.updateManagedUser)
