@@ -764,6 +764,80 @@ TEXTIMAGE_ON [PRIMARY]
 GO
 
 -- ----------------------------
+--  Table structure for goadmin_dict_type
+-- ----------------------------
+IF EXISTS (SELECT * FROM sys.all_objects WHERE object_id = OBJECT_ID('[dbo].[goadmin_dict_type]') AND type IN ('U'))
+	DROP TABLE [dbo].[goadmin_dict_type]
+GO
+CREATE TABLE [dbo].[goadmin_dict_type] (
+	[id] int IDENTITY(1,1) NOT NULL,
+	[name] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+	[code] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+	[description] varchar(3000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL DEFAULT NULL,
+	[sort] int NOT NULL DEFAULT ((0)),
+	[status] tinyint NOT NULL DEFAULT ((1)),
+	[created_at] datetime NULL DEFAULT (getdate()),
+	[updated_at] datetime NULL DEFAULT (getdate())
+)
+ON [PRIMARY]
+GO
+
+-- ----------------------------
+--  Records of goadmin_dict_type
+-- ----------------------------
+BEGIN TRANSACTION
+GO
+SET IDENTITY_INSERT [dbo].[goadmin_dict_type] ON
+GO
+INSERT INTO [dbo].[goadmin_dict_type] ([id], [name], [code], [description], [sort], [status], [created_at], [updated_at]) VALUES ('1', 'Gender', 'sys_gender', 'Common gender dictionary', '1', '1', '2026-07-06 00:00:00.000', '2026-07-06 00:00:00.000');
+INSERT INTO [dbo].[goadmin_dict_type] ([id], [name], [code], [description], [sort], [status], [created_at], [updated_at]) VALUES ('2', 'Status', 'sys_status', 'Common enable/disable status dictionary', '2', '1', '2026-07-06 00:00:00.000', '2026-07-06 00:00:00.000');
+GO
+SET IDENTITY_INSERT [dbo].[goadmin_dict_type] OFF
+GO
+COMMIT
+GO
+
+-- ----------------------------
+--  Table structure for goadmin_dict_data
+-- ----------------------------
+IF EXISTS (SELECT * FROM sys.all_objects WHERE object_id = OBJECT_ID('[dbo].[goadmin_dict_data]') AND type IN ('U'))
+	DROP TABLE [dbo].[goadmin_dict_data]
+GO
+CREATE TABLE [dbo].[goadmin_dict_data] (
+	[id] int IDENTITY(1,1) NOT NULL,
+	[dict_type] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+	[label] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+	[value] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+	[color] varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT '',
+	[css_class] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT '',
+	[is_default] tinyint NOT NULL DEFAULT ((0)),
+	[sort] int NOT NULL DEFAULT ((0)),
+	[status] tinyint NOT NULL DEFAULT ((1)),
+	[remark] varchar(3000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL DEFAULT NULL,
+	[created_at] datetime NULL DEFAULT (getdate()),
+	[updated_at] datetime NULL DEFAULT (getdate())
+)
+ON [PRIMARY]
+GO
+
+-- ----------------------------
+--  Records of goadmin_dict_data
+-- ----------------------------
+BEGIN TRANSACTION
+GO
+SET IDENTITY_INSERT [dbo].[goadmin_dict_data] ON
+GO
+INSERT INTO [dbo].[goadmin_dict_data] ([id], [dict_type], [label], [value], [color], [css_class], [is_default], [sort], [status], [remark], [created_at], [updated_at]) VALUES ('1', 'sys_gender', 'Male', 'male', 'blue', '', '1', '1', '1', '', '2026-07-06 00:00:00.000', '2026-07-06 00:00:00.000');
+INSERT INTO [dbo].[goadmin_dict_data] ([id], [dict_type], [label], [value], [color], [css_class], [is_default], [sort], [status], [remark], [created_at], [updated_at]) VALUES ('2', 'sys_gender', 'Female', 'female', 'magenta', '', '0', '2', '1', '', '2026-07-06 00:00:00.000', '2026-07-06 00:00:00.000');
+INSERT INTO [dbo].[goadmin_dict_data] ([id], [dict_type], [label], [value], [color], [css_class], [is_default], [sort], [status], [remark], [created_at], [updated_at]) VALUES ('3', 'sys_status', 'Enable', 'enable', 'green', '', '1', '1', '1', '', '2026-07-06 00:00:00.000', '2026-07-06 00:00:00.000');
+INSERT INTO [dbo].[goadmin_dict_data] ([id], [dict_type], [label], [value], [color], [css_class], [is_default], [sort], [status], [remark], [created_at], [updated_at]) VALUES ('4', 'sys_status', 'Disable', 'disable', 'red', '', '0', '2', '1', '', '2026-07-06 00:00:00.000', '2026-07-06 00:00:00.000');
+GO
+SET IDENTITY_INSERT [dbo].[goadmin_dict_data] OFF
+GO
+COMMIT
+GO
+
+-- ----------------------------
 --  Table structure for goadmin_user_permissions
 -- ----------------------------
 IF EXISTS (SELECT * FROM sys.all_objects WHERE object_id = OBJECT_ID('[dbo].[goadmin_user_permissions]') AND type IN ('U'))
@@ -1021,6 +1095,47 @@ ALTER TABLE [dbo].[goadmin_site] ADD
 GO
 
 -- ----------------------------
+--  Primary key structure for table goadmin_dict_type
+-- ----------------------------
+ALTER TABLE [dbo].[goadmin_dict_type] ADD
+	CONSTRAINT [PK_goadmin_dict_type] PRIMARY KEY CLUSTERED ([id])
+	WITH (PAD_INDEX = OFF,
+		IGNORE_DUP_KEY = OFF,
+		ALLOW_ROW_LOCKS = ON,
+		ALLOW_PAGE_LOCKS = ON)
+	ON [default]
+GO
+
+ALTER TABLE [dbo].[goadmin_dict_type] ADD
+	CONSTRAINT [UQ_goadmin_dict_type_code] UNIQUE ([code])
+GO
+
+CREATE INDEX [admin_dict_type_status_index] ON [dbo].[goadmin_dict_type] ([status])
+GO
+
+-- ----------------------------
+--  Primary key structure for table goadmin_dict_data
+-- ----------------------------
+ALTER TABLE [dbo].[goadmin_dict_data] ADD
+	CONSTRAINT [PK_goadmin_dict_data] PRIMARY KEY CLUSTERED ([id])
+	WITH (PAD_INDEX = OFF,
+		IGNORE_DUP_KEY = OFF,
+		ALLOW_ROW_LOCKS = ON,
+		ALLOW_PAGE_LOCKS = ON)
+	ON [default]
+GO
+
+ALTER TABLE [dbo].[goadmin_dict_data] ADD
+	CONSTRAINT [UQ_goadmin_dict_data_type_value] UNIQUE ([dict_type], [value])
+GO
+
+CREATE INDEX [admin_dict_data_type_index] ON [dbo].[goadmin_dict_data] ([dict_type])
+GO
+
+CREATE INDEX [admin_dict_data_status_index] ON [dbo].[goadmin_dict_data] ([status])
+GO
+
+-- ----------------------------
 --  Primary key structure for table goadmin_user_permissions
 -- ----------------------------
 ALTER TABLE [dbo].[goadmin_user_permissions] ADD
@@ -1144,6 +1259,22 @@ GO
 ALTER TABLE [dbo].[goadmin_site] SET (LOCK_ESCALATION = TABLE)
 GO
 DBCC CHECKIDENT ('[dbo].[goadmin_site]', RESEED, 1)
+GO
+
+-- ----------------------------
+--  Options for table goadmin_dict_type
+-- ----------------------------
+ALTER TABLE [dbo].[goadmin_dict_type] SET (LOCK_ESCALATION = TABLE)
+GO
+DBCC CHECKIDENT ('[dbo].[goadmin_dict_type]', RESEED, 2)
+GO
+
+-- ----------------------------
+--  Options for table goadmin_dict_data
+-- ----------------------------
+ALTER TABLE [dbo].[goadmin_dict_data] SET (LOCK_ESCALATION = TABLE)
+GO
+DBCC CHECKIDENT ('[dbo].[goadmin_dict_data]', RESEED, 4)
 GO
 
 -- ----------------------------
