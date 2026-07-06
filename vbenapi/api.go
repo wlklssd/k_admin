@@ -20,9 +20,10 @@ type tokenInfo struct {
 }
 
 type Store struct {
-	conn   db.Connection
-	mu     sync.RWMutex
-	tokens map[string]tokenInfo
+	conn     db.Connection
+	mu       sync.RWMutex
+	configMu sync.Mutex
+	tokens   map[string]tokenInfo
 }
 
 func Register(r *gin.Engine, conn db.Connection) {
@@ -43,4 +44,5 @@ func Register(r *gin.Engine, conn db.Connection) {
 	registerUserManagementRoutes(api, s)
 	registerDictionaryRoutes(api, s)
 	registerModuleRoutes(api, s)
+	registerSystemConfigRoutes(api, s)
 }

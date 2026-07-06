@@ -489,6 +489,47 @@ select {
   margin-top: 6px;
 }
 
+.settings-file {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.settings-file strong {
+  max-width: min(620px, calc(100vw - 420px));
+  overflow: hidden;
+  color: #111827;
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-key-cell {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.config-key-cell strong,
+.config-key-cell span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-key-cell span {
+  color: #64748b;
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 12px;
+}
+
+.config-value-control {
+  width: 100%;
+  max-width: 260px;
+}
+
 .not-found-panel {
   min-height: calc(100vh - 104px);
   display: grid;
@@ -540,5 +581,9 @@ select {
 
   .dictionary-type-list {
     max-height: none;
+  }
+
+  .settings-file strong {
+    max-width: calc(100vw - 52px);
   }
 }

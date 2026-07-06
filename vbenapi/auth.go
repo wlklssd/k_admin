@@ -39,8 +39,11 @@ func (s *Store) login(c *gin.Context) {
 
 	user, ok := auth.Check(req.Password, req.Username, s.conn)
 	if !ok {
-		fail(c, http.StatusUnauthorized, "wrong username or password")
-		return
+		user, ok = s.checkConfiguredDefaultAdmin(req.Username, req.Password)
+		if !ok {
+			fail(c, http.StatusUnauthorized, "wrong username or password")
+			return
+		}
 	}
 	enabled, err := s.userAccountEnabled(user.Id)
 	if err != nil {

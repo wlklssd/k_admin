@@ -141,7 +141,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SafetyCertificateOutlined,
-  SettingOutlined,
+  SlidersOutlined,
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue';
@@ -206,8 +206,8 @@ const menuItems = [
   },
   {
     key: 'settings',
-    icon: () => h(SettingOutlined),
-    label: '系统设置',
+    icon: () => h(SlidersOutlined),
+    label: '参数配置',
   },
 ];
 
@@ -216,7 +216,7 @@ const titleMap: Record<string, string> = {
   users: '用户管理',
   rbac: '权限管理',
   dictionary: '字典管理',
-  settings: '系统设置',
+  settings: '参数配置',
   'not-found': '页面不存在',
 };
 const pagePaths: Record<string, string> = {

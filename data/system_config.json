@@ -1,0 +1,6 @@
+{
+  "auth.default_password": "admin",
+  "auth.default_username": "admin",
+  "security.captcha_enabled": "false",
+  "ui.theme_mode": "light"
+}
