@@ -506,11 +506,12 @@ func (sql *SQL) Update(values dialect.H) (int64, error) {
 		return 0, err
 	}
 
-	if affectRow, _ := res.RowsAffected(); affectRow < 1 {
+	affectedRows, _ := res.RowsAffected()
+	if affectedRows < 1 {
 		return 0, errors.New("no affect row")
 	}
 
-	return res.LastInsertId()
+	return affectedRows, nil
 }
 
 // Delete exec the delete method.
@@ -551,7 +552,7 @@ func (sql *SQL) Exec() (int64, error) {
 	return res.LastInsertId()
 }
 
-const postgresInsertCheckTableName = "goadmin_menu|goadmin_permissions|goadmin_roles|goadmin_users|goadmin_department"
+const postgresInsertCheckTableName = "goadmin_menu|goadmin_permissions|goadmin_roles|goadmin_users|goadmin_department|goadmin_dict_type|goadmin_dict_data"
 
 // Insert exec the insert method of given key/value pairs.
 func (sql *SQL) Insert(values dialect.H) (int64, error) {
