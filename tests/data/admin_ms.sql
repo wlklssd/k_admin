@@ -875,6 +875,7 @@ CREATE TABLE [dbo].[goadmin_users] (
 	[password] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT '',
 	[name] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
 	[avatar] varchar(255) COLLATE SQL_Latin1_General_CP1_CI_AS NULL DEFAULT NULL,
+	[status] varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT 'enable',
 	[remember_token] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL DEFAULT NULL,
 	[created_at] datetime NULL DEFAULT (getdate()),
 	[updated_at] datetime NULL DEFAULT (getdate())
@@ -889,8 +890,8 @@ BEGIN TRANSACTION
 GO
 SET IDENTITY_INSERT [dbo].[goadmin_users] ON
 GO
-INSERT INTO [dbo].[goadmin_users] ([id], [username], [password], [name], [avatar], [remember_token], [created_at], [updated_at]) VALUES ('1', 'admin', '$2a$10$9Bb3g7FUC/dDhYISUWegBOHy0498EuV50rVCgxkvAbpjavrKwhjvm', 'admin1', '', 'tlNcBVK9AvfYH7WEnwB1RKvocJu8FfRy4um3DJtwdHuJy0dwFsLOgAc0xUfh', '2019-09-10 00:00:00.000', '2020-03-15 12:24:46.000');
-INSERT INTO [dbo].[goadmin_users] ([id], [username], [password], [name], [avatar], [remember_token], [created_at], [updated_at]) VALUES ('2', 'operator', '$2a$10$rVqkOzHjN2MdlEprRflb1eGP0oZXuSrbJLOmJagFsCd81YZm0bsh.', 'Operator', '', null, '2019-09-10 00:00:00.000', '2019-09-10 00:00:00.000');
+INSERT INTO [dbo].[goadmin_users] ([id], [username], [password], [name], [avatar], [status], [remember_token], [created_at], [updated_at]) VALUES ('1', 'admin', '$2a$10$9Bb3g7FUC/dDhYISUWegBOHy0498EuV50rVCgxkvAbpjavrKwhjvm', 'admin1', '', 'enable', 'tlNcBVK9AvfYH7WEnwB1RKvocJu8FfRy4um3DJtwdHuJy0dwFsLOgAc0xUfh', '2019-09-10 00:00:00.000', '2020-03-15 12:24:46.000');
+INSERT INTO [dbo].[goadmin_users] ([id], [username], [password], [name], [avatar], [status], [remember_token], [created_at], [updated_at]) VALUES ('2', 'operator', '$2a$10$rVqkOzHjN2MdlEprRflb1eGP0oZXuSrbJLOmJagFsCd81YZm0bsh.', 'Operator', '', 'enable', null, '2019-09-10 00:00:00.000', '2019-09-10 00:00:00.000');
 GO
 SET IDENTITY_INSERT [dbo].[goadmin_users] OFF
 GO

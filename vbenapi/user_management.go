@@ -21,6 +21,7 @@ type managedUser struct {
 	Username      string   `json:"username"`
 	Name          string   `json:"name"`
 	Avatar        string   `json:"avatar"`
+	Status        string   `json:"status"`
 	RoleIDs       []int64  `json:"roleIds"`
 	Roles         []string `json:"roles"`
 	DepartmentIDs []int64  `json:"departmentIds"`
@@ -44,11 +45,16 @@ type userPayload struct {
 	Password string  `json:"password"`
 	Name     string  `json:"name"`
 	Avatar   string  `json:"avatar"`
+	Status   string  `json:"status"`
 	RoleIDs  []int64 `json:"roleIds"`
 }
 
 type resetPasswordPayload struct {
 	Password string `json:"password"`
+}
+
+type userStatusPayload struct {
+	Status string `json:"status"`
 }
 
 type importUsersPayload struct {
@@ -65,6 +71,7 @@ func registerUserManagementRoutes(api *gin.RouterGroup, s *Store) {
 	usersGroup.POST("/avatar", s.uploadUserAvatar)
 	usersGroup.GET("/export", s.exportManagedUsers)
 	usersGroup.POST("/import", s.importManagedUsers)
+	usersGroup.PUT("/:id/status", s.updateManagedUserStatus)
 	usersGroup.PUT("/:id", s.updateManagedUser)
 	usersGroup.DELETE("/:id", s.deleteManagedUser)
 	usersGroup.PUT("/:id/password", s.resetManagedUserPassword)
@@ -80,10 +87,11 @@ func (s *Store) listManagedUsers(c *gin.Context) {
 	keyword := strings.ToLower(strings.TrimSpace(c.Query("keyword")))
 	departmentKeyword := strings.ToLower(strings.TrimSpace(c.Query("department")))
 	roleKeyword := strings.ToLower(strings.TrimSpace(c.Query("role")))
-	if keyword != "" || departmentKeyword != "" || roleKeyword != "" {
+	status := strings.TrimSpace(c.Query("status"))
+	if keyword != "" || departmentKeyword != "" || roleKeyword != "" || status != "" {
 		filtered := make([]managedUser, 0, len(users))
 		for _, user := range users {
-			if matchesManagedUserFilter(user, keyword, departmentKeyword, roleKeyword) {
+			if matchesManagedUserFilter(user, keyword, departmentKeyword, roleKeyword, status) {
 				filtered = append(filtered, user)
 			}
 		}
@@ -127,6 +135,7 @@ func (s *Store) createManagedUser(c *gin.Context) {
 		"password": auth.EncodePassword([]byte(req.Password)),
 		"name":     req.Name,
 		"avatar":   req.Avatar,
+		"status":   req.Status,
 	})
 	if err != nil {
 		fail(c, http.StatusInternalServerError, err.Error())
@@ -174,6 +183,9 @@ func (s *Store) updateManagedUser(c *gin.Context) {
 	if req.Name == "" {
 		req.Name = req.Username
 	}
+	if protectedAdminUser(userID) {
+		req.Status = "enable"
+	}
 
 	_, err := db.WithDriver(s.conn).
 		Table("goadmin_users").
@@ -182,6 +194,7 @@ func (s *Store) updateManagedUser(c *gin.Context) {
 			"username":   req.Username,
 			"name":       req.Name,
 			"avatar":     req.Avatar,
+			"status":     req.Status,
 			"updated_at": nowString(),
 		})
 	if err != nil {
@@ -193,6 +206,47 @@ func (s *Store) updateManagedUser(c *gin.Context) {
 			fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
+	}
+
+	user, err := s.loadManagedUser(userID)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, user)
+}
+
+func (s *Store) updateManagedUserStatus(c *gin.Context) {
+	userID, ok := pathID(c)
+	if !ok {
+		return
+	}
+	if protectedAdminUser(userID) {
+		fail(c, http.StatusBadRequest, "admin user cannot be disabled")
+		return
+	}
+
+	var req userStatusPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fail(c, http.StatusBadRequest, "invalid user status payload")
+		return
+	}
+	status := strings.TrimSpace(req.Status)
+	if status != "enable" && status != "disable" {
+		fail(c, http.StatusBadRequest, "invalid user status")
+		return
+	}
+
+	_, err := db.WithDriver(s.conn).
+		Table("goadmin_users").
+		Where("id", "=", userID).
+		Update(dialect.H{
+			"status":     status,
+			"updated_at": nowString(),
+		})
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	user, err := s.loadManagedUser(userID)
@@ -339,6 +393,7 @@ func (s *Store) importManagedUsers(c *gin.Context) {
 			"password": auth.EncodePassword([]byte(payload.Password)),
 			"name":     payload.Name,
 			"avatar":   payload.Avatar,
+			"status":   payload.Status,
 		})
 		if err != nil {
 			fail(c, http.StatusInternalServerError, err.Error())
@@ -400,6 +455,7 @@ func (s *Store) loadManagedUsers() ([]managedUser, error) {
 			Username:      toString(row["username"]),
 			Name:          toString(row["name"]),
 			Avatar:        toString(row["avatar"]),
+			Status:        normalizeUserStatus(toString(row["status"])),
 			RoleIDs:       roleIDs,
 			Roles:         roleNames,
 			DepartmentIDs: uniqueInt64(departmentIDsByUser[id]),
@@ -500,10 +556,19 @@ func normalizeUserPayload(req *userPayload) {
 	req.Password = strings.TrimSpace(req.Password)
 	req.Name = strings.TrimSpace(req.Name)
 	req.Avatar = strings.TrimSpace(req.Avatar)
+	req.Status = normalizeUserStatus(req.Status)
 	req.RoleIDs = uniqueInt64(req.RoleIDs)
 }
 
-func matchesManagedUserFilter(user managedUser, keyword, departmentKeyword, roleKeyword string) bool {
+func normalizeUserStatus(status string) string {
+	status = strings.TrimSpace(status)
+	if status == "" {
+		return "enable"
+	}
+	return status
+}
+
+func matchesManagedUserFilter(user managedUser, keyword, departmentKeyword, roleKeyword, status string) bool {
 	if keyword != "" &&
 		!strings.Contains(strings.ToLower(user.Username), keyword) &&
 		!strings.Contains(strings.ToLower(user.Name), keyword) {
@@ -513,6 +578,9 @@ func matchesManagedUserFilter(user managedUser, keyword, departmentKeyword, role
 		return false
 	}
 	if roleKeyword != "" && !containsKeyword(user.Roles, roleKeyword) {
+		return false
+	}
+	if status != "" && user.Status != status {
 		return false
 	}
 	return true
@@ -551,7 +619,7 @@ func exportUsersCSV(users []managedUser) (string, error) {
 	buf := bytes.NewBuffer(nil)
 	buf.WriteString("\xEF\xBB\xBF")
 	writer := csv.NewWriter(buf)
-	if err := writer.Write([]string{"username", "name", "avatar", "role_ids", "roles", "created_at", "updated_at"}); err != nil {
+	if err := writer.Write([]string{"username", "name", "avatar", "status", "role_ids", "roles", "created_at", "updated_at"}); err != nil {
 		return "", err
 	}
 	for _, user := range users {
@@ -559,6 +627,7 @@ func exportUsersCSV(users []managedUser) (string, error) {
 			user.Username,
 			user.Name,
 			user.Avatar,
+			user.Status,
 			joinInt64(user.RoleIDs),
 			strings.Join(user.Roles, "|"),
 			user.CreatedAt,
@@ -577,10 +646,11 @@ func exportUsersSQL(users []managedUser) string {
 	builder.WriteString("-- password values are intentionally omitted; reset after import if needed.\n")
 	for _, user := range users {
 		builder.WriteString(fmt.Sprintf(
-			"INSERT INTO goadmin_users (username, password, name, avatar) VALUES ('%s', '', '%s', '%s');\n",
+			"INSERT INTO goadmin_users (username, password, name, avatar, status) VALUES ('%s', '', '%s', '%s', '%s');\n",
 			sqlQuote(user.Username),
 			sqlQuote(user.Name),
 			sqlQuote(user.Avatar),
+			sqlQuote(user.Status),
 		))
 	}
 	return builder.String()
@@ -589,7 +659,7 @@ func exportUsersSQL(users []managedUser) string {
 func exportUsersExcel(users []managedUser) ([]byte, error) {
 	file := excelize.NewFile()
 	sheet := "Sheet1"
-	headers := []string{"username", "password", "name", "avatar", "role_ids", "roles", "created_at", "updated_at"}
+	headers := []string{"username", "password", "name", "avatar", "status", "role_ids", "roles", "created_at", "updated_at"}
 	for i, header := range headers {
 		file.SetCellValue(sheet, fmt.Sprintf("%s1", excelColumn(i)), header)
 	}
@@ -600,6 +670,7 @@ func exportUsersExcel(users []managedUser) ([]byte, error) {
 			"",
 			user.Name,
 			user.Avatar,
+			user.Status,
 			joinInt64(user.RoleIDs),
 			strings.Join(user.Roles, "|"),
 			user.CreatedAt,
@@ -657,6 +728,12 @@ func parseUserRows(records [][]string) []userPayload {
 
 	users := make([]userPayload, 0, len(records)-start)
 	for _, record := range records[start:] {
+		statusFallback := 3
+		roleIDsFallback := 4
+		if start == 0 {
+			statusFallback = -1
+			roleIDsFallback = 3
+		}
 		valueAt := func(key string, fallback int) string {
 			if idx, ok := header[key]; ok && idx < len(record) {
 				return record[idx]
@@ -671,7 +748,8 @@ func parseUserRows(records [][]string) []userPayload {
 			Password: valueAt("password", -1),
 			Name:     valueAt("name", 1),
 			Avatar:   valueAt("avatar", 2),
-			RoleIDs:  parseRoleIDs(valueAt("role_ids", 3)),
+			Status:   valueAt("status", statusFallback),
+			RoleIDs:  parseRoleIDs(valueAt("role_ids", roleIDsFallback)),
 		})
 	}
 	return users
@@ -702,9 +780,20 @@ func parseUsersSQL(content string) ([]userPayload, error) {
 			Password: parts[1],
 			Name:     parts[2],
 			Avatar:   parts[3],
+			Status:   valueOrDefault(parts, 4, "enable"),
 		})
 	}
 	return users, nil
+}
+
+func valueOrDefault(values []string, index int, fallback string) string {
+	if index >= 0 && index < len(values) {
+		value := strings.TrimSpace(values[index])
+		if value != "" {
+			return value
+		}
+	}
+	return fallback
 }
 
 func splitSQLValues(values string) ([]string, error) {

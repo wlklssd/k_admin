@@ -48,6 +48,15 @@
             </template>
           </a-input>
         </a-form-item>
+        <a-form-item label="状态">
+          <a-select
+            v-model:value="filters.status"
+            allow-clear
+            class="control-md"
+            :options="statusOptions"
+            placeholder="全部"
+          />
+        </a-form-item>
         <a-form-item>
           <a-space wrap>
             <a-button type="primary" @click="searchUsers">
@@ -105,7 +114,7 @@
         :data-source="users"
         :loading="loading"
         :pagination="pagination"
-        :scroll="{ x: 980 }"
+        :scroll="{ x: 1080 }"
         @change="handleTableChange"
       >
         <template #bodyCell="{ column, record }">
@@ -136,6 +145,22 @@
               <a-tag v-if="record.id === 1" color="gold">最高权限</a-tag>
               <a-tag v-if="record.roles.length === 0 && record.id !== 1">未分配</a-tag>
             </a-space>
+          </template>
+
+          <template v-else-if="column.key === 'status'">
+            <div class="status-switch-cell">
+              <a-switch
+                :checked="record.status === 'enable'"
+                :checked-children="statusLabel('enable')"
+                :disabled="record.id === 1"
+                :loading="isStatusUpdating(record.id)"
+                :un-checked-children="statusLabel('disable')"
+                @change="toggleUserStatus(record, $event)"
+              />
+              <a-tag :color="statusColor(record.status)">
+                {{ statusLabel(record.status) }}
+              </a-tag>
+            </div>
           </template>
 
           <template v-else-if="column.key === 'action'">
@@ -207,6 +232,14 @@
             placeholder="请选择职位"
           />
         </a-form-item>
+        <a-form-item label="状态" name="status">
+          <a-select
+            v-model:value="userForm.status"
+            :options="statusOptions"
+            :disabled="editingUser?.id === 1"
+            placeholder="请选择账号状态"
+          />
+        </a-form-item>
       </a-form>
       <template #extra>
         <a-space>
@@ -263,7 +296,7 @@
           <a-textarea
             v-model:value="importForm.content"
             :rows="8"
-            placeholder="CSV 表头支持 username,password,name,avatar,role_ids；SQL 使用导出的 INSERT 格式"
+            placeholder="CSV 表头支持 username,password,name,avatar,status,role_ids；SQL 使用导出的 INSERT 格式"
           />
         </a-form-item>
       </a-form>
@@ -284,6 +317,7 @@ import {
 import { message, type FormInstance, type UploadProps } from 'ant-design-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
+import { getDictionaryData, type DictionaryData } from '../api/dictionaries';
 import { getRbacOverview, type RbacRole } from '../api/rbac';
 import {
   createUser,
@@ -293,6 +327,7 @@ import {
   importUsers,
   resetUserPassword,
   updateUser,
+  updateUserStatus,
   uploadUserAvatar,
   type ManagedUser,
   type UserImportExportFormat,
@@ -308,8 +343,10 @@ const savingUser = ref(false);
 const savingPassword = ref(false);
 const avatarUploading = ref(false);
 const importing = ref(false);
+const statusUpdatingIds = ref<number[]>([]);
 const users = ref<ManagedUser[]>([]);
 const roles = ref<RbacRole[]>([]);
+const statusItems = ref<DictionaryData[]>([]);
 const userDrawerOpen = ref(false);
 const passwordModalOpen = ref(false);
 const importModalOpen = ref(false);
@@ -323,6 +360,7 @@ const filters = reactive({
   keyword: '',
   department: '',
   role: '',
+  status: undefined as string | undefined,
 });
 
 const userForm = reactive({
@@ -330,6 +368,7 @@ const userForm = reactive({
   password: '',
   name: '',
   avatar: '',
+  status: 'enable',
   roleIds: [] as number[],
 });
 
@@ -356,12 +395,14 @@ const columns = [
   { title: '用户', key: 'user', width: 220, fixed: 'left' },
   { title: '部门', key: 'departments', width: 220 },
   { title: '职位', key: 'roles', width: 260 },
+  { title: '状态', key: 'status', width: 170 },
   { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 160 },
   { title: '操作', key: 'action', width: 190, fixed: 'right' },
 ];
 
 const userRules = computed(() => ({
   username: [{ required: true, message: '请输入账号' }],
+  status: [{ required: true, message: '请选择账号状态' }],
   password: editingUser.value
     ? []
     : [
@@ -384,12 +425,19 @@ const roleOptions = computed(() =>
   })),
 );
 
+const statusOptions = computed(() =>
+  statusItems.value.map((item) => ({
+    label: item.label,
+    value: item.value,
+  })),
+);
+
 const avatarInitial = computed(() =>
   (userForm.name || userForm.username || 'U').slice(0, 1).toUpperCase(),
 );
 
 onMounted(() => {
-  void Promise.all([loadUsers(), loadRoles()]);
+  void Promise.all([loadUsers(), loadRoles(), loadStatusOptions()]);
 });
 
 async function loadUsers() {
@@ -399,6 +447,7 @@ async function loadUsers() {
       keyword: filters.keyword.trim(),
       department: filters.department.trim(),
       role: filters.role.trim(),
+      status: filters.status,
     });
     users.value = (data.items || []).map((user) => ({
       ...user,
@@ -406,6 +455,7 @@ async function loadUsers() {
       roles: user.roles || [],
       departmentIds: user.departmentIds || [],
       departments: user.departments || [],
+      status: user.status || 'enable',
     }));
   } catch (error) {
     message.error(error instanceof Error ? error.message : '加载用户失败');
@@ -423,10 +473,23 @@ async function loadRoles() {
   }
 }
 
+async function loadStatusOptions() {
+  try {
+    const data = await getDictionaryData({ dictType: 'sys_status', status: 1 });
+    statusItems.value = data.items || [];
+  } catch {
+    statusItems.value = [
+      { id: 1, dictType: 'sys_status', label: 'Enable', value: 'enable', isDefault: true, sort: 1, status: 1, color: 'green' },
+      { id: 2, dictType: 'sys_status', label: 'Disable', value: 'disable', isDefault: false, sort: 2, status: 1, color: 'red' },
+    ];
+  }
+}
+
 function resetSearch() {
   filters.keyword = '';
   filters.department = '';
   filters.role = '';
+  filters.status = undefined;
   pagination.current = 1;
   void loadUsers();
 }
@@ -447,6 +510,7 @@ function openUserDrawer(record?: ManagedUser) {
   userForm.password = '';
   userForm.name = record?.name || '';
   userForm.avatar = record?.avatar || '';
+  userForm.status = record?.status || 'enable';
   userForm.roleIds = record?.roleIds ? [...record.roleIds] : [];
   userDrawerOpen.value = true;
 }
@@ -486,6 +550,7 @@ async function submitUser() {
       username: userForm.username.trim(),
       name: userForm.name.trim(),
       avatar: userForm.avatar.trim(),
+      status: userForm.status,
       roleIds: userForm.roleIds,
     };
     if (editingUser.value) {
@@ -541,6 +606,30 @@ async function removeUser(record: ManagedUser) {
   }
 }
 
+function isStatusUpdating(id: number) {
+  return statusUpdatingIds.value.includes(id);
+}
+
+async function toggleUserStatus(record: ManagedUser, checked: boolean) {
+  if (record.id === 1) return;
+  const nextStatus = checked ? 'enable' : 'disable';
+  if (record.status === nextStatus) return;
+
+  const previousStatus = record.status;
+  statusUpdatingIds.value = [...statusUpdatingIds.value, record.id];
+  record.status = nextStatus;
+  try {
+    const user = await updateUserStatus(record.id, nextStatus);
+    record.status = user.status || nextStatus;
+    message.success(nextStatus === 'enable' ? '账号已启用' : '账号已停用');
+  } catch (error) {
+    record.status = previousStatus;
+    message.error(error instanceof Error ? error.message : '更新账号状态失败');
+  } finally {
+    statusUpdatingIds.value = statusUpdatingIds.value.filter((id) => id !== record.id);
+  }
+}
+
 function openImportModal() {
   importForm.format = 'xlsx';
   importForm.content = '';
@@ -589,6 +678,14 @@ async function handleExport(event: { key: UserImportExportFormat }) {
   } catch (error) {
     message.error(error instanceof Error ? error.message : '导出失败');
   }
+}
+
+function statusLabel(status: string) {
+  return statusItems.value.find((item) => item.value === status)?.label || status || 'Enable';
+}
+
+function statusColor(status: string) {
+  return statusItems.value.find((item) => item.value === status)?.color || (status === 'disable' ? 'red' : 'green');
 }
 
 function readFileAsBase64(file: File) {

@@ -8,6 +8,7 @@ export interface ManagedUser {
   username: string;
   name: string;
   avatar?: string;
+  status: string;
   roleIds: number[];
   roles: string[];
   departmentIds: number[];
@@ -26,6 +27,7 @@ export interface UserPayload {
   password?: string;
   name?: string;
   avatar?: string;
+  status?: string;
   roleIds?: number[];
 }
 
@@ -39,6 +41,7 @@ export interface UserListFilters {
   keyword?: string;
   department?: string;
   role?: string;
+  status?: string;
 }
 
 export function getUsers(filters: UserListFilters = {}) {
@@ -46,6 +49,7 @@ export function getUsers(filters: UserListFilters = {}) {
   if (filters.keyword) params.set('keyword', filters.keyword);
   if (filters.department) params.set('department', filters.department);
   if (filters.role) params.set('role', filters.role);
+  if (filters.status) params.set('status', filters.status);
   const query = params.toString();
   return request<ManagedUserListResponse>(`/api/users${query ? `?${query}` : ''}`);
 }
@@ -61,6 +65,13 @@ export function updateUser(id: number, payload: UserPayload) {
   return request<ManagedUser>(`/api/users/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
+  });
+}
+
+export function updateUserStatus(id: number, status: string) {
+  return request<ManagedUser>(`/api/users/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
   });
 }
 

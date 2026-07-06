@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/GoAdminGroup/go-admin/plugins/admin/models"
 	"github.com/gin-gonic/gin"
 )
@@ -28,6 +29,20 @@ func (s *Store) requireAuth() gin.HandlerFunc {
 			delete(s.tokens, token)
 			s.mu.Unlock()
 			fail(c, http.StatusUnauthorized, "invalid token")
+			c.Abort()
+			return
+		}
+		enabled, err := s.userAccountEnabled(info.UserID)
+		if err != nil {
+			fail(c, http.StatusInternalServerError, err.Error())
+			c.Abort()
+			return
+		}
+		if !enabled {
+			s.mu.Lock()
+			delete(s.tokens, token)
+			s.mu.Unlock()
+			fail(c, http.StatusForbidden, "account disabled")
 			c.Abort()
 			return
 		}
@@ -56,6 +71,17 @@ func (s *Store) currentUser(c *gin.Context) (models.UserModel, bool) {
 
 	user = user.WithRoles().WithPermissions().WithMenus()
 	return user, user.HasMenu() || isAdminUser(user.UserName)
+}
+
+func (s *Store) userAccountEnabled(userID int64) (bool, error) {
+	rows, err := db.WithDriver(s.conn).Table("goadmin_users").Where("id", "=", userID).All()
+	if err != nil {
+		return false, err
+	}
+	if len(rows) == 0 {
+		return false, nil
+	}
+	return normalizeUserStatus(toString(rows[0]["status"])) == "enable", nil
 }
 
 func (s *Store) issueToken(userID int64) (string, time.Time, error) {

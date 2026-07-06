@@ -331,6 +331,13 @@ select {
   margin-inline-end: 0;
 }
 
+.status-switch-cell {
+  min-width: 132px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .avatar-uploader {
   min-height: 72px;
   display: flex;

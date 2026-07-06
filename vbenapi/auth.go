@@ -42,6 +42,15 @@ func (s *Store) login(c *gin.Context) {
 		fail(c, http.StatusUnauthorized, "wrong username or password")
 		return
 	}
+	enabled, err := s.userAccountEnabled(user.Id)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !enabled {
+		fail(c, http.StatusForbidden, "account disabled")
+		return
+	}
 
 	token, expiresAt, err := s.issueToken(user.Id)
 	if err != nil {
