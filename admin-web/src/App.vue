@@ -122,6 +122,7 @@
           <DashboardView v-if="activePage === 'dashboard'" />
           <UserManagementView v-else-if="activePage === 'users'" />
           <RbacWorkbench v-else-if="activePage === 'rbac'" />
+          <DictionaryManagementView v-else-if="activePage === 'dictionary'" />
           <SettingsView v-else-if="activePage === 'settings'" />
           <NotFoundView v-else @go-home="navigateTo('dashboard')" />
         </a-layout-content>
@@ -134,6 +135,7 @@
 import {
   BellOutlined,
   DashboardOutlined,
+  DatabaseOutlined,
   LockOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
@@ -148,6 +150,7 @@ import { computed, h, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 
 import { getUserInfo, getUserMenu, login, logout, type UserInfo } from './api/auth';
 import DashboardView from './components/DashboardView.vue';
+import DictionaryManagementView from './components/DictionaryManagementView.vue';
 import NotFoundView from './components/NotFoundView.vue';
 import RbacWorkbench from './components/RbacWorkbench.vue';
 import SettingsView from './components/SettingsView.vue';
@@ -197,6 +200,11 @@ const menuItems = [
     label: '权限管理',
   },
   {
+    key: 'dictionary',
+    icon: () => h(DatabaseOutlined),
+    label: '字典管理',
+  },
+  {
     key: 'settings',
     icon: () => h(SettingOutlined),
     label: '系统设置',
@@ -207,6 +215,7 @@ const titleMap: Record<string, string> = {
   dashboard: '工作台',
   users: '用户管理',
   rbac: '权限管理',
+  dictionary: '字典管理',
   settings: '系统设置',
   'not-found': '页面不存在',
 };
@@ -214,6 +223,7 @@ const pagePaths: Record<string, string> = {
   dashboard: '/dashboard',
   users: '/users',
   rbac: '/rbac',
+  dictionary: '/dictionary',
   settings: '/settings',
 };
 const pathPages: Record<string, string> = Object.fromEntries(
