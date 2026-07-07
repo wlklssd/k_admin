@@ -7,6 +7,9 @@
 .page-stack {
   display: grid;
   gap: 16px;
+  /* vben 内容区默认 contentPadding=0,这里补上外层留白;
+     同时吸收 antd <a-row :gutter> 的负 margin,避免横向溢出。 */
+  padding: 16px;
 }
 
 .page-heading {
@@ -348,6 +351,10 @@
 }
 
 @media (max-width: 768px) {
+  .page-stack {
+    padding: 12px;
+  }
+
   .page-heading,
   .table-toolbar {
     align-items: flex-start;
