@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultHomePath = "/dashboard"
+	defaultHomePath = "/dashboard/workspace"
 	tokenTTL        = 2 * time.Hour
 )
 
