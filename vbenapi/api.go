@@ -1,6 +1,7 @@
 package vbenapi
 
 import (
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -30,6 +31,9 @@ func Register(r *gin.Engine, conn db.Connection) {
 	s := &Store{
 		conn:   conn,
 		tokens: make(map[string]tokenInfo),
+	}
+	if err := s.syncDefaultMenus(); err != nil {
+		log.Printf("sync vben menus failed: %v", err)
 	}
 
 	api := r.Group("/api", cors())

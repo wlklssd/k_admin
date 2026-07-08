@@ -29,6 +29,73 @@ type vbenMenu struct {
 	Children  []vbenMenu             `json:"children,omitempty"`
 }
 
+type menuRouteBinding struct {
+	Name      string
+	Path      string
+	Component string
+	Icon      string
+}
+
+var vbenMenuRouteBindings = map[string]menuRouteBinding{
+	"/": {
+		Name: "Dashboard",
+		Path: "/dashboard",
+		Icon: "lucide:layout-dashboard",
+	},
+	"/dashboard": {
+		Name: "Dashboard",
+		Path: "/dashboard",
+		Icon: "lucide:layout-dashboard",
+	},
+	"/dashboard/analytics": {
+		Name:      "Analytics",
+		Path:      "/dashboard/analytics",
+		Component: "/dashboard/analytics/index",
+		Icon:      "lucide:area-chart",
+	},
+	"/dashboard/workspace": {
+		Name:      "Workspace",
+		Path:      "/dashboard/workspace",
+		Component: "/dashboard/workspace/index",
+		Icon:      "carbon:workspace",
+	},
+	"/kadmin": {
+		Name: "KAdmin",
+		Path: "/kadmin",
+		Icon: "lucide:settings-2",
+	},
+	"/kadmin/users": {
+		Name:      "KAdminUsers",
+		Path:      "/kadmin/users",
+		Component: "/kadmin/components/UserManagementView",
+		Icon:      "lucide:users",
+	},
+	"/kadmin/rbac": {
+		Name:      "KAdminRbac",
+		Path:      "/kadmin/rbac",
+		Component: "/kadmin/components/RbacWorkbench",
+		Icon:      "lucide:shield-check",
+	},
+	"/kadmin/dictionary": {
+		Name:      "KAdminDictionary",
+		Path:      "/kadmin/dictionary",
+		Component: "/kadmin/components/DictionaryManagementView",
+		Icon:      "lucide:book-open",
+	},
+	"/kadmin/settings": {
+		Name:      "KAdminSettings",
+		Path:      "/kadmin/settings",
+		Component: "/kadmin/components/SettingsView",
+		Icon:      "lucide:sliders-horizontal",
+	},
+	"/kadmin/resources": {
+		Name:      "KAdminResources",
+		Path:      "/kadmin/resources",
+		Component: "/kadmin/components/ResourceWorkbench",
+		Icon:      "lucide:folder-kanban",
+	},
+}
+
 func registerMenuRoutes(api *gin.RouterGroup, s *Store) {
 	menuGroup := api.Group("/menu", s.requireAuth())
 	menuGroup.GET("/all", s.menus)
@@ -96,22 +163,36 @@ func buildMenuTree(items []menuItem, parentID int64) []vbenMenu {
 }
 
 func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
-	path, link := menuPath(m)
+	path, iframeSrc := menuPath(m)
+	binding, hasBinding := vbenMenuBinding(m.URI)
+	if hasBinding {
+		path = binding.Path
+	}
+
 	meta := map[string]interface{}{
 		"title": m.Title,
 		"order": m.Order,
 	}
-	if m.Icon != "" {
-		meta["icon"] = m.Icon
+	icon := normalizeMenuIcon(m.Icon)
+	if icon == "" && hasBinding {
+		icon = binding.Icon
 	}
-	if link != "" {
-		meta["link"] = link
+	if icon != "" {
+		meta["icon"] = icon
+	}
+	if iframeSrc != "" && !hasBinding {
+		meta["iframeSrc"] = iframeSrc
+	}
+
+	name := "GoAdminMenu" + strconv.FormatInt(m.ID, 10)
+	if hasBinding {
+		name = binding.Name
 	}
 
 	menu := vbenMenu{
 		ID:       m.ID,
 		ParentID: m.ParentID,
-		Name:     "GoAdminMenu" + strconv.FormatInt(m.ID, 10),
+		Name:     name,
 		Path:     path,
 		Meta:     meta,
 		Children: children,
@@ -122,14 +203,19 @@ func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
 		return menu
 	}
 
-	// Add a Vben view at apps/web-*/src/views/legacy/iframe/index.vue
-	// to render meta.link during the migration from GoAdmin pages.
-	menu.Component = "/legacy/iframe/index"
+	if hasBinding {
+		menu.Component = binding.Component
+		return menu
+	}
+
+	if iframeSrc != "" {
+		menu.Component = "IFrameView"
+	}
 	return menu
 }
 
-func menuPath(m menuItem) (path string, link string) {
-	uri := strings.TrimSpace(m.URI)
+func menuPath(m menuItem) (path string, iframeSrc string) {
+	uri := normalizeMenuURI(m.URI)
 	if uri == "" || uri == "#" {
 		return "/goadmin/menu-" + strconv.FormatInt(m.ID, 10), ""
 	}
@@ -138,9 +224,53 @@ func menuPath(m menuItem) (path string, link string) {
 		return "/goadmin/external-" + strconv.FormatInt(m.ID, 10), uri
 	}
 
+	return "/goadmin" + strings.TrimSuffix(uri, "/"), "/admin" + uri
+}
+
+func vbenMenuBinding(uri string) (menuRouteBinding, bool) {
+	binding, ok := vbenMenuRouteBindings[normalizeMenuURI(uri)]
+	return binding, ok
+}
+
+func normalizeMenuURI(uri string) string {
+	uri = strings.TrimSpace(uri)
+	if uri == "" || uri == "#" {
+		return uri
+	}
+	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
+		return uri
+	}
 	if !strings.HasPrefix(uri, "/") {
 		uri = "/" + uri
 	}
+	if uri != "/" {
+		uri = strings.TrimSuffix(uri, "/")
+	}
+	return uri
+}
 
-	return "/goadmin" + strings.TrimSuffix(uri, "/"), "/admin" + uri
+func normalizeMenuIcon(icon string) string {
+	icon = strings.TrimSpace(icon)
+	if icon == "" || strings.Contains(icon, ":") {
+		return icon
+	}
+
+	switch icon {
+	case "fa-bar-chart", "fa-dashboard":
+		return "lucide:layout-dashboard"
+	case "fa-tasks":
+		return "lucide:settings-2"
+	case "fa-users":
+		return "lucide:users"
+	case "fa-user":
+		return "lucide:user"
+	case "fa-ban":
+		return "lucide:ban"
+	case "fa-bars":
+		return "lucide:menu"
+	case "fa-history":
+		return "lucide:history"
+	default:
+		return icon
+	}
 }
