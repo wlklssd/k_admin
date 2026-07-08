@@ -63,11 +63,12 @@
         row-key="id"
         :columns="columns"
         :data-source="filteredMenus"
-        :default-expand-all-rows="true"
+        :expanded-row-keys="expandedRowKeys"
         :loading="loading"
         :pagination="false"
         :scroll="{ x: 1120 }"
         :size="density === '紧凑' ? 'small' : 'middle'"
+        @expanded-rows-change="onExpandedRowsChange"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'title'">
@@ -200,6 +201,7 @@ const density = ref('默认');
 const menus = ref<AdminMenu[]>([]);
 const editingMenu = ref<AdminMenu | null>(null);
 const formRef = ref<FormInstance>();
+const expandedRowKeys = ref<number[]>([]);
 
 const filters = reactive<{
   keyword: string;
@@ -266,11 +268,18 @@ async function loadMenus() {
   loading.value = true;
   try {
     menus.value = await getAdminMenuTree();
+    // a-table 的 defaultExpandAllRows 仅在挂载时生效，此时数据尚未返回；
+    // 改为受控展开：数据到达后自动展开所有含子菜单的节点，保证子菜单可见。
+    expandedRowKeys.value = collectExpandableKeys(menus.value);
   } catch (error) {
     message.error(error instanceof Error ? error.message : '加载菜单失败');
   } finally {
     loading.value = false;
   }
+}
+
+function onExpandedRowsChange(keys: (number | string)[]) {
+  expandedRowKeys.value = keys as number[];
 }
 
 function applySearch() {
@@ -374,6 +383,17 @@ function excludeMenuSubtree(items: AdminMenu[], excludeId?: number): AdminMenu[]
     result.push({ ...item, children });
   }
   return result;
+}
+
+function collectExpandableKeys(items: AdminMenu[]): number[] {
+  const keys: number[] = [];
+  for (const item of items) {
+    if (item.children && item.children.length > 0) {
+      keys.push(item.id);
+      keys.push(...collectExpandableKeys(item.children));
+    }
+  }
+  return keys;
 }
 
 function nextChildOrder(parent?: AdminMenu) {
