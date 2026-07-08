@@ -3,7 +3,7 @@
     <section class="page-heading">
       <div>
         <h1>菜单管理</h1>
-        <p>配置 goadmin_menu 菜单结构，为后台导航和后续代码生成提供基础元数据</p>
+        <p>维护后台导航菜单的层级、路径与图标</p>
       </div>
       <a-space wrap>
         <a-button :loading="loading" @click="loadMenus">
@@ -54,7 +54,7 @@
     <section class="panel">
       <div class="table-toolbar">
         <span class="muted-text">
-          修改后刷新菜单或重新登录即可看到最新导航；排序使用 goadmin_menu.order。
+          调整后刷新页面或重新登录，即可同步侧边栏导航。
         </span>
         <a-segmented v-model:value="density" :options="['默认', '紧凑']" />
       </div>
@@ -66,23 +66,27 @@
         :expanded-row-keys="expandedRowKeys"
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1120 }"
+        :scroll="{ x: 1040 }"
         :size="density === '紧凑' ? 'small' : 'middle'"
         @expanded-rows-change="onExpandedRowsChange"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'title'">
-            <a-space>
-              <span class="menu-icon">{{ record.icon || '-' }}</span>
+            <div class="menu-title-cell">
+              <span class="menu-icon-box" :title="record.icon || '未设置图标'">
+                <IconifyIcon v-if="record.icon" :icon="record.icon" />
+                <span v-else class="menu-icon-fallback">—</span>
+              </span>
               <div class="name-cell">
                 <strong>{{ record.title }}</strong>
-                <span>ID: {{ record.id }} · Parent: {{ record.parentId }}</span>
+                <span>#{{ record.id }}</span>
               </div>
-            </a-space>
+            </div>
           </template>
 
           <template v-else-if="column.key === 'uri'">
-            <span class="code-cell">{{ record.uri || '-' }}</span>
+            <span v-if="record.uri" class="code-cell">{{ record.uri }}</span>
+            <span v-else class="muted-text">—</span>
           </template>
 
           <template v-else-if="column.key === 'type'">
@@ -182,6 +186,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons-vue';
+import { IconifyIcon } from '@vben/icons';
 import { message, type FormInstance } from 'ant-design-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -233,14 +238,12 @@ const typeOptions = [
 ];
 
 const columns = [
-  { title: '菜单', key: 'title', width: 300, fixed: 'left' },
-  { title: '路径', key: 'uri', dataIndex: 'uri', width: 240 },
-  { title: '类型', key: 'type', dataIndex: 'type', width: 100 },
-  { title: '排序', key: 'order', dataIndex: 'order', width: 90 },
-  { title: 'Header', key: 'header', dataIndex: 'header', width: 150 },
-  { title: '插件', key: 'pluginName', dataIndex: 'pluginName', width: 130 },
-  { title: '更新时间', key: 'updatedAt', dataIndex: 'updatedAt', width: 170 },
-  { title: '操作', key: 'action', width: 210, fixed: 'right' },
+  { title: '菜单', key: 'title', width: 260, fixed: 'left' },
+  { title: '路径', key: 'uri', dataIndex: 'uri', width: 220 },
+  { title: '类型', key: 'type', dataIndex: 'type', width: 96 },
+  { title: '排序', key: 'order', dataIndex: 'order', width: 80 },
+  { title: '更新时间', key: 'updatedAt', dataIndex: 'updatedAt', width: 168 },
+  { title: '操作', key: 'action', width: 196, fixed: 'right' },
 ];
 
 const filteredMenus = computed(() => {
