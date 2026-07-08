@@ -59,15 +59,6 @@ const routes: RouteRecordRaw[] = [
           title: '资源工作台',
         },
       },
-      {
-        name: 'KAdminLegacyDashboard',
-        path: 'legacy-dashboard',
-        component: () => import('#/views/kadmin/components/DashboardView.vue'),
-        meta: {
-          icon: 'lucide:gauge',
-          title: '旧版工作台',
-        },
-      },
     ],
   },
 ];
