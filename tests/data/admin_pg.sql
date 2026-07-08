@@ -8,7 +8,7 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'EUC_CN';
+SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
@@ -428,13 +428,16 @@ ALTER TABLE public.users OWNER TO postgres;
 --
 
 COPY public.goadmin_menu (id, parent_id, type, "order", title, plugin_name, header, icon, uri, created_at, updated_at) FROM stdin;
-1	0	1	2	Admin		\N	fa-tasks		2019-09-10 00:00:00	2019-09-10 00:00:00
-2	1	1	2	Users		\N	fa-users	/info/manager	2019-09-10 00:00:00	2019-09-10 00:00:00
-3	1	1	3	Roles		\N	fa-user	/info/roles	2019-09-10 00:00:00	2019-09-10 00:00:00
-4	1	1	4	Permission		\N	fa-ban	/info/permission	2019-09-10 00:00:00	2019-09-10 00:00:00
-5	1	1	5	Menu		\N	fa-bars	/menu	2019-09-10 00:00:00	2019-09-10 00:00:00
-6	1	1	6	Operation log		\N	fa-history	/info/op	2019-09-10 00:00:00	2019-09-10 00:00:00
-7	0	1	1	Dashboard		\N	fa-bar-chart	/	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	0	1	1	Dashboard		\N	lucide:layout-dashboard	/dashboard	2019-09-10 00:00:00	2019-09-10 00:00:00
+2	1	1	1	分析页		\N	lucide:area-chart	/dashboard/analytics	2019-09-10 00:00:00	2019-09-10 00:00:00
+3	1	1	2	工作台		\N	carbon:workspace	/dashboard/workspace	2019-09-10 00:00:00	2019-09-10 00:00:00
+4	0	1	10	KAdmin 管理		\N	lucide:settings-2	/kadmin	2019-09-10 00:00:00	2019-09-10 00:00:00
+5	4	1	1	用户管理		\N	lucide:users	/kadmin/users	2019-09-10 00:00:00	2019-09-10 00:00:00
+6	4	1	2	权限管理		\N	lucide:shield-check	/kadmin/rbac	2019-09-10 00:00:00	2019-09-10 00:00:00
+7	4	1	3	菜单管理		\N	lucide:menu	/kadmin/menus	2019-09-10 00:00:00	2019-09-10 00:00:00
+8	4	1	4	字典管理		\N	lucide:book-open	/kadmin/dictionary	2019-09-10 00:00:00	2019-09-10 00:00:00
+9	4	1	5	参数配置		\N	lucide:sliders-horizontal	/kadmin/settings	2019-09-10 00:00:00	2019-09-10 00:00:00
+10	4	1	6	资源工作台		\N	lucide:folder-kanban	/kadmin/resources	2019-09-10 00:00:00	2019-09-10 00:00:00
 \.
 
 
@@ -492,8 +495,18 @@ COPY public.goadmin_permissions (id, name, slug, http_method, http_path, created
 
 COPY public.goadmin_role_menu (role_id, menu_id, created_at, updated_at) FROM stdin;
 1	1	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	2	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	3	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	4	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	5	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	6	2019-09-10 00:00:00	2019-09-10 00:00:00
 1	7	2019-09-10 00:00:00	2019-09-10 00:00:00
-2	7	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	8	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	9	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	10	2019-09-10 00:00:00	2019-09-10 00:00:00
+2	1	2019-09-10 00:00:00	2019-09-10 00:00:00
+2	2	2019-09-10 00:00:00	2019-09-10 00:00:00
+2	3	2019-09-10 00:00:00	2019-09-10 00:00:00
 \.
 
 
@@ -613,7 +626,7 @@ COPY public.users (id, name, homepage, email, birthday, country, city, password,
 -- Name: goadmin_menu_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.goadmin_menu_myid_seq', 7, true);
+SELECT pg_catalog.setval('public.goadmin_menu_myid_seq', 10, true);
 
 
 --
