@@ -31,6 +31,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        name: 'KAdminMenus',
+        path: 'menus',
+        component: () =>
+          import('#/views/kadmin/components/MenuManagementView.vue'),
+        meta: {
+          icon: 'lucide:menu',
+          title: '菜单管理',
+        },
+      },
+      {
         name: 'KAdminDictionary',
         path: 'dictionary',
         component: () =>

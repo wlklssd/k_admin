@@ -76,6 +76,12 @@ var vbenMenuRouteBindings = map[string]menuRouteBinding{
 		Component: "/kadmin/components/RbacWorkbench",
 		Icon:      "lucide:shield-check",
 	},
+	"/kadmin/menus": {
+		Name:      "KAdminMenus",
+		Path:      "/kadmin/menus",
+		Component: "/kadmin/components/MenuManagementView",
+		Icon:      "lucide:menu",
+	},
 	"/kadmin/dictionary": {
 		Name:      "KAdminDictionary",
 		Path:      "/kadmin/dictionary",

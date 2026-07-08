@@ -45,6 +45,7 @@ func Register(r *gin.Engine, conn db.Connection) {
 	registerUserRoutes(api, s)
 	registerMenuRoutes(api, s)
 	registerRBACRoutes(api, s)
+	registerMenuManagementRoutes(api, s)
 	registerUserManagementRoutes(api, s)
 	registerDictionaryRoutes(api, s)
 	registerModuleRoutes(api, s)
