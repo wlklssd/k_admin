@@ -28,7 +28,7 @@ type managedMenu struct {
 
 type menuPayload struct {
 	ParentID   int64  `json:"parentId"`
-	Type       int64  `json:"type"`
+	Type       *int64 `json:"type"`
 	Order      int64  `json:"order"`
 	Title      string `json:"title"`
 	Icon       string `json:"icon"`
@@ -90,7 +90,7 @@ func (s *Store) createAdminMenu(c *gin.Context) {
 
 	id, err := db.WithDriver(s.conn).Table("goadmin_menu").Insert(dialect.H{
 		"parent_id":   req.ParentID,
-		"type":        req.Type,
+		"type":        *req.Type,
 		"order":       req.Order,
 		"title":       req.Title,
 		"icon":        req.Icon,
@@ -160,7 +160,7 @@ func (s *Store) updateAdminMenu(c *gin.Context) {
 		Where("id", "=", menuID).
 		Update(dialect.H{
 			"parent_id":   req.ParentID,
-			"type":        req.Type,
+			"type":        *req.Type,
 			"order":       req.Order,
 			"title":       req.Title,
 			"icon":        req.Icon,
@@ -278,8 +278,10 @@ func normalizeMenuPayload(req *menuPayload) {
 	req.Header = strings.TrimSpace(req.Header)
 	req.PluginName = strings.TrimSpace(req.PluginName)
 	req.UUID = strings.TrimSpace(req.UUID)
-	if req.Type == 0 {
-		req.Type = 1
+	// type 未传时默认为菜单(1)；显式传 0 表示目录/分组，需原样保留。
+	if req.Type == nil {
+		t := int64(1)
+		req.Type = &t
 	}
 }
 

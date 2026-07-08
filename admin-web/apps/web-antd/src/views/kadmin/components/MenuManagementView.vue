@@ -99,7 +99,7 @@
                 编辑
               </a-button>
               <a-popconfirm
-                title="确认删除该菜单？存在子菜单时不会删除。"
+                title="确认删除该菜单？存在子菜单时将无法删除，请先删除子菜单。"
                 @confirm="removeMenu(record)"
               >
                 <a-button type="link" size="small" danger>删除</a-button>
@@ -255,7 +255,7 @@ const filteredMenus = computed(() => {
 });
 
 const parentOptions = computed(() =>
-  filterMenuTree(menus.value, (menu) => menu.id !== editingMenu.value?.id),
+  excludeMenuSubtree(menus.value, editingMenu.value?.id),
 );
 
 onMounted(() => {
@@ -274,7 +274,7 @@ async function loadMenus() {
 }
 
 function applySearch() {
-  message.success('查询完成');
+  // 菜单树为前端实时过滤，输入即生效，此处仅保留入口与其他列表页保持一致。
 }
 
 function resetSearch() {
@@ -359,9 +359,26 @@ function filterMenuTree(
   return result;
 }
 
+function excludeMenuSubtree(items: AdminMenu[], excludeId?: number): AdminMenu[] {
+  if (!excludeId) {
+    return items;
+  }
+  const result: AdminMenu[] = [];
+  for (const item of items) {
+    if (item.id === excludeId) {
+      continue;
+    }
+    const children = item.children
+      ? excludeMenuSubtree(item.children, excludeId)
+      : [];
+    result.push({ ...item, children });
+  }
+  return result;
+}
+
 function nextChildOrder(parent?: AdminMenu) {
   const children = parent?.children || menus.value;
-  return children.length + 1;
+  return children.reduce((max, item) => Math.max(max, item.order), 0) + 1;
 }
 
 function typeText(type: number) {
