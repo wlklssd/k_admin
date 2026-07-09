@@ -35,6 +35,10 @@ type systemConfigOverview struct {
 	Items    []systemConfigItem `json:"items"`
 }
 
+type publicLoginConfig struct {
+	CaptchaEnabled bool `json:"captchaEnabled"`
+}
+
 type systemConfigMeta struct {
 	Key         string
 	Label       string
@@ -69,7 +73,6 @@ var systemConfigMetas = []systemConfigMeta{
 		Type:        "boolean",
 		Default:     "false",
 		Description: "登录验证码开关",
-		Future:      true,
 		Order:       30,
 	},
 	{
@@ -85,11 +88,28 @@ var systemConfigMetas = []systemConfigMeta{
 }
 
 func registerSystemConfigRoutes(api *gin.RouterGroup, s *Store) {
+	api.GET("/system/config/login", s.publicLoginConfig)
+	api.GET("/system/config/login/", s.publicLoginConfig)
+
 	group := api.Group("/system/config", s.requireAuth(), s.requireAdmin())
 	group.GET("", s.systemConfig)
 	group.GET("/", s.systemConfig)
 	group.PUT("", s.updateSystemConfig)
 	group.PUT("/", s.updateSystemConfig)
+}
+
+func (s *Store) publicLoginConfig(c *gin.Context) {
+	values, err := s.readSystemConfig()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, publicLoginConfig{
+		CaptchaEnabled: normalizeSystemConfigValue(
+			systemConfigMeta{Type: "boolean"},
+			values["security.captcha_enabled"],
+		) == "true",
+	})
 }
 
 func (s *Store) systemConfig(c *gin.Context) {
