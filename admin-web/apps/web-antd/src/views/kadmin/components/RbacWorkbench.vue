@@ -46,7 +46,7 @@
               >
                 <a-list-item-meta>
                   <template #avatar>
-                    <a-avatar :style="{ backgroundColor: item.status === 1 ? '#1677ff' : '#8c8c8c' }">
+                    <a-avatar :style="{ backgroundColor: item.status === 1 ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }">
                       {{ item.name.slice(0, 1) }}
                     </a-avatar>
                   </template>
@@ -173,7 +173,7 @@
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'role'">
                 <a-space>
-                  <a-avatar :style="{ backgroundColor: record.isAdmin ? '#d46b08' : '#1677ff' }">
+                  <a-avatar :style="{ backgroundColor: record.isAdmin ? 'hsl(var(--warning))' : 'hsl(var(--primary))' }">
                     {{ record.name.slice(0, 1) }}
                   </a-avatar>
                   <div class="name-cell">

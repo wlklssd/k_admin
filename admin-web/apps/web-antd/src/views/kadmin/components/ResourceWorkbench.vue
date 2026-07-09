@@ -396,10 +396,10 @@ function priorityMeta(priority: ResourcePriority) {
 }
 
 function avatarColor(type: string) {
-  if (type === '系统模块') return '#1677ff';
-  if (type === '通用服务') return '#13a8a8';
-  if (type === '快速开发') return '#722ed1';
-  return '#d46b08';
+  if (type === '系统模块') return 'hsl(var(--primary))';
+  if (type === '通用服务') return 'hsl(var(--success))';
+  if (type === '快速开发') return 'hsl(var(--accent-foreground))';
+  return 'hsl(var(--warning))';
 }
 
 function fieldTitle(key: string) {
