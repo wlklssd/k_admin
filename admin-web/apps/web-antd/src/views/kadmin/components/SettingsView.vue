@@ -136,7 +136,7 @@
               <a-tag :color="record.builtin ? 'blue' : 'default'">
                 {{ record.builtin ? '内置' : '自定义' }}
               </a-tag>
-              <a-tag v-if="record.future" color="gold">后续适配</a-tag>
+
             </a-space>
           </template>
 
@@ -187,6 +187,8 @@ import {
   SearchOutlined,
   UndoOutlined,
 } from '@ant-design/icons-vue';
+import type { ThemeModeType } from '@vben/types';
+import { updatePreferences } from '@vben/preferences';
 import { message, type FormInstance } from 'ant-design-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -200,8 +202,10 @@ const defaultValues: Record<string, string> = {
   'auth.default_username': 'admin',
   'auth.default_password': 'admin',
   'security.captcha_enabled': 'false',
-  'ui.theme_mode': 'light',
+  'ui.theme_mode': 'auto',
 };
+
+const themeModes = new Set<ThemeModeType>(['auto', 'light', 'dark']);
 
 const initialLoading = ref(false);
 const submitLoading = ref(false);
@@ -289,6 +293,7 @@ async function submit() {
     const data = await updateSystemConfig(items.value);
     filePath.value = data.filePath;
     items.value = data.items || [];
+    syncThemeModePreference(items.value);
     message.success('参数配置已保存');
   } catch (error) {
     apiError.value = error instanceof Error ? error.message : '保存参数配置失败';
@@ -328,9 +333,24 @@ function updateInputValue(key: string, event: Event) {
 
 function optionItems(item: SystemConfigItem) {
   return (item.options || []).map((value) => ({
-    label: value === 'light' ? '白天' : value === 'dark' ? '黑夜' : value,
+    label:
+      value === 'auto'
+        ? '跟随电脑主题'
+        : value === 'light'
+          ? '白天'
+          : value === 'dark'
+            ? '黑夜'
+            : value,
     value,
   }));
+}
+
+function syncThemeModePreference(configItems: SystemConfigItem[]) {
+  const mode = configItems.find((item) => item.key === 'ui.theme_mode')?.value;
+  if (!mode || !themeModes.has(mode as ThemeModeType)) {
+    return;
+  }
+  updatePreferences({ theme: { mode: mode as ThemeModeType } });
 }
 
 function resetItem(record: SystemConfigItem) {
@@ -377,4 +397,3 @@ function removeCustomItem(record: SystemConfigItem) {
   items.value = items.value.filter((item) => item.key !== record.key);
 }
 </script>
-

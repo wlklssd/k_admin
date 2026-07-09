@@ -79,10 +79,9 @@ var systemConfigMetas = []systemConfigMeta{
 		Key:         "ui.theme_mode",
 		Label:       "界面模式",
 		Type:        "select",
-		Default:     "light",
-		Options:     []string{"light", "dark"},
-		Description: "白天 / 黑夜模式",
-		Future:      true,
+		Default:     "auto",
+		Options:     []string{"auto", "light", "dark"},
+		Description: "跟随电脑主题 / 白天 / 黑夜模式",
 		Order:       40,
 	},
 }
