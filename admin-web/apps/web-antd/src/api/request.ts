@@ -96,6 +96,16 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     errorMessageResponseInterceptor((msg: string, error) => {
       // 这里可以根据业务进行定制,你可以拿到 error 内的信息进行定制化处理，根据不同的 code 做不同的提示，而不是直接使用 message.error 提示 msg
       // 当前mock接口返回的错误字段是 error 或者 message
+      const authorization =
+        error?.config?.headers?.Authorization ??
+        error?.config?.headers?.authorization;
+
+      // 携带 token 的 401 已由鉴权拦截器负责清理登录态并跳转，
+      // 避免首次进入时因本地残留的失效 token 重复提示 invalid token。
+      if (error?.response?.status === 401 && authorization) {
+        return;
+      }
+
       const responseData = error?.response?.data ?? {};
       const errorMessage = responseData?.error ?? responseData?.message ?? '';
       // 如果没有错误信息，则会根据状态码进行提示
