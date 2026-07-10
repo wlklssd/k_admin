@@ -802,6 +802,111 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: goadmin_department_myid_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.goadmin_department_myid_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 99999999
+    CACHE 1;
+
+
+ALTER SEQUENCE public.goadmin_department_myid_seq OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: goadmin_department; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.goadmin_department (
+    id integer DEFAULT nextval('public.goadmin_department_myid_seq'::regclass) NOT NULL,
+    name character varying(100) NOT NULL,
+    code character varying(100) DEFAULT ''::character varying NOT NULL,
+    description character varying(3000),
+    sort integer DEFAULT 0 NOT NULL,
+    status integer DEFAULT 1 NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.goadmin_department OWNER TO postgres;
+
+--
+-- Name: goadmin_department_roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.goadmin_department_roles (
+    department_id integer NOT NULL,
+    role_id integer NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.goadmin_department_roles OWNER TO postgres;
+
+--
+-- Data for Name: goadmin_department; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.goadmin_department (id, name, code, description, sort, status, created_at, updated_at) FROM stdin;
+1	管理	onp		0	1	2026-07-04 17:35:42.862376	2026-07-04 17:35:42.862376
+2	运营	onb		1	1	2026-07-04 17:42:33.067153	2026-07-04 17:42:33.067153
+\.
+
+
+--
+-- Data for Name: goadmin_department_roles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.goadmin_department_roles (department_id, role_id, created_at, updated_at) FROM stdin;
+1	1	2026-07-04 17:42:39.171653	2026-07-04 17:42:39.171653
+1	2	2026-07-04 17:42:39.173343	2026-07-04 17:42:39.173343
+2	3	2026-07-04 17:42:52.058756	2026-07-04 17:42:52.058756
+\.
+
+
+--
+-- Name: goadmin_department_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.goadmin_department_myid_seq', 2, true);
+
+
+--
+-- Name: goadmin_department goadmin_department_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.goadmin_department
+    ADD CONSTRAINT goadmin_department_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: goadmin_department_roles goadmin_department_roles_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.goadmin_department_roles
+    ADD CONSTRAINT goadmin_department_roles_unique UNIQUE (department_id, role_id);
+
+
+--
+-- Name: goadmin_department_code_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX goadmin_department_code_index ON public.goadmin_department USING btree (code);
+
+
+--
+-- Name: goadmin_department_roles_role_id_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX goadmin_department_roles_role_id_index ON public.goadmin_department_roles USING btree (role_id);
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
 --
 
