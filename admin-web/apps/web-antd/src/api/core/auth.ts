@@ -10,11 +10,22 @@ export namespace AuthApi {
   /** 登录接口返回值 */
   export interface LoginResult {
     accessToken: string;
+    expiresAt?: number;
+    refreshToken?: string;
+    token?: string;
+    tokenType?: string;
   }
 
-  export interface RefreshTokenResult {
-    data: string;
-    status: number;
+  export interface LogoutParams {
+    accessToken?: null | string;
+    refreshToken?: null | string;
+  }
+
+  export interface RefreshTokenResponse {
+    code: number;
+    data: LoginResult;
+    message: string;
+    msg?: string;
   }
 }
 
@@ -22,25 +33,36 @@ export namespace AuthApi {
  * 登录
  */
 export async function loginApi(data: AuthApi.LoginParams) {
-  return requestClient.post<AuthApi.LoginResult>('/auth/login', data);
+  return requestClient.post<AuthApi.LoginResult>('/auth/login', data, {
+    skipAuthRefresh: true,
+  });
 }
 
 /**
  * 刷新accessToken
  */
-export async function refreshTokenApi() {
-  return baseRequestClient.post<AuthApi.RefreshTokenResult>('/auth/refresh', {
-    withCredentials: true,
+export async function refreshTokenApi(refreshToken: string) {
+  const response = await baseRequestClient.post<any>('/auth/refresh', {
+    refreshToken,
   });
+  return response.data?.data as AuthApi.LoginResult;
 }
 
 /**
  * 退出登录
  */
-export async function logoutApi() {
-  return baseRequestClient.post('/auth/logout', {
-    withCredentials: true,
-  });
+export async function logoutApi(params: AuthApi.LogoutParams = {}) {
+  return baseRequestClient.post(
+    '/auth/logout',
+    {
+      refreshToken: params.refreshToken,
+    },
+    {
+      headers: params.accessToken
+        ? { Authorization: `Bearer ${params.accessToken}` }
+        : undefined,
+    },
+  );
 }
 
 /**

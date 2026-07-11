@@ -1,11 +1,8 @@
 package vbenapi
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/GoAdminGroup/go-admin/plugins/admin/models"
@@ -21,34 +18,41 @@ func (s *Store) requireAuth() gin.HandlerFunc {
 			return
 		}
 
-		s.mu.RLock()
-		info, ok := s.tokens[token]
-		s.mu.RUnlock()
-		if !ok || time.Now().After(info.ExpiresAt) {
-			s.mu.Lock()
-			delete(s.tokens, token)
-			s.mu.Unlock()
+		claims, err := s.auth.parseAccessToken(token)
+		if err != nil {
 			fail(c, http.StatusUnauthorized, "invalid token")
 			c.Abort()
 			return
 		}
-		enabled, err := s.userAccountEnabled(info.UserID)
+
+		blacklisted, err := s.auth.isAccessTokenBlacklisted(claims.JTI)
+		if err != nil {
+			fail(c, http.StatusInternalServerError, "auth storage unavailable")
+			c.Abort()
+			return
+		}
+		if blacklisted {
+			fail(c, http.StatusUnauthorized, "invalid token")
+			c.Abort()
+			return
+		}
+
+		enabled, err := s.userAccountEnabled(claims.UserID)
 		if err != nil {
 			fail(c, http.StatusInternalServerError, err.Error())
 			c.Abort()
 			return
 		}
 		if !enabled {
-			s.mu.Lock()
-			delete(s.tokens, token)
-			s.mu.Unlock()
+			_ = s.auth.blacklistAccessToken(claims)
 			fail(c, http.StatusForbidden, "account disabled")
 			c.Abort()
 			return
 		}
 
-		c.Set("vben_user_id", info.UserID)
+		c.Set("vben_user_id", claims.UserID)
 		c.Set("vben_token", token)
+		c.Set("vben_token_jti", claims.JTI)
 		c.Next()
 	}
 }
@@ -82,22 +86,6 @@ func (s *Store) userAccountEnabled(userID int64) (bool, error) {
 		return false, nil
 	}
 	return normalizeUserStatus(toString(rows[0]["status"])) == "enable", nil
-}
-
-func (s *Store) issueToken(userID int64) (string, time.Time, error) {
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
-		return "", time.Time{}, err
-	}
-
-	token := hex.EncodeToString(raw)
-	expiresAt := time.Now().Add(tokenTTL)
-
-	s.mu.Lock()
-	s.tokens[token] = tokenInfo{UserID: userID, ExpiresAt: expiresAt}
-	s.mu.Unlock()
-
-	return token, expiresAt, nil
 }
 
 func tokenFromRequest(c *gin.Context) string {

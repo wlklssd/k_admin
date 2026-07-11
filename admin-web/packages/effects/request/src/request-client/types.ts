@@ -26,6 +26,10 @@ type ExtendOptions<T = any> = {
    * - data: 解构响应的BODY数据，只返回其中的data节点数据（会检查status和code是否为成功状态）。
    */
   responseReturn?: 'body' | 'data' | 'raw';
+  /**
+   * 跳过 401 自动刷新 token，适用于登录、刷新等认证接口自身。
+   */
+  skipAuthRefresh?: boolean;
 };
 type RequestClientConfig<T = any> = AxiosRequestConfig<T> & ExtendOptions<T>;
 

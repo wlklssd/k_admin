@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/gin-gonic/gin"
@@ -12,25 +11,18 @@ import (
 
 const (
 	defaultHomePath = "/dashboard/workspace"
-	tokenTTL        = 2 * time.Hour
 )
-
-type tokenInfo struct {
-	UserID    int64
-	ExpiresAt time.Time
-}
 
 type Store struct {
 	conn     db.Connection
-	mu       sync.RWMutex
 	configMu sync.Mutex
-	tokens   map[string]tokenInfo
+	auth     *authService
 }
 
 func Register(r *gin.Engine, conn db.Connection) {
 	s := &Store{
-		conn:   conn,
-		tokens: make(map[string]tokenInfo),
+		conn: conn,
+		auth: newAuthServiceFromEnv(),
 	}
 	if err := s.syncDefaultMenus(); err != nil {
 		log.Printf("sync vben menus failed: %v", err)
