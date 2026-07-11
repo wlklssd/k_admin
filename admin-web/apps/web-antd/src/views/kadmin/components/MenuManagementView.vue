@@ -66,6 +66,7 @@
         :expanded-row-keys="expandedRowKeys"
         :loading="loading"
         :pagination="false"
+        :row-class-name="menuRowClassName"
         :scroll="{ x: 1040 }"
         :size="density === '紧凑' ? 'small' : 'middle'"
         @expanded-rows-change="onExpandedRowsChange"
@@ -404,7 +405,79 @@ function nextChildOrder(parent?: AdminMenu) {
   return children.reduce((max, item) => Math.max(max, item.order), 0) + 1;
 }
 
+function menuRowClassName(record: AdminMenu) {
+  if (!record.parentId) {
+    return 'menu-row menu-row-root';
+  }
+
+  const depth = getMenuDepth(record.id, filteredMenus.value) ?? 1;
+  return `menu-row menu-row-child menu-row-level-${Math.min(depth, 3)}`;
+}
+
 function typeText(type: number) {
   return type === 1 ? '菜单' : '目录/分组';
 }
+
+function getMenuDepth(
+  id: number,
+  items: AdminMenu[],
+  depth = 0,
+): number | undefined {
+  for (const item of items) {
+    if (item.id === id) {
+      return depth;
+    }
+
+    if (item.children?.length) {
+      const childDepth = getMenuDepth(id, item.children, depth + 1);
+      if (childDepth !== undefined) {
+        return childDepth;
+      }
+    }
+  }
+}
 </script>
+
+<style scoped>
+:deep(.menu-row > td) {
+  transition:
+    background-color 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+:deep(.menu-row-child) {
+  animation: menu-child-slide-in 0.24s ease both;
+}
+
+:deep(.menu-row-child > td) {
+  background-color: #f1f5f9;
+}
+
+:deep(.menu-row-level-2 > td) {
+  background-color: #e8eef7;
+}
+
+:deep(.menu-row-level-3 > td) {
+  background-color: #dee8f3;
+}
+
+:deep(.menu-row-child > td:first-child) {
+  box-shadow: inset 3px 0 0 #8aa4c8;
+}
+
+:deep(.menu-row-child:hover > td) {
+  background-color: #dfeaf7 !important;
+}
+
+@keyframes menu-child-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
