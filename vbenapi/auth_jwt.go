@@ -87,7 +87,7 @@ func newAuthRedisClientFromEnv() *authRedisClient {
 	return &authRedisClient{
 		address:  address,
 		db:       authIntEnv("KADMIN_REDIS_DB", 0),
-		password: strings.TrimSpace(os.Getenv("KADMIN_REDIS_PASSWORD")),
+		password: authStringEnv("KADMIN_REDIS_PASSWORD", "kadmin_redis_pwd"),
 		timeout:  2 * time.Second,
 	}
 }

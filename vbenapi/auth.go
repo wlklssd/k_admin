@@ -63,7 +63,7 @@ func (s *Store) login(c *gin.Context) {
 
 	tokens, err := s.auth.issueTokenPair(user.Id)
 	if err != nil {
-		fail(c, http.StatusInternalServerError, "create token failed")
+		fail(c, http.StatusInternalServerError, "create token failed: "+err.Error())
 		return
 	}
 
