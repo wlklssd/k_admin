@@ -54,7 +54,7 @@
     <section class="panel">
       <div class="table-toolbar">
         <span class="muted-text">
-          调整后刷新页面或重新登录，即可同步侧边栏导航。
+          保存后会自动同步侧边栏导航。
         </span>
         <a-segmented v-model:value="density" :options="['默认', '紧凑']" />
       </div>
@@ -188,6 +188,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons-vue';
 import { IconifyIcon } from '@vben/icons';
+import { useAccessStore, useUserStore } from '@vben/stores';
 import { message, type FormInstance } from 'ant-design-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -199,6 +200,9 @@ import {
   type AdminMenu,
   type AdminMenuPayload,
 } from '#/api/kadmin/menus';
+import { generateAccess } from '#/router/access';
+import { router } from '#/router';
+import { accessRoutes } from '#/router/routes';
 
 const loading = ref(false);
 const saving = ref(false);
@@ -208,6 +212,8 @@ const menus = ref<AdminMenu[]>([]);
 const editingMenu = ref<AdminMenu | null>(null);
 const formRef = ref<FormInstance>();
 const expandedRowKeys = ref<number[]>([]);
+const accessStore = useAccessStore();
+const userStore = useUserStore();
 
 const filters = reactive<{
   keyword: string;
@@ -323,6 +329,7 @@ async function submitForm() {
     }
     drawerOpen.value = false;
     await loadMenus();
+    await refreshNavigationMenus();
     message.success('菜单已保存');
   } catch (error) {
     message.error(error instanceof Error ? error.message : '保存菜单失败');
@@ -335,10 +342,22 @@ async function removeMenu(record: AdminMenu) {
   try {
     await deleteAdminMenu(record.id);
     await loadMenus();
+    await refreshNavigationMenus();
     message.success('菜单已删除');
   } catch (error) {
     message.error(error instanceof Error ? error.message : '删除菜单失败');
   }
+}
+
+async function refreshNavigationMenus() {
+  const { accessibleMenus, accessibleRoutes } = await generateAccess({
+    roles: userStore.userInfo?.roles ?? [],
+    router,
+    routes: accessRoutes,
+  });
+  accessStore.setAccessMenus(accessibleMenus);
+  accessStore.setAccessRoutes(accessibleRoutes);
+  accessStore.setIsAccessChecked(true);
 }
 
 function normalizePayload(): AdminMenuPayload {
