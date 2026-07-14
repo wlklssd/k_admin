@@ -18,6 +18,11 @@ import {
   mapTree,
 } from '@vben/utils';
 
+type AccessRouter = GenerateMenuAndRoutesOptions['router'];
+
+const rootBaseChildren = new WeakMap<AccessRouter, RouteRecordRaw[]>();
+const standaloneRouteRemovers = new WeakMap<AccessRouter, Array<() => void>>();
+
 async function generateAccessible(
   mode: AccessModeType,
   options: GenerateMenuAndRoutesOptions,
@@ -29,47 +34,80 @@ async function generateAccessible(
   // 生成路由
   const accessibleRoutes = await generateRoutes(mode, options);
 
+  installAccessibleRoutes(router, accessibleRoutes);
+
+  // 生成菜单
+  const accessibleMenus = generateMenus(accessibleRoutes, options.router);
+
+  return { accessibleMenus, accessibleRoutes };
+}
+
+function installAccessibleRoutes(
+  router: AccessRouter,
+  accessibleRoutes: RouteRecordRaw[],
+) {
   const root = router.getRoutes().find((item) => item.path === '/');
+  const rootRoutes: RouteRecordRaw[] = [];
+  const standaloneRoutes: RouteRecordRaw[] = [];
 
-  // 获取已有的路由名称列表
-  const names = root?.children?.map((item) => item.name) ?? [];
-
-  // 动态添加到router实例内
-  accessibleRoutes.forEach((route) => {
+  for (const route of accessibleRoutes) {
+    const clone = { ...route } as RouteRecordRaw;
     if (root && !route.meta?.noBasicLayout) {
-      // 为了兼容之前的版本用法，如果包含子路由，则将component移除，以免出现多层BasicLayout
-      // 如果你的项目已经跟进了本次修改，移除了所有自定义菜单首级的BasicLayout，可以将这段if代码删除
-      if (route.children && route.children.length > 0) {
-        delete route.component;
+      // Root 已提供布局容器，目录节点不能再次挂载自己的布局组件。
+      if (clone.children?.length) {
+        delete clone.component;
       }
-      // 根据router name判断，如果路由已经存在，则不再添加
-      if (names?.includes(route.name)) {
-        // 找到已存在的路由索引并更新，不更新会造成切换用户时，一级目录未更新，homePath 在二级目录导致的404问题
-        const index = root.children?.findIndex(
-          (item) => item.name === route.name,
-        );
-        if (index !== undefined && index !== -1 && root.children) {
-          root.children[index] = route;
-        }
-      } else {
-        root.children?.push(route);
-      }
+      rootRoutes.push(clone);
     } else {
-      router.addRoute(route);
+      standaloneRoutes.push(clone);
     }
-  });
+  }
+
+  for (const removeRoute of standaloneRouteRemovers.get(router) ?? []) {
+    removeRoute();
+  }
 
   if (root) {
+    let baseChildren = rootBaseChildren.get(router);
+    if (!baseChildren) {
+      baseChildren = (root.children ?? []).map(
+        (route) => ({ ...route }) as RouteRecordRaw,
+      );
+      rootBaseChildren.set(router, baseChildren);
+    }
+    root.children = mergeRootChildren(baseChildren, rootRoutes);
     if (root.name) {
       router.removeRoute(root.name);
     }
     router.addRoute(root);
   }
 
-  // 生成菜单
-  const accessibleMenus = generateMenus(accessibleRoutes, options.router);
+  standaloneRouteRemovers.set(
+    router,
+    standaloneRoutes.map((route) => router.addRoute(route)),
+  );
+}
 
-  return { accessibleMenus, accessibleRoutes };
+function mergeRootChildren(
+  baseChildren: RouteRecordRaw[],
+  accessChildren: RouteRecordRaw[],
+): RouteRecordRaw[] {
+  const result: RouteRecordRaw[] = [];
+  const indexes = new Map<string, number>();
+
+  for (const route of [...baseChildren, ...accessChildren]) {
+    const key = route.name
+      ? `name:${String(route.name)}`
+      : `path:${route.path}`;
+    const index = indexes.get(key);
+    if (index === undefined) {
+      indexes.set(key, result.length);
+      result.push(route);
+    } else {
+      result[index] = route;
+    }
+  }
+  return result;
 }
 
 /**
@@ -172,54 +210,118 @@ function mergeRoutesByName(
   baseRoutes: RouteRecordRaw[],
   extraRoutes: RouteRecordRaw[],
 ): RouteRecordRaw[] {
-  const result: RouteRecordRaw[] = [];
-  const routeMap = new Map<string, RouteRecordRaw>();
+  const backendRouteNames = collectRouteNames(baseRoutes);
+  const frontendRouteMap = collectRoutesByName(extraRoutes);
 
-  for (const route of baseRoutes) {
-    const clone = { ...route } as RouteRecordRaw;
+  return mergeRouteLevel(
+    baseRoutes,
+    extraRoutes,
+    backendRouteNames,
+    frontendRouteMap,
+  );
+}
+
+function mergeRouteLevel(
+  backendRoutes: RouteRecordRaw[],
+  frontendRoutes: RouteRecordRaw[],
+  backendRouteNames: Set<string>,
+  frontendRouteMap: Map<string, RouteRecordRaw>,
+): RouteRecordRaw[] {
+  const result = backendRoutes.map((backendRoute) => {
+    const routeName = getRouteName(backendRoute);
+    const frontendRoute = routeName
+      ? frontendRouteMap.get(routeName)
+      : undefined;
+    const backendChildren = backendRoute.children ?? [];
+    const frontendChildren = frontendRoute?.children ?? [];
+    const merged = {
+      ...frontendRoute,
+      ...backendRoute,
+      meta: {
+        ...frontendRoute?.meta,
+        ...backendRoute.meta,
+      },
+    } as RouteRecordRaw;
+
+    // 后端菜单一旦拥有子级就表示目录。静态页面组件通常不包含 RouterView，
+    // 若继续保留组件，移动到它下面的子菜单会匹配但无法渲染。
+    if (backendChildren.length > 0) {
+      delete merged.component;
+    }
+
+    if (backendChildren.length > 0 || frontendChildren.length > 0) {
+      merged.children = mergeRouteLevel(
+        backendChildren,
+        frontendChildren,
+        backendRouteNames,
+        frontendRouteMap,
+      );
+    }
+
+    return merged;
+  });
+
+  for (const frontendRoute of frontendRoutes) {
+    const routeName = getRouteName(frontendRoute);
+    // 后端路由可能已被移动到其他父级，不能按前端静态树补回旧位置。
+    if (routeName && backendRouteNames.has(routeName)) {
+      continue;
+    }
+
+    const clone = { ...frontendRoute } as RouteRecordRaw;
+    if (frontendRoute.children?.length) {
+      clone.children = mergeRouteLevel(
+        [],
+        frontendRoute.children,
+        backendRouteNames,
+        frontendRouteMap,
+      );
+    }
     result.push(clone);
-    if (clone.name && isString(clone.name)) {
-      routeMap.set(clone.name as string, clone);
-    }
-  }
-
-  for (const route of extraRoutes) {
-    if (
-      route.name &&
-      isString(route.name) &&
-      routeMap.has(route.name as string)
-    ) {
-      const existing = routeMap.get(route.name as string);
-      if (!existing) {
-        continue;
-      }
-      const existingChildren = existing.children ?? [];
-      const routeChildren = route.children ?? [];
-
-      const merged = {
-        ...route,
-        ...existing, // keep backend as base
-        meta: {
-          ...route.meta,
-          ...existing.meta, // backend meta wins on conflicts
-        },
-      } as RouteRecordRaw;
-
-      if (existingChildren.length > 0 || routeChildren.length > 0) {
-        merged.children = mergeRoutesByName(existingChildren, routeChildren);
-      }
-
-      Object.assign(existing, merged);
-    } else {
-      const clone = { ...route } as RouteRecordRaw;
-      result.push(clone);
-      if (clone.name && isString(clone.name)) {
-        routeMap.set(clone.name as string, clone);
-      }
-    }
   }
 
   return result;
 }
 
-export { generateAccessible };
+function collectRouteNames(
+  routes: RouteRecordRaw[],
+  names = new Set<string>(),
+): Set<string> {
+  for (const route of routes) {
+    const name = getRouteName(route);
+    if (name) {
+      names.add(name);
+    }
+    if (route.children?.length) {
+      collectRouteNames(route.children, names);
+    }
+  }
+  return names;
+}
+
+function collectRoutesByName(
+  routes: RouteRecordRaw[],
+  routeMap = new Map<string, RouteRecordRaw>(),
+): Map<string, RouteRecordRaw> {
+  for (const route of routes) {
+    const name = getRouteName(route);
+    if (name) {
+      routeMap.set(name, route);
+    }
+    if (route.children?.length) {
+      collectRoutesByName(route.children, routeMap);
+    }
+  }
+  return routeMap;
+}
+
+function getRouteName(route: RouteRecordRaw): string | undefined {
+  return isString(route.name) ? route.name : undefined;
+}
+
+export {
+  generateAccessible,
+  installAccessibleRoutes,
+  mergeRootChildren,
+  mergeRoutesByName,
+};

@@ -1,9 +1,17 @@
 import { request } from './client';
 
+export const ADMIN_MENU_TYPE = {
+  DIRECTORY: 0,
+  MENU: 1,
+} as const;
+
+export type AdminMenuType =
+  (typeof ADMIN_MENU_TYPE)[keyof typeof ADMIN_MENU_TYPE];
+
 export interface AdminMenu {
   id: number;
   parentId: number;
-  type: number;
+  type: AdminMenuType;
   order: number;
   title: string;
   icon: string;
@@ -18,7 +26,7 @@ export interface AdminMenu {
 
 export interface AdminMenuPayload {
   parentId?: number;
-  type?: number;
+  type?: AdminMenuType;
   order?: number;
   title: string;
   icon?: string;
@@ -26,6 +34,12 @@ export interface AdminMenuPayload {
   header?: string;
   pluginName?: string;
   uuid?: string;
+}
+
+export interface AdminMenuPosition {
+  id: number;
+  parentId: number;
+  order: number;
 }
 
 export function getAdminMenuTree() {
@@ -43,6 +57,13 @@ export function updateAdminMenu(id: number, payload: AdminMenuPayload) {
   return request<AdminMenu>(`/api/admin-menus/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminMenuLayout(items: AdminMenuPosition[]) {
+  return request<AdminMenu[]>('/api/admin-menus', {
+    method: 'PUT',
+    body: JSON.stringify({ items }),
   });
 }
 

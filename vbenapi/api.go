@@ -14,9 +14,10 @@ const (
 )
 
 type Store struct {
-	conn     db.Connection
-	configMu sync.Mutex
-	auth     *authService
+	conn           db.Connection
+	configMu       sync.Mutex
+	menuMutationMu sync.Mutex
+	auth           *authService
 }
 
 func Register(r *gin.Engine, conn db.Connection) {

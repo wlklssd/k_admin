@@ -1,6 +1,8 @@
 package vbenapi
 
 import (
+	"database/sql"
+	"fmt"
 	"net/http"
 	"sort"
 	"strings"
@@ -8,6 +10,11 @@ import (
 	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/GoAdminGroup/go-admin/modules/db/dialect"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	menuTypeDirectory int64 = iota
+	menuTypeItem
 )
 
 type managedMenu struct {
@@ -38,11 +45,22 @@ type menuPayload struct {
 	UUID       string `json:"uuid"`
 }
 
+type menuPosition struct {
+	ID       int64 `json:"id"`
+	ParentID int64 `json:"parentId"`
+	Order    int64 `json:"order"`
+}
+
+type menuLayoutPayload struct {
+	Items []menuPosition `json:"items"`
+}
+
 func registerMenuManagementRoutes(api *gin.RouterGroup, s *Store) {
 	menuGroup := api.Group("/admin-menus", s.requireAuth(), s.requireAdmin())
 	menuGroup.GET("", s.adminMenus)
 	menuGroup.GET("/tree", s.adminMenuTree)
 	menuGroup.POST("", s.createAdminMenu)
+	menuGroup.PUT("", s.updateAdminMenuLayout)
 	menuGroup.PUT("/:id", s.updateAdminMenu)
 	menuGroup.DELETE("/:id", s.deleteAdminMenu)
 }
@@ -76,16 +94,19 @@ func (s *Store) createAdminMenu(c *gin.Context) {
 		fail(c, http.StatusBadRequest, "menu title is required")
 		return
 	}
-	if req.ParentID > 0 {
-		exists, err := s.menuExists(req.ParentID)
-		if err != nil {
-			fail(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		if !exists {
-			fail(c, http.StatusBadRequest, "parent menu does not exist")
-			return
-		}
+	if err := validateMenuType(*req.Type); err != nil {
+		fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	s.menuMutationMu.Lock()
+	defer s.menuMutationMu.Unlock()
+
+	if validationMessage, err := s.validateMenuParent(req.ParentID); err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	} else if validationMessage != "" {
+		fail(c, http.StatusBadRequest, validationMessage)
+		return
 	}
 
 	id, err := db.WithDriver(s.conn).Table("goadmin_menu").Insert(dialect.H{
@@ -130,20 +151,49 @@ func (s *Store) updateAdminMenu(c *gin.Context) {
 		fail(c, http.StatusBadRequest, "menu title is required")
 		return
 	}
+	if err := validateMenuType(*req.Type); err != nil {
+		fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	if req.ParentID == menuID {
 		fail(c, http.StatusBadRequest, "parent menu cannot be itself")
 		return
 	}
-	if req.ParentID > 0 {
-		exists, err := s.menuExists(req.ParentID)
+	s.menuMutationMu.Lock()
+	defer s.menuMutationMu.Unlock()
+
+	existingMenu, err := s.loadManagedMenu(menuID)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if existingMenu.ID == 0 {
+		fail(c, http.StatusNotFound, "menu does not exist")
+		return
+	}
+
+	if *req.Type == menuTypeItem {
+		hasChildren, err := s.menuHasChildren(menuID)
 		if err != nil {
 			fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
-		if !exists {
-			fail(c, http.StatusBadRequest, "parent menu does not exist")
+		if hasChildren {
+			fail(c, http.StatusBadRequest, "menu with children must be a directory")
 			return
 		}
+	}
+
+	validationMessage, err := s.validateMenuParent(req.ParentID)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if validationMessage != "" {
+		fail(c, http.StatusBadRequest, validationMessage)
+		return
+	}
+	if req.ParentID != 0 {
 		descendant, err := s.isMenuDescendant(req.ParentID, menuID)
 		if err != nil {
 			fail(c, http.StatusInternalServerError, err.Error())
@@ -155,7 +205,7 @@ func (s *Store) updateAdminMenu(c *gin.Context) {
 		}
 	}
 
-	_, err := db.WithDriver(s.conn).
+	_, err = db.WithDriver(s.conn).
 		Table("goadmin_menu").
 		Where("id", "=", menuID).
 		Update(dialect.H{
@@ -183,11 +233,87 @@ func (s *Store) updateAdminMenu(c *gin.Context) {
 	success(c, menu)
 }
 
+func (s *Store) updateAdminMenuLayout(c *gin.Context) {
+	var req menuLayoutPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fail(c, http.StatusBadRequest, "invalid menu layout payload")
+		return
+	}
+	s.menuMutationMu.Lock()
+	defer s.menuMutationMu.Unlock()
+
+	var validationErr error
+	_, err := db.WithDriver(s.conn).WithTransaction(func(tx *sql.Tx) (error, map[string]interface{}) {
+		menus, loadErr := s.loadManagedMenusWithTx(tx)
+		if loadErr != nil {
+			return loadErr, nil
+		}
+		if validationErr = validateMenuPositions(menus, req.Items); validationErr != nil {
+			return validationErr, nil
+		}
+
+		current := make(map[int64]managedMenu, len(menus))
+		for _, menu := range menus {
+			current[menu.ID] = menu
+		}
+		layoutChanged := false
+		for _, item := range req.Items {
+			menu := current[item.ID]
+			if menu.ParentID != item.ParentID || menu.Order != item.Order {
+				layoutChanged = true
+				break
+			}
+		}
+		if !layoutChanged {
+			return nil, nil
+		}
+
+		// 布局是完整快照。有变化时覆盖所有行，并固定锁顺序，避免两个并发请求
+		// 分别只写“变化行”后拼成一个从未通过校验的层级（例如 A<->B 环）。
+		positions := append([]menuPosition(nil), req.Items...)
+		sort.Slice(positions, func(i, j int) bool { return positions[i].ID < positions[j].ID })
+		updatedAt := nowString()
+		for _, item := range positions {
+			_, updateErr := db.WithDriver(s.conn).
+				WithTx(tx).
+				Table("goadmin_menu").
+				Where("id", "=", item.ID).
+				Update(dialect.H{
+					"parent_id":  item.ParentID,
+					"order":      item.Order,
+					"updated_at": updatedAt,
+				})
+			if updateErr != nil {
+				return updateErr, nil
+			}
+		}
+		return nil, nil
+	})
+	if err != nil {
+		if validationErr != nil {
+			fail(c, http.StatusBadRequest, validationErr.Error())
+			return
+		}
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	menus, err := s.loadManagedMenus()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, buildManagedMenuTree(menus, 0))
+}
+
 func (s *Store) deleteAdminMenu(c *gin.Context) {
 	menuID, ok := pathID(c)
 	if !ok {
 		return
 	}
+	s.menuMutationMu.Lock()
+	defer s.menuMutationMu.Unlock()
+
 	hasChildren, err := s.menuHasChildren(menuID)
 	if err != nil {
 		fail(c, http.StatusInternalServerError, err.Error())
@@ -214,7 +340,22 @@ func (s *Store) loadManagedMenus() ([]managedMenu, error) {
 	if err != nil {
 		return nil, err
 	}
+	return managedMenusFromRows(rows), nil
+}
 
+func (s *Store) loadManagedMenusWithTx(tx *sql.Tx) ([]managedMenu, error) {
+	rows, err := db.WithDriver(s.conn).
+		WithTx(tx).
+		Table("goadmin_menu").
+		OrderBy("order", "asc").
+		All()
+	if err != nil {
+		return nil, err
+	}
+	return managedMenusFromRows(rows), nil
+}
+
+func managedMenusFromRows(rows []map[string]interface{}) []managedMenu {
 	menus := make([]managedMenu, 0, len(rows))
 	for _, row := range rows {
 		menus = append(menus, managedMenuFromRow(row))
@@ -225,7 +366,7 @@ func (s *Store) loadManagedMenus() ([]managedMenu, error) {
 		}
 		return menus[i].Order < menus[j].Order
 	})
-	return menus, nil
+	return menus
 }
 
 func (s *Store) loadManagedMenu(id int64) (managedMenu, error) {
@@ -280,17 +421,106 @@ func normalizeMenuPayload(req *menuPayload) {
 	req.UUID = strings.TrimSpace(req.UUID)
 	// type 未传时默认为菜单(1)；显式传 0 表示目录/分组，需原样保留。
 	if req.Type == nil {
-		t := int64(1)
+		t := menuTypeItem
 		req.Type = &t
 	}
 }
 
-func (s *Store) menuExists(id int64) (bool, error) {
-	rows, err := db.WithDriver(s.conn).Table("goadmin_menu").Where("id", "=", id).All()
-	if err != nil {
-		return false, err
+func validateMenuType(menuType int64) error {
+	if menuType != menuTypeDirectory && menuType != menuTypeItem {
+		return fmt.Errorf("menu type must be directory or menu")
 	}
-	return len(rows) > 0, nil
+	return nil
+}
+
+func validateMenuPositions(menus []managedMenu, positions []menuPosition) error {
+	if len(positions) != len(menus) {
+		return fmt.Errorf("menu layout payload must contain all menus")
+	}
+
+	menuByID := make(map[int64]managedMenu, len(menus))
+	for _, menu := range menus {
+		if err := validateMenuType(menu.Type); err != nil {
+			return fmt.Errorf("menu %d has an invalid type", menu.ID)
+		}
+		menuByID[menu.ID] = menu
+	}
+	parentByID := make(map[int64]int64, len(positions))
+	siblingOrders := make(map[string]struct{}, len(positions))
+	ordersByParent := make(map[int64][]int64)
+	for _, position := range positions {
+		if _, exists := menuByID[position.ID]; !exists {
+			return fmt.Errorf("menu %d does not exist", position.ID)
+		}
+		if _, duplicate := parentByID[position.ID]; duplicate {
+			return fmt.Errorf("menu %d is duplicated", position.ID)
+		}
+		if position.ParentID == position.ID {
+			return fmt.Errorf("menu %d cannot be its own parent", position.ID)
+		}
+		if position.ParentID != 0 {
+			parent, exists := menuByID[position.ParentID]
+			if !exists {
+				return fmt.Errorf("parent menu %d does not exist", position.ParentID)
+			}
+			if parent.Type != menuTypeDirectory {
+				return fmt.Errorf("parent menu %d must be a directory", position.ParentID)
+			}
+		}
+		if position.Order < 0 {
+			return fmt.Errorf("menu %d has an invalid order", position.ID)
+		}
+
+		orderKey := fmt.Sprintf("%d:%d", position.ParentID, position.Order)
+		if _, duplicate := siblingOrders[orderKey]; duplicate {
+			return fmt.Errorf("menus under parent %d have duplicate orders", position.ParentID)
+		}
+		siblingOrders[orderKey] = struct{}{}
+		ordersByParent[position.ParentID] = append(
+			ordersByParent[position.ParentID],
+			position.Order,
+		)
+		parentByID[position.ID] = position.ParentID
+	}
+	for parentID, orders := range ordersByParent {
+		sort.Slice(orders, func(i, j int) bool { return orders[i] < orders[j] })
+		for index, order := range orders {
+			if order != int64(index) {
+				return fmt.Errorf("menus under parent %d must have continuous orders", parentID)
+			}
+		}
+	}
+
+	for menuID := range menuByID {
+		if _, exists := parentByID[menuID]; !exists {
+			return fmt.Errorf("menu %d is missing", menuID)
+		}
+		visited := make(map[int64]struct{})
+		for current := menuID; current != 0; current = parentByID[current] {
+			if _, cycle := visited[current]; cycle {
+				return fmt.Errorf("menu hierarchy contains a cycle")
+			}
+			visited[current] = struct{}{}
+		}
+	}
+	return nil
+}
+
+func (s *Store) validateMenuParent(parentID int64) (string, error) {
+	if parentID == 0 {
+		return "", nil
+	}
+	parent, err := s.loadManagedMenu(parentID)
+	if err != nil {
+		return "", err
+	}
+	if parent.ID == 0 {
+		return "parent menu does not exist", nil
+	}
+	if parent.Type != menuTypeDirectory {
+		return "parent menu must be a directory", nil
+	}
+	return "", nil
 }
 
 func (s *Store) menuHasChildren(id int64) (bool, error) {
