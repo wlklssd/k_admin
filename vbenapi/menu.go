@@ -2,6 +2,7 @@ package vbenapi
 
 import (
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 type menuItem struct {
 	ID       int64
 	ParentID int64
+	Type     int64
 	Order    int64
 	Title    string
 	Icon     string
@@ -124,34 +126,94 @@ func (s *Store) menus(c *gin.Context) {
 		return
 	}
 
-	allowed := make(map[int64]bool)
-	if user.IsSuperAdmin() || isAdminUser(user.UserName) {
-		for _, row := range rows {
-			allowed[toInt64(row["id"])] = true
-		}
-	} else {
-		for _, id := range user.MenuIds {
-			allowed[id] = true
-		}
-	}
-
 	items := make([]menuItem, 0, len(rows))
 	for _, row := range rows {
-		id := toInt64(row["id"])
-		if !allowed[id] {
-			continue
-		}
 		items = append(items, menuItem{
-			ID:       id,
+			ID:       toInt64(row["id"]),
 			ParentID: toInt64(row["parent_id"]),
+			Type:     toInt64(row["type"]),
 			Order:    toInt64(row["order"]),
 			Title:    toString(row["title"]),
 			Icon:     toString(row["icon"]),
 			URI:      toString(row["uri"]),
 		})
 	}
+	sortMenuItems(items)
 
-	success(c, buildMenuTree(items, 0))
+	allowed := make(map[int64]bool)
+	if user.IsSuperAdmin() || isAdminUser(user.UserName) {
+		for _, item := range items {
+			allowed[item.ID] = true
+		}
+	} else {
+		directlyAllowed, loadErr := s.loadAllowedMenuIDsForRoles(user.GetAllRoleId())
+		if loadErr != nil {
+			fail(c, http.StatusInternalServerError, loadErr.Error())
+			return
+		}
+		allowed = expandAllowedMenuAncestors(items, directlyAllowed)
+	}
+
+	visibleItems := make([]menuItem, 0, len(items))
+	for _, item := range items {
+		if !allowed[item.ID] {
+			continue
+		}
+		visibleItems = append(visibleItems, item)
+	}
+
+	success(c, buildMenuTree(visibleItems, 0))
+}
+
+func (s *Store) loadAllowedMenuIDsForRoles(roleIDs []interface{}) (map[int64]bool, error) {
+	allowed := make(map[int64]bool)
+	if len(roleIDs) == 0 {
+		return allowed, nil
+	}
+	rows, err := db.WithDriver(s.conn).
+		Table("goadmin_role_menu").
+		WhereIn("role_id", roleIDs).
+		Select("menu_id").
+		All()
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		allowed[toInt64(row["menu_id"])] = true
+	}
+	return allowed, nil
+}
+
+func expandAllowedMenuAncestors(items []menuItem, directlyAllowed map[int64]bool) map[int64]bool {
+	parentByID := make(map[int64]int64, len(items))
+	for _, item := range items {
+		parentByID[item.ID] = item.ParentID
+	}
+
+	allowed := make(map[int64]bool, len(directlyAllowed))
+	for menuID := range directlyAllowed {
+		visited := make(map[int64]bool)
+		for current := menuID; current != 0 && !visited[current]; current = parentByID[current] {
+			visited[current] = true
+			if _, exists := parentByID[current]; !exists {
+				break
+			}
+			allowed[current] = true
+		}
+	}
+	return allowed
+}
+
+func sortMenuItems(items []menuItem) {
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].ParentID != items[j].ParentID {
+			return items[i].ParentID < items[j].ParentID
+		}
+		if items[i].Order != items[j].Order {
+			return items[i].Order < items[j].Order
+		}
+		return items[i].ID < items[j].ID
+	})
 }
 
 func buildMenuTree(items []menuItem, parentID int64) []vbenMenu {
@@ -204,8 +266,10 @@ func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
 		Children: children,
 	}
 
-	if len(children) > 0 {
-		menu.Redirect = children[0].Path
+	if m.Type == menuTypeDirectory || len(children) > 0 {
+		if len(children) > 0 {
+			menu.Redirect = children[0].Path
+		}
 		return menu
 	}
 

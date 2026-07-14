@@ -10,7 +10,7 @@
           <ApartmentOutlined />
           菜单布局
         </a-button>
-        <a-button :loading="loading" @click="loadMenus">
+        <a-button :loading="loading" @click="refreshMenuData">
           <ReloadOutlined />
           刷新
         </a-button>
@@ -258,6 +258,7 @@ const formRef = ref<FormInstance>();
 const expandedRowKeys = ref<number[]>([]);
 const accessStore = useAccessStore();
 const userStore = useUserStore();
+let navigationRefreshQueue: Promise<void> = Promise.resolve();
 
 const filters = reactive<{
   keyword: string;
@@ -328,17 +329,25 @@ onMounted(() => {
   void loadMenus();
 });
 
-async function loadMenus() {
+async function loadMenus(): Promise<boolean> {
   loading.value = true;
   try {
     menus.value = await getAdminMenuTree();
     // a-table 的 defaultExpandAllRows 仅在挂载时生效，此时数据尚未返回；
     // 改为受控展开：数据到达后自动展开所有含子菜单的节点，保证子菜单可见。
     expandedRowKeys.value = collectExpandableKeys(menus.value);
+    return true;
   } catch (error) {
     message.error(error instanceof Error ? error.message : '加载菜单失败');
+    return false;
   } finally {
     loading.value = false;
+  }
+}
+
+async function refreshMenuData() {
+  if (await loadMenus()) {
+    await queueNavigationRefresh();
   }
 }
 
@@ -382,7 +391,7 @@ async function submitForm() {
     drawerOpen.value = false;
     message.success('菜单已保存');
     await loadMenus();
-    await refreshNavigationMenusSafely();
+    await queueNavigationRefresh();
   } catch (error) {
     message.error(error instanceof Error ? error.message : '保存菜单失败');
   } finally {
@@ -395,7 +404,7 @@ async function removeMenu(record: AdminMenu) {
     await deleteAdminMenu(record.id);
     message.success('菜单已删除');
     await loadMenus();
-    await refreshNavigationMenusSafely();
+    await queueNavigationRefresh();
   } catch (error) {
     message.error(error instanceof Error ? error.message : '删除菜单失败');
   }
@@ -403,17 +412,30 @@ async function removeMenu(record: AdminMenu) {
 
 async function saveMenuLayout(items: AdminMenuPosition[]) {
   layoutSaving.value = true;
+  let saved = false;
   try {
     menus.value = await updateAdminMenuLayout(items);
     expandedRowKeys.value = collectExpandableKeys(menus.value);
     layoutEditorOpen.value = false;
     message.success('菜单布局已保存');
-    await refreshNavigationMenusSafely();
+    saved = true;
   } catch (error) {
     message.error(error instanceof Error ? error.message : '保存菜单布局失败');
   } finally {
     layoutSaving.value = false;
   }
+
+  if (saved) {
+    void queueNavigationRefresh();
+  }
+}
+
+function queueNavigationRefresh(): Promise<void> {
+  navigationRefreshQueue = navigationRefreshQueue.then(
+    refreshNavigationMenusSafely,
+    refreshNavigationMenusSafely,
+  );
+  return navigationRefreshQueue;
 }
 
 async function refreshNavigationMenusSafely() {

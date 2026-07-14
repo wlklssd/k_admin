@@ -60,11 +60,18 @@ export function updateAdminMenu(id: number, payload: AdminMenuPayload) {
   });
 }
 
-export function updateAdminMenuLayout(items: AdminMenuPosition[]) {
-  return request<AdminMenu[]>('/api/admin-menus', {
+export async function updateAdminMenuLayout(
+  items: AdminMenuPosition[],
+): Promise<AdminMenu[]> {
+  const result = await request<AdminMenu[] | boolean>('/api/admin-menus', {
     method: 'PUT',
     body: JSON.stringify({ items }),
   });
+
+  // Older API versions return true after persisting the layout. Always expose
+  // the current tree to callers so a mixed frontend/backend deployment cannot
+  // corrupt the reactive menu state with a boolean value.
+  return Array.isArray(result) ? result : getAdminMenuTree();
 }
 
 export function deleteAdminMenu(id: number) {

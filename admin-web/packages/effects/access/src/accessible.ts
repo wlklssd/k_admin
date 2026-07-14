@@ -269,6 +269,10 @@ function mergeRouteLevel(
     }
 
     const clone = { ...frontendRoute } as RouteRecordRaw;
+    clone.meta = {
+      ...frontendRoute.meta,
+      hideInMenu: true,
+    };
     if (frontendRoute.children?.length) {
       clone.children = mergeRouteLevel(
         [],

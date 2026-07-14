@@ -74,7 +74,7 @@ func (s *Store) currentUser(c *gin.Context) (models.UserModel, bool) {
 	}
 
 	user = user.WithRoles().WithPermissions().WithMenus()
-	return user, user.HasMenu() || isAdminUser(user.UserName)
+	return user, true
 }
 
 func (s *Store) userAccountEnabled(userID int64) (bool, error) {

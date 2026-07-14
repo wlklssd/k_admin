@@ -69,7 +69,7 @@ describe('mergeRoutesByName', () => {
     expect(kadminRoute?.children).toEqual([]);
   });
 
-  it('keeps backend order and frontend-only routes without duplicating moved routes', () => {
+  it('keeps backend order and hides frontend-only routes', () => {
     const component = () => Promise.resolve({});
     const backendRoutes = [
       {
@@ -117,6 +117,10 @@ describe('mergeRoutesByName', () => {
       component,
       name: 'Moved',
       path: '/moved',
+    });
+    expect(result[2]).toMatchObject({
+      name: 'FrontendOnly',
+      meta: { hideInMenu: true },
     });
   });
 
