@@ -133,7 +133,7 @@ type RouteRecordStringComponent<T = string> = Omit<
   'children' | 'component'
 > & {
   children?: RouteRecordStringComponent<T>[];
-  component: T;
+  component?: T;
 };
 
 type ComponentRecordType = Record<string, () => Promise<Component>>;

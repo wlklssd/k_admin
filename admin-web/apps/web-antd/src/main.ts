@@ -1,7 +1,11 @@
-import { initPreferences } from '@vben/preferences';
+import { initPreferences, updatePreferences } from '@vben/preferences';
 import { unmountGlobalLoading } from '@vben/utils';
 
-import { overridesPreferences, preferencesExtension } from './preferences';
+import {
+  KADMIN_ACCESS_MODE,
+  overridesPreferences,
+  preferencesExtension,
+} from './preferences';
 
 /**
  * 应用初始化完成之后再进行页面加载渲染
@@ -19,6 +23,8 @@ async function initApplication() {
     namespace,
     overrides: overridesPreferences,
   });
+  // accessMode 是应用架构配置，不允许旧的浏览器偏好缓存切回静态前端路由。
+  updatePreferences({ app: { accessMode: KADMIN_ACCESS_MODE } });
 
   // 启动应用并挂载
   // vue应用主要逻辑及视图

@@ -38,6 +38,49 @@ func TestSortMenuItemsUsesStableHierarchyOrder(t *testing.T) {
 	}
 }
 
+func TestBuildMenuTreePreservesSortedHierarchyOrder(t *testing.T) {
+	items := []menuItem{
+		{ID: 22, ParentID: 20, Type: menuTypeItem, Order: 0, Title: "Workspace", URI: "/dashboard/workspace"},
+		{ID: 13, ParentID: 10, Type: menuTypeItem, Order: 1, Title: "Menus", URI: "/kadmin/menus"},
+		{ID: 20, ParentID: 0, Type: menuTypeDirectory, Order: 0, Title: "Dashboard", URI: "/dashboard"},
+		{ID: 11, ParentID: 10, Type: menuTypeItem, Order: 2, Title: "Users", URI: "/kadmin/users"},
+		{ID: 10, ParentID: 0, Type: menuTypeDirectory, Order: 1, Title: "KAdmin", URI: "/kadmin"},
+		{ID: 21, ParentID: 20, Type: menuTypeItem, Order: 1, Title: "Analytics", URI: "/dashboard/analytics"},
+		{ID: 12, ParentID: 10, Type: menuTypeItem, Order: 0, Title: "RBAC", URI: "/kadmin/rbac"},
+	}
+
+	sortMenuItems(items)
+	tree := buildMenuTree(items, 0)
+
+	assertOrder := func(label string, menus []vbenMenu, wantIDs, wantOrders []int64) {
+		t.Helper()
+		if len(menus) != len(wantIDs) {
+			t.Fatalf("expected %d %s menus, got %d", len(wantIDs), label, len(menus))
+		}
+		for index, wantID := range wantIDs {
+			if menus[index].ID != wantID {
+				t.Fatalf("expected %s menu id %d at index %d, got %d", label, wantID, index, menus[index].ID)
+			}
+			if got := menus[index].Meta["order"]; got != wantOrders[index] {
+				t.Fatalf("expected %s menu %d meta.order %d, got %v", label, wantID, wantOrders[index], got)
+			}
+		}
+	}
+
+	assertOrder("root", tree, []int64{20, 10}, []int64{0, 1})
+	assertOrder("dashboard child", tree[0].Children, []int64{22, 21}, []int64{0, 1})
+	assertOrder("kadmin child", tree[1].Children, []int64{12, 13, 11}, []int64{0, 1, 2})
+	if tree[0].Children[1].Meta["affixTab"] != true {
+		t.Fatal("expected analytics route metadata to keep affixTab")
+	}
+
+	for _, root := range tree {
+		if root.Redirect != root.Children[0].Path {
+			t.Fatalf("expected menu %d redirect %q, got %q", root.ID, root.Children[0].Path, root.Redirect)
+		}
+	}
+}
+
 func TestDirectoryWithoutChildrenDoesNotBecomePage(t *testing.T) {
 	menu := menuItem{
 		ID:    1,

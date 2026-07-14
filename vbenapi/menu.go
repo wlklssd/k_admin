@@ -36,6 +36,7 @@ type menuRouteBinding struct {
 	Path      string
 	Component string
 	Icon      string
+	Meta      map[string]interface{}
 }
 
 var vbenMenuRouteBindings = map[string]menuRouteBinding{
@@ -54,6 +55,9 @@ var vbenMenuRouteBindings = map[string]menuRouteBinding{
 		Path:      "/dashboard/analytics",
 		Component: "/dashboard/analytics/index",
 		Icon:      "lucide:area-chart",
+		Meta: map[string]interface{}{
+			"affixTab": true,
+		},
 	},
 	"/dashboard/workspace": {
 		Name:      "Workspace",
@@ -240,6 +244,14 @@ func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
 	meta := map[string]interface{}{
 		"title": m.Title,
 		"order": m.Order,
+	}
+	if hasBinding {
+		for key, value := range binding.Meta {
+			if key == "order" || key == "title" {
+				continue
+			}
+			meta[key] = value
+		}
 	}
 	icon := normalizeMenuIcon(m.Icon)
 	if icon == "" && hasBinding {

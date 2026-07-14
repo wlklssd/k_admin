@@ -225,6 +225,40 @@ describe('generateMenus', () => {
     expect(menus).toEqual(expectedMenus);
   });
 
+  it('should recursively sort nested menus and preserve order zero', () => {
+    const nestedRoutes: any = [
+      {
+        children: [
+          {
+            meta: { order: 1, title: '用户管理' },
+            name: 'users',
+            path: 'users',
+          },
+          {
+            meta: { order: 0, title: '菜单管理' },
+            name: 'menus',
+            path: 'menus',
+          },
+        ],
+        meta: { order: 0, title: 'KAdmin' },
+        name: 'kadmin',
+        path: '/kadmin',
+      },
+    ];
+    const nestedRouter = createRouter({
+      history: createWebHistory(),
+      routes: nestedRoutes,
+    });
+
+    const menus = generateMenus(nestedRoutes, nestedRouter);
+
+    expect(menus[0]?.children?.map((menu) => menu.name)).toEqual([
+      '菜单管理',
+      '用户管理',
+    ]);
+    expect(menus[0]?.children?.map((menu) => menu.order)).toEqual([0, 1]);
+  });
+
   it('should handle empty routes', async () => {
     const emptyRoutes: any[] = [];
     const menus = generateMenus(emptyRoutes, router);

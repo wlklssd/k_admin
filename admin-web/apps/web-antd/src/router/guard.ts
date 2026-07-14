@@ -5,10 +5,11 @@ import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { startProgress, stopProgress } from '@vben/utils';
 
-import { accessRoutes, coreRouteNames } from '#/router/routes';
+import { coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
 
-import { generateAccess } from './access';
+import { refreshNavigation } from './access';
+import { resolveAccessibleHomePath } from './navigation-home';
 
 /**
  * 通用守卫配置
@@ -96,24 +97,25 @@ function setupAccessGuard(router: Router) {
     const userRoles = userInfo.roles ?? [];
 
     // 生成菜单和路由
-    const { accessibleMenus, accessibleRoutes } = await generateAccess({
+    const { accessibleMenus } = await refreshNavigation({
       roles: userRoles,
       router,
-      // 则会在菜单中显示，但是访问会被重定向到403
-      routes: accessRoutes,
     });
-
-    // 保存菜单信息和路由信息
-    accessStore.setAccessMenus(accessibleMenus);
-    accessStore.setAccessRoutes(accessibleRoutes);
-    accessStore.setIsAccessChecked(true);
-    const redirectPath = (from.query.redirect ??
-      (to.path === preferences.app.defaultHomePath
-        ? userInfo.homePath || preferences.app.defaultHomePath
-        : to.fullPath)) as string;
+    const requestedPath = decodeURIComponent(
+      (from.query.redirect ?? to.fullPath) as string,
+    );
+    const preferredHomePath =
+      userInfo.homePath || preferences.app.defaultHomePath;
+    const requestedPathname = requestedPath.split(/[?#]/, 1)[0];
+    const isHomeNavigation =
+      requestedPathname === preferredHomePath ||
+      requestedPathname === preferences.app.defaultHomePath;
+    const redirectPath = isHomeNavigation
+      ? resolveAccessibleHomePath(router, preferredHomePath, accessibleMenus)
+      : requestedPath;
 
     return {
-      ...router.resolve(decodeURIComponent(redirectPath)),
+      ...router.resolve(redirectPath),
       replace: true,
     };
   });

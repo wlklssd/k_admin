@@ -1,11 +1,13 @@
 import type {
   GenerateMenuAndRoutesOptions,
   RouteRecordRaw,
+  RouteRecordStringComponent,
 } from '@vben/types';
 
 import { describe, expect, it } from 'vitest';
 
 import {
+  generateAccessible,
   installAccessibleRoutes,
   mergeRootChildren,
   mergeRoutesByName,
@@ -232,9 +234,9 @@ describe('installAccessibleRoutes', () => {
       'Constant',
       'Parent',
     ]);
-    expect(getRoot().children?.[1]?.children?.map((route) => route.name)).toEqual([
-      'Moved',
-    ]);
+    expect(
+      getRoot().children?.[1]?.children?.map((route) => route.name),
+    ).toEqual(['Moved']);
 
     installAccessibleRoutes(router, [movedRoute]);
     expect(getRoot().children?.map((route) => route.name)).toEqual([
@@ -258,6 +260,177 @@ describe('installAccessibleRoutes', () => {
 
     installAccessibleRoutes(router, []);
     expect(routes.some((route) => route.name === 'Standalone')).toBe(false);
+  });
+});
+
+describe('backend navigation snapshots', () => {
+  it('replaces database order and parent relationships without static routes', async () => {
+    const snapshots: RouteRecordStringComponent[][] = [
+      [
+        {
+          meta: { order: 0, title: 'Dashboard' },
+          name: 'Dashboard',
+          path: '/dashboard',
+          children: [
+            {
+              component: '/dashboard/analytics/index',
+              meta: { order: 0, title: '分析页' },
+              name: 'Analytics',
+              path: '/dashboard/analytics',
+            },
+          ],
+        },
+        {
+          meta: { order: 1, title: 'KAdmin' },
+          name: 'KAdmin',
+          path: '/kadmin',
+          children: [
+            {
+              component: '/kadmin/components/MenuManagementView',
+              meta: { order: 0, title: '菜单管理' },
+              name: 'KAdminMenus',
+              path: '/kadmin/menus',
+            },
+            {
+              component: '/kadmin/components/UserManagementView',
+              meta: { order: 1, title: '用户管理' },
+              name: 'KAdminUsers',
+              path: '/kadmin/users',
+            },
+          ],
+        },
+      ],
+      [
+        {
+          meta: { order: 0, title: 'Dashboard' },
+          name: 'Dashboard',
+          path: '/dashboard',
+          children: [
+            {
+              component: '/dashboard/analytics/index',
+              meta: { order: 0, title: '分析页' },
+              name: 'Analytics',
+              path: '/dashboard/analytics',
+            },
+          ],
+        },
+        {
+          meta: { order: 1, title: 'KAdmin' },
+          name: 'KAdmin',
+          path: '/kadmin',
+          children: [
+            {
+              component: '/kadmin/components/UserManagementView',
+              meta: { order: 0, title: '用户管理' },
+              name: 'KAdminUsers',
+              path: '/kadmin/users',
+            },
+            {
+              component: '/kadmin/components/MenuManagementView',
+              meta: { order: 1, title: '菜单管理' },
+              name: 'KAdminMenus',
+              path: '/kadmin/menus',
+            },
+          ],
+        },
+      ],
+      [
+        {
+          meta: { order: 0, title: 'Dashboard' },
+          name: 'Dashboard',
+          path: '/dashboard',
+          children: [
+            {
+              component: '/dashboard/analytics/index',
+              meta: { order: 0, title: '分析页' },
+              name: 'Analytics',
+              path: '/dashboard/analytics',
+            },
+            {
+              component: '/kadmin/components/MenuManagementView',
+              meta: { order: 1, title: '菜单管理' },
+              name: 'KAdminMenus',
+              path: '/kadmin/menus',
+            },
+          ],
+        },
+        {
+          meta: { order: 1, title: 'KAdmin' },
+          name: 'KAdmin',
+          path: '/kadmin',
+          children: [
+            {
+              component: '/kadmin/components/UserManagementView',
+              meta: { order: 0, title: '用户管理' },
+              name: 'KAdminUsers',
+              path: '/kadmin/users',
+            },
+          ],
+        },
+      ],
+    ];
+    let snapshotIndex = 0;
+    const { getRoot, router } = createFakeRouter();
+    const analyticsComponent = () => Promise.resolve({});
+    const menuComponent = () => Promise.resolve({});
+    const userComponent = () => Promise.resolve({});
+    const options: GenerateMenuAndRoutesOptions = {
+      fetchMenuListAsync: async () => snapshots[snapshotIndex++] ?? [],
+      pageMap: {
+        '../views/dashboard/analytics/index.vue': analyticsComponent,
+        '../views/kadmin/components/MenuManagementView.vue': menuComponent,
+        '../views/kadmin/components/UserManagementView.vue': userComponent,
+      },
+      router,
+      routes: [
+        {
+          meta: { order: -1, title: '静态菜单' },
+          name: 'StaticMenu',
+          path: '/static-menu',
+        },
+      ],
+    };
+
+    const first = await generateAccessible('backend', options);
+    expect(
+      first.accessibleMenus[1]?.children?.map((menu) => menu.name),
+    ).toEqual(['菜单管理', '用户管理']);
+
+    const second = await generateAccessible('backend', options);
+    expect(
+      second.accessibleMenus[1]?.children?.map((menu) => menu.name),
+    ).toEqual(['用户管理', '菜单管理']);
+    expect(
+      second.accessibleRoutes[1]?.children?.map((route) => route.name),
+    ).toEqual(['KAdminUsers', 'KAdminMenus']);
+    expect(second.accessibleRoutes[1]?.children?.[1]?.component).toBe(
+      menuComponent,
+    );
+    expect(
+      getRoot().children?.[1]?.children?.map((route) => route.name),
+    ).toEqual(['KAdminUsers', 'KAdminMenus']);
+
+    const third = await generateAccessible('backend', options);
+    expect(
+      third.accessibleMenus[0]?.children?.map((menu) => menu.name),
+    ).toEqual(['分析页', '菜单管理']);
+    expect(
+      third.accessibleMenus[1]?.children?.map((menu) => menu.name),
+    ).toEqual(['用户管理']);
+    expect(third.accessibleRoutes.map((route) => route.name)).toEqual([
+      'Dashboard',
+      'KAdmin',
+    ]);
+    expect(getRoot().children?.map((route) => route.name)).toEqual([
+      'Dashboard',
+      'KAdmin',
+    ]);
+    expect(
+      getRoot().children?.[0]?.children?.map((route) => route.name),
+    ).toEqual(['Analytics', 'KAdminMenus']);
+    expect(
+      getRoot().children?.[1]?.children?.map((route) => route.name),
+    ).toEqual(['KAdminUsers']);
   });
 });
 

@@ -272,6 +272,7 @@ function mergeRouteLevel(
     clone.meta = {
       ...frontendRoute.meta,
       hideInMenu: true,
+      title: frontendRoute.meta?.title ?? routeName ?? '',
     };
     if (frontendRoute.children?.length) {
       clone.children = mergeRouteLevel(

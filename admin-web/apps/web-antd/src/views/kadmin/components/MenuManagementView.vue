@@ -217,7 +217,7 @@ import type {
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { IconifyIcon } from '@vben/icons';
-import { useAccessStore, useUserStore } from '@vben/stores';
+import { useUserStore } from '@vben/stores';
 
 import {
   ApartmentOutlined,
@@ -237,13 +237,9 @@ import {
   updateAdminMenuLayout,
 } from '#/api/kadmin/menus';
 import { router } from '#/router';
-import { generateAccess } from '#/router/access';
-import { accessRoutes } from '#/router/routes';
+import { refreshNavigation } from '#/router/access';
 
-import {
-  canSetMenuAsItem,
-  filterMenuParentOptions,
-} from './menu-sort';
+import { canSetMenuAsItem, filterMenuParentOptions } from './menu-sort';
 import MenuSorter from './MenuSorter.vue';
 
 const loading = ref(false);
@@ -256,7 +252,6 @@ const menus = ref<AdminMenu[]>([]);
 const editingMenu = ref<AdminMenu | null>(null);
 const formRef = ref<FormInstance>();
 const expandedRowKeys = ref<number[]>([]);
-const accessStore = useAccessStore();
 const userStore = useUserStore();
 let navigationRefreshQueue: Promise<void> = Promise.resolve();
 
@@ -447,14 +442,10 @@ async function refreshNavigationMenusSafely() {
 }
 
 async function refreshNavigationMenus() {
-  const { accessibleMenus, accessibleRoutes } = await generateAccess({
+  await refreshNavigation({
     roles: userStore.userInfo?.roles ?? [],
     router,
-    routes: accessRoutes,
   });
-  accessStore.setAccessMenus(accessibleMenus);
-  accessStore.setAccessRoutes(accessibleRoutes);
-  accessStore.setIsAccessChecked(true);
   const currentRoute = router.currentRoute.value;
   await router.replace({
     force: true,
@@ -495,10 +486,7 @@ function validateParentMenu(_rule: unknown, value: unknown): Promise<void> {
   return Promise.resolve();
 }
 
-function validateMenuTypeChange(
-  _rule: unknown,
-  value: unknown,
-): Promise<void> {
+function validateMenuTypeChange(_rule: unknown, value: unknown): Promise<void> {
   if (
     Number(value) === ADMIN_MENU_TYPE.MENU &&
     !canSetMenuAsItem(editingMenu.value)

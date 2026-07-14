@@ -11,6 +11,9 @@ interface WebAntdPreferencesExtension {
   tenantMode: 'multi' | 'single';
 }
 
+/** KAdmin 的业务路由和导航统一由服务端菜单接口生成。 */
+export const KADMIN_ACCESS_MODE = 'backend' as const;
+
 /**
  * @description 项目配置文件
  * 只需要覆盖项目中的一部分配置，不需要的配置不用覆盖，会自动使用默认配置
@@ -19,7 +22,7 @@ interface WebAntdPreferencesExtension {
 export const overridesPreferences = defineOverridesPreferences({
   // overrides
   app: {
-    accessMode: 'mixed',
+    accessMode: KADMIN_ACCESS_MODE,
     defaultHomePath: '/dashboard/workspace',
     name: import.meta.env.VITE_APP_TITLE,
   },
