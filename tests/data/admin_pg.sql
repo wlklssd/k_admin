@@ -428,10 +428,10 @@ ALTER TABLE public.users OWNER TO postgres;
 --
 
 COPY public.goadmin_menu (id, parent_id, type, "order", title, plugin_name, header, icon, uri, created_at, updated_at) FROM stdin;
-1	0	1	1	Dashboard		\N	lucide:layout-dashboard	/dashboard	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	0	0	1	Dashboard		\N	lucide:layout-dashboard	/dashboard	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	1	1	1	分析页		\N	lucide:area-chart	/dashboard/analytics	2019-09-10 00:00:00	2019-09-10 00:00:00
 3	1	1	2	工作台		\N	carbon:workspace	/dashboard/workspace	2019-09-10 00:00:00	2019-09-10 00:00:00
-4	0	1	10	KAdmin 管理		\N	lucide:settings-2	/kadmin	2019-09-10 00:00:00	2019-09-10 00:00:00
+4	0	0	10	KAdmin 管理		\N	lucide:settings-2	/kadmin	2019-09-10 00:00:00	2019-09-10 00:00:00
 5	4	1	1	用户管理		\N	lucide:users	/kadmin/users	2019-09-10 00:00:00	2019-09-10 00:00:00
 6	4	1	2	权限管理		\N	lucide:shield-check	/kadmin/rbac	2019-09-10 00:00:00	2019-09-10 00:00:00
 7	4	1	3	菜单管理		\N	lucide:menu	/kadmin/menus	2019-09-10 00:00:00	2019-09-10 00:00:00
@@ -919,4 +919,3 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 --
 -- PostgreSQL database dump complete
 --
-

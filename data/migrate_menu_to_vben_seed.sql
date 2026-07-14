@@ -14,14 +14,14 @@ DELETE FROM goadmin_menu;
 -- 3. 序列回到起点，使用干净连续的 id
 SELECT setval('goadmin_menu_myid_seq', 1, false);
 
--- 4. 写入当前菜单目录（parent_id 指向新 id；type=1 菜单；icon/uri 与 menu.go 绑定一致）
+-- 4. 写入当前菜单目录（type=0 目录/分组，type=1 菜单；icon/uri 与 menu.go 绑定一致）
 INSERT INTO goadmin_menu
     (id, parent_id, type, "order", title, header, icon, uri, uuid, plugin_name, created_at, updated_at)
 VALUES
-    (1,  0, 1,  1, 'Dashboard',  NULL, 'lucide:layout-dashboard',  '/dashboard',            NULL, '', now(), now()),
+    (1,  0, 0,  1, 'Dashboard',  NULL, 'lucide:layout-dashboard',  '/dashboard',            NULL, '', now(), now()),
     (2,  1, 1,  1, '分析页',      NULL, 'lucide:area-chart',        '/dashboard/analytics',  NULL, '', now(), now()),
     (3,  1, 1,  2, '工作台',      NULL, 'carbon:workspace',         '/dashboard/workspace',  NULL, '', now(), now()),
-    (4,  0, 1, 10, 'KAdmin 管理', NULL, 'lucide:settings-2',        '/kadmin',               NULL, '', now(), now()),
+    (4,  0, 0, 10, 'KAdmin 管理', NULL, 'lucide:settings-2',        '/kadmin',               NULL, '', now(), now()),
     (5,  4, 1,  1, '用户管理',    NULL, 'lucide:users',             '/kadmin/users',         NULL, '', now(), now()),
     (6,  4, 1,  2, '权限管理',    NULL, 'lucide:shield-check',      '/kadmin/rbac',          NULL, '', now(), now()),
     (7,  4, 1,  3, '菜单管理',    NULL, 'lucide:menu',              '/kadmin/menus',         NULL, '', now(), now()),
