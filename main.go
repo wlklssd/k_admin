@@ -1,11 +1,18 @@
 package main
 
 import (
-	"io/ioutil"
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	// ① 引入框架适配器（自注册）
@@ -23,8 +30,21 @@ import (
 )
 
 func main() {
-	gin.SetMode(gin.ReleaseMode)
-	gin.DefaultWriter = ioutil.Discard
+	if err := run(); err != nil {
+		log.Printf("KAdmin 后端服务启动失败：%v", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	debug := getenvBool("KADMIN_APP_DEBUG", true)
+	if debug {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	gin.DefaultWriter = io.Discard
+	log.SetOutput(ginDebugErrorWriter{destination: os.Stderr})
 
 	r := gin.New()
 	e := engine.Default()
@@ -52,16 +72,14 @@ func main() {
 			"minio": minioConfig(),
 		},
 		Language: language.CN, // 中文
-		Debug:    true,
+		Debug:    debug,
 	}
 
 	// ④ 初始化引擎
-	if err := e.AddConfig(&cfg).Use(r); err != nil {
-		panic(err)
+	if err := setupBackend(r, e, &cfg); err != nil {
+		return err
 	}
-
-	// Vben 前后端分离接口。原 GoAdmin 服务端页面仍保留在 /admin 下。
-	vbenapi.Register(r, e.DefaultConnection())
+	defer closeDatabase(e)
 
 	// 访问根路径自动跳转到后台
 	r.GET("/", func(c *gin.Context) {
@@ -70,17 +88,99 @@ func main() {
 
 	r.Static("/uploads", "./uploads")
 
+	listener, err := listenHTTP(addr)
+	if err != nil {
+		return err
+	}
+
+	server := &http.Server{Handler: r}
+	serverErr := make(chan error, 1)
 	go func() {
-		if err := r.Run(addr); err != nil {
-			log.Printf("server stopped: %v", err)
+		serverErr <- server.Serve(listener)
+	}()
+
+	mode := gin.ReleaseMode
+	if debug {
+		mode = gin.DebugMode
+	}
+	log.Printf("KAdmin 后端服务启动成功（模式：%s）", mode)
+	log.Printf("HTTP 监听地址：%s", listener.Addr())
+	log.Print("Vben API 前缀：/api；前端项目：admin-web（独立运行）")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(quit)
+
+	select {
+	case err := <-serverErr:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("HTTP 服务异常退出: %w", err)
+		}
+		return nil
+	case sig := <-quit:
+		log.Printf("收到退出信号 %s，正在停止 KAdmin 后端服务", sig)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		_ = server.Close()
+		return fmt.Errorf("HTTP 服务停止失败: %w", err)
+	}
+
+	if err := <-serverErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("HTTP 服务停止时发生错误: %w", err)
+	}
+	log.Print("KAdmin 后端服务已停止")
+	return nil
+}
+
+func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (err error) {
+	stage := "初始化 GoAdmin 公共组件"
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = fmt.Errorf("%s失败: %v", stage, recovered)
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
-	log.Print("closing database connection")
-	e.PostgresqlConnection().Close()
+	if err := e.AddConfig(cfg).Use(r); err != nil {
+		return fmt.Errorf("%s失败: %w", stage, err)
+	}
+
+	stage = "注册 Vben API"
+	if err := vbenapi.Register(r, e.DefaultConnection()); err != nil {
+		return fmt.Errorf("%s失败: %w", stage, err)
+	}
+	return nil
+}
+
+func listenHTTP(addr string) (net.Listener, error) {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP 服务监听 %q 失败: %w", addr, err)
+	}
+	return listener, nil
+}
+
+type ginDebugErrorWriter struct {
+	destination io.Writer
+}
+
+func (w ginDebugErrorWriter) Write(p []byte) (int, error) {
+	message := bytes.TrimLeft(p, "\r\n")
+	if bytes.HasPrefix(message, []byte("[GIN-debug]")) &&
+		!bytes.HasPrefix(message, []byte("[GIN-debug] [ERROR]")) {
+		return len(p), nil
+	}
+	return w.destination.Write(p)
+}
+
+func closeDatabase(e *engine.Engine) {
+	for _, err := range e.PostgresqlConnection().Close() {
+		if err != nil {
+			log.Printf("关闭数据库连接失败：%v", err)
+		}
+	}
 }
 
 func getenv(key string, fallback string) string {

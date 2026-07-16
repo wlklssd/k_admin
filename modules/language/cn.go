@@ -57,7 +57,7 @@ var cn = LangSet{
 	"fail":              "失败",
 	"current page":      "当前页",
 
-	"goadmin is now running. \nrunning in \"debug\" mode. switch to \"release\" mode in production.\n\n": "GoAdmin 启动成功。\n目前处于 \"debug\" 模式。请在生产环境中切换为 \"release\" 模式。\n\n",
+	"goadmin is now running. \nrunning in \"debug\" mode. switch to \"release\" mode in production.\n\n": "KAdmin 后端调试模式已启用。生产环境请将 KADMIN_APP_DEBUG 设置为 false。\n\n",
 
 	"wrong goadmin version, theme %s required goadmin version are %s":    "错误的 GoAdmin 版本，当前主题 %s 需要 GoAdmin 版本为 %s",
 	"wrong theme version, goadmin %s required version of theme %s is %s": "错误的主题版本, GoAdmin %s 需要主题 %s 的版本为 %s",

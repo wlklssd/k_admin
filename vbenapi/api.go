@@ -1,7 +1,7 @@
 package vbenapi
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -20,13 +20,13 @@ type Store struct {
 	auth           *authService
 }
 
-func Register(r *gin.Engine, conn db.Connection) {
+func Register(r *gin.Engine, conn db.Connection) error {
 	s := &Store{
 		conn: conn,
 		auth: newAuthServiceFromEnv(),
 	}
 	if err := s.syncDefaultMenus(); err != nil {
-		log.Printf("sync vben menus failed: %v", err)
+		return fmt.Errorf("同步默认菜单失败: %w", err)
 	}
 
 	api := r.Group("/api", cors())
@@ -43,4 +43,5 @@ func Register(r *gin.Engine, conn db.Connection) {
 	registerDictionaryRoutes(api, s)
 	registerModuleRoutes(api, s)
 	registerSystemConfigRoutes(api, s)
+	return nil
 }
