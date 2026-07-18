@@ -1,88 +1,150 @@
-<p align="center">
-  <a href="https://github.com/GoAdminGroup/go-admin">
-    <img width="48%" alt="go-admin" src="http://quick.go-admin.cn/official/assets/imgs/github_logo.png">
-  </a>
-</p>
+# KAdmin
 
-<p align="center">
-    the missing golang data admin panel builder tool.
-</p>
+KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](https://github.com/GoAdminGroup/go-admin) 的公共组件，并在 `vbenapi` 中提供面向独立前端的接口；前端基于 [Vben Admin](https://github.com/vbenjs/vue-vben-admin) 的 Vue 3 与 Ant Design Vue 技术栈开发。
 
-<p align="center">
-    <a href="https://book.go-admin.cn/en">Documentation</a> | 
-	<a href="http://doc.go-admin.cn/zh/">中文文档</a> | 
-    <a href="./README_CN.md">中文介绍</a> |
-    <a href="https://demo.go-admin.com">DEMO</a> |
-    <a href="https://demo.go-admin.cn">中文DEMO</a> |
-    <a href="https://twitter.com/cg3365688034">Twitter</a> |
-    <a href="http://discuss.go-admin.com">Forum</a>
-</p>
+> 本项目是独立维护的二次开发项目，不是 GoAdminGroup 或 Vben 团队的官方发行版，也不代表上述项目对 KAdmin 的认可或背书。
 
-<p align="center">
-  <a href="http://drone.go-admin.com/GoAdminGroup/go-admin"><img alt="Build Status" src="http://drone.go-admin.com/api/badges/GoAdminGroup/go-admin/status.svg?ref=refs/heads/master"></a>
-  <a href="https://goreportcard.com/report/github.com/GoAdminGroup/go-admin"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/GoAdminGroup/go-admin"></a>
-  <a href="https://goreportcard.com/report/github.com/GoAdminGroup/go-admin"><img alt="golang" src="https://img.shields.io/badge/awesome-golang-blue.svg"></a>
-  <a href="https://discord.gg/usAaEpCP"><img alt="discord" src="https://img.shields.io/badge/chat%20on-Discord-blue.svg"></a>
-  <a href="https://t.me/joinchat/NlyH6Bch2QARZkArithKvg" rel="nofollow"><img alt="telegram" src="https://img.shields.io/badge/chat%20on-telegram-blue" style="max-width:100%;"></a>  
-  <a href="https://raw.githubusercontent.com/GoAdminGroup/go-admin/master/LICENSE" rel="nofollow"><img src="https://img.shields.io/badge/license-Apache2.0-blue.svg" alt="license" data-canonical-src="https://img.shields.io/badge/license-Apache2.0-blue.svg" style="max-width:100%;"></a>
-</p> 
+## 当前能力
 
-<p align="center">
-    Inspired by <a href="https://github.com/z-song/laravel-admin" target="_blank">laravel-admin</a>
-</p>
+- JWT 登录、刷新令牌、退出登录和 Redis 令牌状态管理
+- 用户管理、状态管理、密码重置、头像上传和用户导入
+- 部门、角色、菜单及用户授权管理
+- 服务端动态菜单和前端权限路由
+- 字典类型与字典数据管理
+- 系统配置管理
+- PostgreSQL 数据存储、Redis 鉴权状态存储
+- 可选的 MinIO 对象存储和 Adminer 数据库管理工具
+- 保留 GoAdmin 原有后台入口，供兼容和公共能力复用
 
-## Preface
+## 技术栈
 
-GoAdmin is a toolkit to help you build a data visualization admin panel for your golang app.
+| 层级 | 技术 |
+| --- | --- |
+| 后端 | Go、Gin、GoAdmin 公共组件 |
+| 前端 | Vue 3、Vben Admin、Ant Design Vue、TypeScript、Vite |
+| 数据库 | PostgreSQL |
+| 鉴权状态 | Redis |
+| 可选存储 | MinIO |
+| 本地依赖 | Docker Compose |
 
-Online demo: [https://demo.go-admin.com](https://demo.go-admin.com)
+## 项目结构
 
-![interface](http://file.go-admin.cn/introduction/interface_en_3.png)
-
-## Features
-
-- 🚀 **Fast**: build a production admin panel app in **ten** minutes.
-- 🎨 **Theming**: beautiful ui themes supported(default adminlte, more themes are coming.)
-- 🔢 **Plugins**: many plugins to use(more useful and powerful plugins are coming.)
-- ✅ **Rbac**: out of box rbac auth system.
-- ⚙️ **Frameworks**: support most of the go web frameworks.
-
-## Translation
-We need your help: [https://github.com/GoAdminGroup/docs/issues/1](https://github.com/GoAdminGroup/docs/issues/1)
-
-## Who is using
-
-[Comment the issue to tell us](https://github.com/GoAdminGroup/go-admin/issues/71).
-
-## How to
-
-Following three steps to run it.
-
-```shell
-$ mkdir new_project && cd new_project
-$ go install github.com/GoAdminGroup/adm@latest
-$ adm init web
+```text
+.
+├─ admin-web/          # 独立 Vue 前端，主要应用位于 apps/web-antd
+├─ vbenapi/            # KAdmin 前后端分离 API，统一挂载在 /api
+├─ adapter/            # GoAdmin Web 框架适配器
+├─ engine/             # GoAdmin 核心引擎
+├─ modules/            # GoAdmin 公共模块
+├─ plugins/            # GoAdmin 公共插件
+├─ template/           # GoAdmin 原后台模板
+├─ tests/data/         # 本地 PostgreSQL 初始化数据
+├─ main.go             # KAdmin 后端入口
+└─ docker-compose.yml  # PostgreSQL、Redis、MinIO、Adminer
 ```
 
-## Example
+项目边界：
 
-Quick follow up example: 
+- GoAdmin 原后台保留在 `/admin`，不作为新页面的主要开发入口。
+- 新的后端接口集中维护在 `vbenapi`，默认前缀为 `/api`。
+- 新的后台页面集中维护在 `admin-web`，沿用 Vben Admin 的组件和工程约定。
 
-- [pure golang](https://github.com/GoAdminGroup/example), simple and less dependency
-- [golang with frontend template](https://github.com/GoAdminGroup/example_with_frontend), change template by yourself
-- [golang with vue](https://github.com/GoAdminGroup/example_with_vue), if you have vue experience
+## 本地开发
 
-See the [docs](https://book.go-admin.cn) for more details.
+### 环境要求
 
-## Backers
+- Go 1.22.10 或更高版本
+- Node.js 22.18+ 或 24+
+- pnpm 11+
+- Docker 与 Docker Compose
 
- Your support will help me do better! [[Become a backer](https://opencollective.com/go-admin#backer)]
- <a href="https://opencollective.com/go-admin#backers" target="_blank"><img src="https://opencollective.com/go-admin/backers.svg?width=890"></a>
+### 1. 启动依赖服务
 
-## Contribution
+项目的本地默认值已经与 `docker-compose.yml` 对齐，可以直接启动 PostgreSQL 和 Redis：
 
-[here for contribution guide](CONTRIBUTING.md)
+```powershell
+docker compose up -d postgres redis
+```
 
-<strong>here to join into the develop team</strong>
+如需调整端口或账号，可先创建 Docker Compose 使用的 `.env`：
 
-[join telegram](https://t.me/joinchat/NlyH6Bch2QARZkArithKvg)
+```powershell
+Copy-Item .env.example .env
+```
+
+后端读取的是进程环境变量；未设置时使用与 `.env.example` 一致的本地开发默认值。生产环境必须替换数据库密码、Redis 密码、`KADMIN_JWT_SECRET` 等敏感配置。
+
+### 2. 启动后端
+
+```powershell
+go run .
+```
+
+默认地址：
+
+- 原 GoAdmin 后台：`http://127.0.0.1:9033/admin`
+- Vben API：`http://127.0.0.1:9033/api`
+- 根地址：`http://127.0.0.1:9033/`，会跳转到 `/admin`
+
+首次创建 PostgreSQL volume 时，Docker Compose 会自动导入 `tests/data/admin_pg.sql`。
+
+### 3. 启动前端
+
+```powershell
+Set-Location admin-web
+corepack enable
+pnpm install
+pnpm dev
+```
+
+访问 `http://127.0.0.1:5666`。开发服务器会把 `/api` 请求代理到 `http://127.0.0.1:9033`。
+
+初始化数据中的本地账号为 `admin` / `admin`，仅用于本地开发；首次登录后应立即修改密码。
+
+## 可选服务
+
+启动 MinIO：
+
+```powershell
+docker compose --profile storage up -d minio minio-init
+```
+
+启动 Adminer：
+
+```powershell
+docker compose --profile tools up -d adminer
+```
+
+端口、默认账号和数据重置方式见 [DOCKER_LOCAL.md](./DOCKER_LOCAL.md)。
+
+## 构建与检查
+
+后端：
+
+```powershell
+go test ./vbenapi
+go build .
+```
+
+前端：
+
+```powershell
+Set-Location admin-web
+pnpm test:unit
+pnpm build
+```
+
+## 开源来源与许可
+
+本仓库包含来自不同上游项目的代码，使用和再分发时请同时遵守对应许可证：
+
+- 后端基于 GoAdmin 修改并复用其公共组件。GoAdmin 由 GoAdminGroup 及其贡献者维护，采用 [Apache License 2.0](./LICENSE)。本仓库包含对上游代码的修改，相关修改由 KAdmin 项目维护者负责。
+- `admin-web` 基于 Vben Admin 修改。Vben Admin 由 Vben 及其贡献者维护，采用 [MIT License](./admin-web/LICENSE)。
+- GoAdmin、Vben Admin 及相关名称和标识的权利归各自权利人所有；本项目仅为说明软件来源而引用这些名称。
+
+上游项目：
+
+- GoAdmin：<https://github.com/GoAdminGroup/go-admin>
+- Vben Admin：<https://github.com/vbenjs/vue-vben-admin>
+
+请勿删除或替换仓库中的许可证、版权及归属说明。上游项目的问题请反馈到各自社区；KAdmin 修改产生的问题应在本项目中处理。
