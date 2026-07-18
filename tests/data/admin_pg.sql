@@ -380,50 +380,6 @@ CREATE TABLE public.goadmin_users (
 ALTER TABLE public.goadmin_users OWNER TO postgres;
 
 --
--- Name: user_like_books; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.user_like_books (
-    id integer,
-    user_id integer,
-    name character varying,
-    created_at timestamp without time zone DEFAULT now(),
-    updated_at timestamp without time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.user_like_books OWNER TO postgres;
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.users (
-    id integer NOT NULL,
-    name character varying(100),
-    homepage character varying(3000),
-    email character varying(100),
-    birthday timestamp with time zone,
-    country character varying(50),
-    city character varying(50),
-    password character varying(100),
-    ip character varying(20),
-    certificate character varying(300),
-    money integer,
-    resume text,
-    gender smallint,
-    fruit character varying(200),
-    drink character varying(200),
-    experience smallint,
-    created_at timestamp without time zone DEFAULT now(),
-    updated_at timestamp without time zone DEFAULT now(),
-    member_id integer DEFAULT 0
-);
-
-
-ALTER TABLE public.users OWNER TO postgres;
-
---
 -- Data for Name: goadmin_menu; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -605,24 +561,6 @@ COPY public.goadmin_users (id, username, password, name, avatar, status, remembe
 
 
 --
--- Data for Name: user_like_books; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.user_like_books (id, user_id, name, created_at, updated_at) FROM stdin;
-1	1	Robinson Crusoe	2020-03-15 09:00:57.409596	2020-03-15 09:00:57.409596
-\.
-
-
---
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.users (id, name, homepage, email, birthday, country, city, password, ip, certificate, money, resume, gender, fruit, drink, experience, created_at, updated_at, member_id) FROM stdin;
-1	Jack	http://jack.me	jack@163.com	1993-10-21 00:00:00+08	china	guangzhou	123456	127.0.0.1	\N	10	<h1>Jacks Resume</h1>	0	apple	water	0	2020-03-09 15:24:00	2020-03-09 15:24:00	0
-\.
-
-
---
 -- Name: goadmin_menu_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -791,14 +729,6 @@ ALTER TABLE ONLY public.goadmin_session
 
 ALTER TABLE ONLY public.goadmin_users
     ADD CONSTRAINT goadmin_users_pkey PRIMARY KEY (id);
-
-
---
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
 
 --
