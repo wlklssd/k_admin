@@ -74,10 +74,11 @@ ALTER TABLE public.goadmin_menu OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.goadmin_operation_log_myid_seq
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
-    MAXVALUE 99999999
+    NO MAXVALUE
     CACHE 1;
 
 
@@ -88,18 +89,53 @@ ALTER TABLE public.goadmin_operation_log_myid_seq OWNER TO postgres;
 --
 
 CREATE TABLE public.goadmin_operation_log (
-    id integer DEFAULT nextval('public.goadmin_operation_log_myid_seq'::regclass) NOT NULL,
-    user_id integer NOT NULL,
-    path character varying(255) NOT NULL,
-    method character varying(10) NOT NULL,
-    ip character varying(15) NOT NULL,
-    input text NOT NULL,
+    id bigint DEFAULT nextval('public.goadmin_operation_log_myid_seq'::regclass) NOT NULL,
+    user_id integer,
+    path character varying(2048) DEFAULT ''::character varying NOT NULL,
+    method character varying(16) DEFAULT ''::character varying NOT NULL,
+    ip character varying(45) DEFAULT ''::character varying NOT NULL,
+    input text DEFAULT ''::text NOT NULL,
+    event_id character varying(64),
+    event_type character varying(32) DEFAULT 'operation'::character varying NOT NULL,
+    level character varying(16) DEFAULT 'info'::character varying NOT NULL,
+    source character varying(100) DEFAULT 'goadmin'::character varying NOT NULL,
+    module character varying(100) DEFAULT ''::character varying NOT NULL,
+    action character varying(100) DEFAULT ''::character varying NOT NULL,
+    message text DEFAULT ''::text NOT NULL,
+    actor_name character varying(100) DEFAULT ''::character varying NOT NULL,
+    request_id character varying(64),
+    trace_id character varying(64),
+    status_code smallint,
+    success boolean,
+    duration_ms bigint,
+    error_code character varying(100),
+    error_message text,
+    user_agent text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    occurred_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    expires_at timestamp with time zone,
     created_at timestamp without time zone DEFAULT now(),
-    updated_at timestamp without time zone DEFAULT now()
+    updated_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT goadmin_operation_log_event_type_check CHECK (((event_type)::text = ANY ((ARRAY['operation'::character varying, 'request'::character varying, 'auth'::character varying, 'audit'::character varying, 'system'::character varying])::text[]))),
+    CONSTRAINT goadmin_operation_log_level_check CHECK (((level)::text = ANY ((ARRAY['debug'::character varying, 'info'::character varying, 'warn'::character varying, 'error'::character varying, 'fatal'::character varying])::text[]))),
+    CONSTRAINT goadmin_operation_log_status_code_check CHECK (((status_code IS NULL) OR ((status_code >= 100) AND (status_code <= 599)))),
+    CONSTRAINT goadmin_operation_log_duration_ms_check CHECK (((duration_ms IS NULL) OR (duration_ms >= 0))),
+    CONSTRAINT goadmin_operation_log_metadata_check CHECK ((jsonb_typeof(metadata) = 'object'::text)),
+    CONSTRAINT goadmin_operation_log_expires_at_check CHECK (((expires_at IS NULL) OR (expires_at >= occurred_at)))
 );
 
 
 ALTER TABLE public.goadmin_operation_log OWNER TO postgres;
+
+COMMENT ON TABLE public.goadmin_operation_log IS 'Operation and listener events for GoAdmin and Vben API';
+COMMENT ON COLUMN public.goadmin_operation_log.event_id IS 'Producer-generated idempotency key; NULL for legacy synchronous events';
+COMMENT ON COLUMN public.goadmin_operation_log.user_id IS 'Optional actor id; no foreign key so audit history survives user deletion';
+COMMENT ON COLUMN public.goadmin_operation_log.actor_name IS 'Actor name snapshot captured when the event occurs';
+COMMENT ON COLUMN public.goadmin_operation_log.message IS 'Sanitized human-readable event summary';
+COMMENT ON COLUMN public.goadmin_operation_log.input IS 'Redacted request or operation input; credentials and tokens must not be stored';
+COMMENT ON COLUMN public.goadmin_operation_log.metadata IS 'Sanitized event-specific attributes as a JSON object';
+COMMENT ON COLUMN public.goadmin_operation_log.occurred_at IS 'Canonical event time with time zone';
+COMMENT ON COLUMN public.goadmin_operation_log.expires_at IS 'Optional retention deadline used by a future cleanup job';
 
 --
 -- Name: goadmin_permissions_myid_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -636,6 +672,37 @@ ALTER TABLE ONLY public.goadmin_menu
 
 ALTER TABLE ONLY public.goadmin_operation_log
     ADD CONSTRAINT goadmin_operation_log_pkey PRIMARY KEY (id);
+
+
+CREATE UNIQUE INDEX goadmin_operation_log_event_id_unique
+    ON public.goadmin_operation_log USING btree (event_id)
+    WHERE ((event_id IS NOT NULL) AND ((event_id)::text <> ''::text));
+
+CREATE INDEX goadmin_operation_log_occurred_at_index
+    ON public.goadmin_operation_log USING btree (occurred_at DESC, id DESC);
+
+CREATE INDEX goadmin_operation_log_event_type_time_index
+    ON public.goadmin_operation_log USING btree (event_type, occurred_at DESC, id DESC);
+
+CREATE INDEX goadmin_operation_log_user_time_index
+    ON public.goadmin_operation_log USING btree (user_id, occurred_at DESC, id DESC)
+    WHERE (user_id IS NOT NULL);
+
+CREATE INDEX goadmin_operation_log_failure_time_index
+    ON public.goadmin_operation_log USING btree (occurred_at DESC, id DESC)
+    WHERE (success = false);
+
+CREATE INDEX goadmin_operation_log_request_id_index
+    ON public.goadmin_operation_log USING btree (request_id)
+    WHERE ((request_id IS NOT NULL) AND ((request_id)::text <> ''::text));
+
+CREATE INDEX goadmin_operation_log_trace_id_index
+    ON public.goadmin_operation_log USING btree (trace_id)
+    WHERE ((trace_id IS NOT NULL) AND ((trace_id)::text <> ''::text));
+
+CREATE INDEX goadmin_operation_log_expires_at_index
+    ON public.goadmin_operation_log USING btree (expires_at)
+    WHERE (expires_at IS NOT NULL);
 
 
 --
