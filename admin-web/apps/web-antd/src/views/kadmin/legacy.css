@@ -19,6 +19,7 @@
 
 .page-stack {
   display: grid;
+  min-width: 0;
   gap: 16px;
   /* vben 内容区默认 contentPadding=0,这里补上外层留白;
      同时吸收 antd <a-row :gutter> 的负 margin,避免横向溢出。 */
@@ -53,6 +54,7 @@
 }
 
 .panel {
+  min-width: 0;
   padding: 16px;
 }
 
@@ -183,6 +185,73 @@
 .muted-text {
   margin: 2px 0 0;
   color: var(--kadmin-muted);
+}
+
+.log-date-range {
+  width: 330px;
+}
+
+.log-request-cell,
+.log-two-line-cell {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.log-request-cell > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.log-request-cell > span,
+.log-two-line-cell span {
+  overflow: hidden;
+  color: var(--kadmin-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-code {
+  display: block;
+  max-width: 165px;
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 12px;
+}
+
+.log-success-icon {
+  color: #16a34a;
+}
+
+.log-error-icon {
+  color: #dc2626;
+}
+
+.log-detail-pre {
+  max-height: 280px;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--kadmin-border);
+  border-radius: 6px;
+  background: var(--kadmin-soft-bg);
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-break-text {
+  overflow-wrap: anywhere;
 }
 
 .role-list {
@@ -414,8 +483,18 @@
   }
 
   .control-md,
-  .control-lg {
+  .control-lg,
+  .log-date-range {
     width: 100%;
+  }
+
+  .search-form .ant-form-item {
+    width: 100%;
+    margin-inline-end: 0;
+  }
+
+  .search-form .ant-form-item-control {
+    min-width: 0;
   }
 
   .panel {

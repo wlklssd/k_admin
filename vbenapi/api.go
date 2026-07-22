@@ -25,6 +25,9 @@ func Register(r *gin.Engine, conn db.Connection) error {
 		conn: conn,
 		auth: newAuthServiceFromEnv(),
 	}
+	if err := s.syncDefaultPermissions(); err != nil {
+		return fmt.Errorf("同步默认权限失败: %w", err)
+	}
 	if err := s.syncDefaultMenus(); err != nil {
 		return fmt.Errorf("同步默认菜单失败: %w", err)
 	}
@@ -43,5 +46,6 @@ func Register(r *gin.Engine, conn db.Connection) error {
 	registerDictionaryRoutes(api, s)
 	registerModuleRoutes(api, s)
 	registerSystemConfigRoutes(api, s)
+	registerLogRoutes(api, s)
 	return nil
 }

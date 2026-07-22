@@ -66,6 +66,8 @@ func (s *Store) login(c *gin.Context) {
 		fail(c, http.StatusInternalServerError, "create token failed: "+err.Error())
 		return
 	}
+	c.Set("vben_user_id", user.Id)
+	c.Set("vben_user", user)
 
 	success(c, loginResponse{
 		AccessToken:  tokens.AccessToken,

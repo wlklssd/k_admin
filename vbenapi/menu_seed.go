@@ -78,6 +78,12 @@ var defaultMenuSeeds = []menuSeed{
 				URI:   "/kadmin/resources",
 				Order: 6,
 			},
+			{
+				Title: "日志管理",
+				Icon:  "lucide:scroll-text",
+				URI:   "/kadmin/logs",
+				Order: 7,
+			},
 		},
 	},
 }
