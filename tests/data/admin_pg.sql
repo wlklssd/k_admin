@@ -430,6 +430,7 @@ COPY public.goadmin_menu (id, parent_id, type, "order", title, plugin_name, head
 8	4	1	4	字典管理		\N	lucide:book-open	/kadmin/dictionary	2019-09-10 00:00:00	2019-09-10 00:00:00
 9	4	1	5	参数配置		\N	lucide:sliders-horizontal	/kadmin/settings	2019-09-10 00:00:00	2019-09-10 00:00:00
 10	4	1	6	资源工作台		\N	lucide:folder-kanban	/kadmin/resources	2019-09-10 00:00:00	2019-09-10 00:00:00
+11	4	1	7	日志管理		\N	lucide:scroll-text	/kadmin/logs	2026-07-22 00:00:00	2026-07-22 00:00:00
 \.
 
 
@@ -478,6 +479,8 @@ COPY public.goadmin_dict_data (id, dict_type, label, value, color, css_class, is
 COPY public.goadmin_permissions (id, name, slug, http_method, http_path, created_at, updated_at) FROM stdin;
 1	All permission	*		*	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	Dashboard	dashboard	GET,PUT,POST,DELETE	/	2019-09-10 00:00:00	2019-09-10 00:00:00
+3	查看请求日志	system:log:list	GET	/api/logs*	2026-07-22 00:00:00	2026-07-22 00:00:00
+4	删除请求日志	system:log:delete	DELETE	/api/logs*	2026-07-22 00:00:00	2026-07-22 00:00:00
 \.
 
 
@@ -496,6 +499,7 @@ COPY public.goadmin_role_menu (role_id, menu_id, created_at, updated_at) FROM st
 1	8	2019-09-10 00:00:00	2019-09-10 00:00:00
 1	9	2019-09-10 00:00:00	2019-09-10 00:00:00
 1	10	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	11	2026-07-22 00:00:00	2026-07-22 00:00:00
 2	1	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	2	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	3	2019-09-10 00:00:00	2019-09-10 00:00:00
@@ -510,22 +514,6 @@ COPY public.goadmin_role_permissions (role_id, permission_id, created_at, update
 1	1	2019-09-10 00:00:00	2019-09-10 00:00:00
 1	2	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	2	2019-09-10 00:00:00	2019-09-10 00:00:00
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
-0	3	\N	\N
 \.
 
 
@@ -600,7 +588,7 @@ COPY public.goadmin_users (id, username, password, name, avatar, status, remembe
 -- Name: goadmin_menu_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.goadmin_menu_myid_seq', 10, true);
+SELECT pg_catalog.setval('public.goadmin_menu_myid_seq', 11, true);
 
 
 --
@@ -614,7 +602,7 @@ SELECT pg_catalog.setval('public.goadmin_operation_log_myid_seq', 1, true);
 -- Name: goadmin_permissions_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.goadmin_permissions_myid_seq', 2, true);
+SELECT pg_catalog.setval('public.goadmin_permissions_myid_seq', 4, true);
 
 
 --

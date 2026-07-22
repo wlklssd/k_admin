@@ -76,10 +76,12 @@ func run() error {
 	}
 
 	// ④ 初始化引擎
-	if err := setupBackend(r, e, &cfg); err != nil {
+	requestLogs, err := setupBackend(r, e, &cfg)
+	if err != nil {
 		return err
 	}
 	defer closeDatabase(e)
+	defer requestLogs.Close()
 
 	// 访问根路径自动跳转到后台
 	r.GET("/", func(c *gin.Context) {
@@ -135,23 +137,30 @@ func run() error {
 	return nil
 }
 
-func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (err error) {
+func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (requestLogs *vbenapi.RequestLogListener, err error) {
 	stage := "初始化 GoAdmin 公共组件"
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			err = fmt.Errorf("%s失败: %v", stage, recovered)
 		}
+		if err != nil && requestLogs != nil {
+			requestLogs.Close()
+			requestLogs = nil
+		}
 	}()
 
-	if err := e.AddConfig(cfg).Use(r); err != nil {
-		return fmt.Errorf("%s失败: %w", stage, err)
+	e.AddConfig(cfg)
+	requestLogs = vbenapi.NewRequestLogListener(e.DefaultConnection())
+	r.Use(requestLogs.Middleware())
+	if err := e.Use(r); err != nil {
+		return nil, fmt.Errorf("%s失败: %w", stage, err)
 	}
 
 	stage = "注册 Vben API"
 	if err := vbenapi.Register(r, e.DefaultConnection()); err != nil {
-		return fmt.Errorf("%s失败: %w", stage, err)
+		return nil, fmt.Errorf("%s失败: %w", stage, err)
 	}
-	return nil
+	return requestLogs, nil
 }
 
 func listenHTTP(addr string) (net.Listener, error) {
