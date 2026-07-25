@@ -9,20 +9,23 @@ import (
 )
 
 const (
-	uploadRoot  = "upload"
-	minioRegion = "us-east-1"
+	uploadRoot      = "upload"
+	managedFileRoot = "data/files"
+	minioRegion     = "us-east-1"
 )
 
 type fileStorageSettings struct {
-	LocalRoot    string
-	MinioEnabled bool
-	Minio        storage.MinioConfig
+	LocalRoot        string
+	ManagedLocalRoot string
+	MinioEnabled     bool
+	Minio            storage.MinioConfig
 }
 
 func loadFileStorageSettings() fileStorageSettings {
 	return fileStorageSettings{
-		LocalRoot:    uploadRoot,
-		MinioEnabled: envBool("KADMIN_MINIO_ENABLED", false),
+		LocalRoot:        uploadRoot,
+		ManagedLocalRoot: envString("KADMIN_FILE_LOCAL_ROOT", managedFileRoot),
+		MinioEnabled:     envBool("KADMIN_MINIO_ENABLED", false),
 		Minio: storage.MinioConfig{
 			Endpoints:  uniqueStrings([]string{envString("KADMIN_MINIO_ENDPOINT", "127.0.0.1:19000"), envString("KADMIN_MINIO_INTERNAL_ENDPOINT", "minio:9000")}),
 			AccessKey:  envString("KADMIN_MINIO_ACCESS_KEY", "kadmin_minio"),

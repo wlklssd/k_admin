@@ -1,6 +1,8 @@
 package vbenapi
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +27,44 @@ func TestRegisterExistingUploadRoutes(t *testing.T) {
 		if !registered {
 			t.Fatalf("route %s was not registered", route)
 		}
+	}
+}
+
+func TestRegisterManagedFileRoutes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	engine := gin.New()
+	registerFileRoutes(engine.Group("/api"), &Store{})
+
+	wanted := map[string]bool{
+		"DELETE /api/files/:id":      false,
+		"GET /api/files/:id":         false,
+		"GET /api/files/:id/content": false,
+		"POST /api/files":            false,
+	}
+	for _, route := range engine.Routes() {
+		key := route.Method + " " + route.Path
+		if _, exists := wanted[key]; exists {
+			wanted[key] = true
+		}
+	}
+	for route, registered := range wanted {
+		if !registered {
+			t.Fatalf("route %s was not registered", route)
+		}
+	}
+}
+
+func TestManagedFileRoutesReturn401WithoutToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	engine := gin.New()
+	registerFileRoutes(engine.Group("/api"), &Store{})
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/files", nil)
+
+	engine.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d; body=%s", recorder.Code, http.StatusUnauthorized, recorder.Body.String())
 	}
 }
 

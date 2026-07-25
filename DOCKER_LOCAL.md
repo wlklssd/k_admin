@@ -42,6 +42,7 @@ docker compose --profile storage up -d minio minio-init
 如果 Go 服务需要读取 MinIO 配置，在 `.env` 中开启：
 
 ```dotenv
+KADMIN_FILE_LOCAL_ROOT=data/files
 KADMIN_MINIO_ENABLED=true
 KADMIN_MINIO_ENDPOINT=127.0.0.1:19000
 KADMIN_MINIO_ACCESS_KEY=kadmin_minio
@@ -50,7 +51,7 @@ KADMIN_MINIO_BUCKET=kadmin
 KADMIN_MINIO_USE_SSL=false
 ```
 
-不开启时保持 `KADMIN_MINIO_ENABLED=false` 或不设置该变量即可。当前服务只登记 MinIO 连接参数，不会在启动时强制连接 MinIO。
+不开启时保持 `KADMIN_MINIO_ENABLED=false` 或不设置该变量即可，通用文件会写入 `KADMIN_FILE_LOCAL_ROOT`。启用 MinIO 后通用文件上传不会静默降级到本地目录，存储不可用会返回 503；旧头像接口仍保持原有迁移期行为。当前服务不会在启动时强制连接 MinIO。
 
 ## Navicat 连接 PostgreSQL
 

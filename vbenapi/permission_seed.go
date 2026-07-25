@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	logListPermission   = "system:log:list"
-	logDeletePermission = "system:log:delete"
+	logListPermission    = "system:log:list"
+	logDeletePermission  = "system:log:delete"
+	fileUploadPermission = "system:file:upload"
+	fileReadPermission   = "system:file:read"
+	fileDeletePermission = "system:file:delete"
 )
 
 type permissionSeed struct {
@@ -24,6 +27,9 @@ type permissionSeed struct {
 var defaultPermissionSeeds = []permissionSeed{
 	{Name: "查看请求日志", Slug: logListPermission, HTTPMethod: "GET", HTTPPath: "/api/logs*"},
 	{Name: "删除请求日志", Slug: logDeletePermission, HTTPMethod: "DELETE", HTTPPath: "/api/logs*"},
+	{Name: "上传文件", Slug: fileUploadPermission, HTTPMethod: "POST", HTTPPath: "/api/files"},
+	{Name: "读取文件", Slug: fileReadPermission, HTTPMethod: "GET", HTTPPath: "/api/files*"},
+	{Name: "删除文件", Slug: fileDeletePermission, HTTPMethod: "DELETE", HTTPPath: "/api/files/*"},
 }
 
 func (s *Store) syncDefaultPermissions() error {
@@ -55,8 +61,12 @@ func (s *Store) syncDefaultPermissions() error {
 }
 
 func (s *Store) requirePermission(codes ...string) gin.HandlerFunc {
+	return permissionRequired(s.currentUser, codes...)
+}
+
+func permissionRequired(resolveUser func(*gin.Context) (models.UserModel, bool), codes ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, ok := s.currentUser(c)
+		user, ok := resolveUser(c)
 		if !ok {
 			fail(c, http.StatusUnauthorized, "invalid token")
 			c.Abort()

@@ -44,6 +44,7 @@ func Register(r *gin.Engine, conn db.Connection) error {
 	registerMenuManagementRoutes(api, s)
 	registerUserManagementRoutes(api, s)
 	registerDictionaryRoutes(api, s)
+	registerFileRoutes(api, s)
 	registerModuleRoutes(api, s)
 	registerSystemConfigRoutes(api, s)
 	registerLogRoutes(api, s)

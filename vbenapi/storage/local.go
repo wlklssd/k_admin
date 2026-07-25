@@ -22,19 +22,31 @@ func (l *Local) Put(_ context.Context, objectKey string, body io.Reader, _ int64
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+	directory := filepath.Dir(target)
+	if err := os.MkdirAll(directory, 0755); err != nil {
 		return err
 	}
-	file, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	temporary, err := os.CreateTemp(directory, ".kadmin-upload-*")
 	if err != nil {
 		return err
 	}
-	_, copyErr := io.Copy(file, body)
-	closeErr := file.Close()
+	temporaryName := temporary.Name()
+	defer os.Remove(temporaryName)
+
+	copyErr := error(nil)
+	if err := temporary.Chmod(0644); err != nil {
+		copyErr = err
+	} else {
+		_, copyErr = io.Copy(temporary, body)
+	}
+	closeErr := temporary.Close()
 	if copyErr != nil {
 		return copyErr
 	}
-	return closeErr
+	if closeErr != nil {
+		return closeErr
+	}
+	return os.Rename(temporaryName, target)
 }
 
 func (l *Local) Open(_ context.Context, objectKey string) (io.ReadCloser, ObjectInfo, error) {

@@ -2,11 +2,64 @@ package vbenapi
 
 import (
 	"bytes"
+	"errors"
 	"mime/multipart"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
+
+func TestValidateManagedFileAcceptsPDF(t *testing.T) {
+	header := testMultipartFileHeader(t, "report.pdf", []byte("%PDF-1.7\ncontent"))
+
+	upload, err := validateManagedFile(header, filePurposeAttachment)
+	if err != nil {
+		t.Fatalf("validate PDF attachment: %v", err)
+	}
+	if upload.ContentType != "application/pdf" || upload.Extension != ".pdf" {
+		t.Fatalf("unexpected detected file: %#v", upload)
+	}
+	if upload.Purpose != filePurposeAttachment || upload.Visibility != fileVisibilityPrivate {
+		t.Fatalf("unexpected upload policy result: %#v", upload)
+	}
+	if len(upload.SHA256) != 64 || upload.OriginalName != "report.pdf" {
+		t.Fatalf("unexpected upload metadata: %#v", upload)
+	}
+}
+
+func TestValidateManagedFileReturns413ForOversizedFile(t *testing.T) {
+	header := testMultipartFileHeader(t, "report.pdf", []byte("%PDF-1.7"))
+	header.Size = maxFileSize + 1
+
+	_, err := validateManagedFile(header, filePurposeAttachment)
+	assertFileRequestStatus(t, err, http.StatusRequestEntityTooLarge)
+}
+
+func TestValidateManagedFileReturns415ForUnsupportedType(t *testing.T) {
+	header := testMultipartFileHeader(t, "program.exe", []byte("MZ executable"))
+
+	_, err := validateManagedFile(header, filePurposeAttachment)
+	assertFileRequestStatus(t, err, http.StatusUnsupportedMediaType)
+}
+
+func TestValidateManagedFileRejectsUnknownPurpose(t *testing.T) {
+	header := testMultipartFileHeader(t, "report.pdf", []byte("%PDF-1.7"))
+
+	_, err := validateManagedFile(header, "unknown")
+	assertFileRequestStatus(t, err, http.StatusBadRequest)
+}
+
+func assertFileRequestStatus(t *testing.T, err error, status int) {
+	t.Helper()
+	var requestErr *fileRequestError
+	if !errors.As(err, &requestErr) {
+		t.Fatalf("expected fileRequestError, got %v", err)
+	}
+	if requestErr.Status != status {
+		t.Fatalf("request status = %d, want %d", requestErr.Status, status)
+	}
+}
 
 func TestValidateAvatarAcceptsDetectedImage(t *testing.T) {
 	header := testMultipartFileHeader(t, "avatar.txt", []byte("\x89PNG\r\n\x1a\nimage"))

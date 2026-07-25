@@ -1,6 +1,7 @@
 package vbenapi
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -91,6 +92,47 @@ func TestUserHasLogPermission(t *testing.T) {
 	user.Permissions = []models.PermissionModel{{Slug: "*"}}
 	if !userHasPermission(user, logDeletePermission) {
 		t.Fatal("expected wildcard permission to be accepted")
+	}
+}
+
+func TestDefaultFilePermissions(t *testing.T) {
+	wanted := map[string]bool{
+		fileUploadPermission: false,
+		fileReadPermission:   false,
+		fileDeletePermission: false,
+	}
+	for _, seed := range defaultPermissionSeeds {
+		if _, ok := wanted[seed.Slug]; ok {
+			wanted[seed.Slug] = true
+		}
+	}
+	for permission, found := range wanted {
+		if !found {
+			t.Fatalf("file permission %s was not seeded", permission)
+		}
+	}
+
+	user := models.UserModel{Permissions: []models.PermissionModel{{Slug: "system:file:other"}}}
+	if userHasPermission(user, fileUploadPermission) {
+		t.Fatal("unrelated file permission must not grant upload access")
+	}
+}
+
+func TestFilePermissionMiddlewareReturns403(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	engine := gin.New()
+	engine.POST("/api/files", permissionRequired(func(*gin.Context) (models.UserModel, bool) {
+		return models.UserModel{Permissions: []models.PermissionModel{{Slug: "system:file:other"}}}, true
+	}, fileUploadPermission), func(c *gin.Context) {
+		c.Status(http.StatusNoContent)
+	})
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/files", nil)
+
+	engine.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d; body=%s", recorder.Code, http.StatusForbidden, recorder.Body.String())
 	}
 }
 

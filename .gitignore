@@ -18,6 +18,7 @@ logs
 adm/build
 template/login/assets/login
 uploads
+data/files/
 go-admin.exe
 通用管理后台框架功能规划.md
 tips/

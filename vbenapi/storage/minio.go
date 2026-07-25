@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -34,14 +35,15 @@ func NewMinio(config MinioConfig) *Minio {
 	return &Minio{config: config}
 }
 
-func (m *Minio) Put(ctx context.Context, objectKey string, body io.Reader, _ int64, contentType string) error {
+func (m *Minio) Put(ctx context.Context, objectKey string, body io.Reader, size int64, contentType string) error {
 	if err := m.validateConfig(); err != nil {
 		return err
 	}
-	payload, err := io.ReadAll(body)
+	source, cleanup, payloadSize, payloadHash, err := replayablePayload(body, size)
 	if err != nil {
 		return err
 	}
+	defer cleanup()
 	var lastErr error
 	for _, endpoint := range m.config.Endpoints {
 		client := newMinioHTTPClient(m.config, endpoint)
@@ -56,13 +58,59 @@ func (m *Minio) Put(ctx context.Context, objectKey string, body io.Reader, _ int
 			lastErr = err
 			continue
 		}
-		if err := client.putObject(ctx, objectKey, payload, contentType); err != nil {
+		if _, err := source.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+		if err := client.putObject(ctx, objectKey, source, payloadSize, payloadHash, contentType); err != nil {
 			lastErr = err
 			continue
 		}
 		return nil
 	}
 	return minioEndpointError(lastErr)
+}
+
+func replayablePayload(body io.Reader, expectedSize int64) (io.ReadSeeker, func(), int64, string, error) {
+	if body == nil {
+		return nil, func() {}, 0, "", fmt.Errorf("upload body is required")
+	}
+	hash := sha256.New()
+	var (
+		source  io.ReadSeeker
+		written int64
+		err     error
+	)
+	cleanup := func() {}
+	if seeker, ok := body.(io.ReadSeeker); ok {
+		source = seeker
+		if _, err = source.Seek(0, io.SeekStart); err == nil {
+			written, err = io.Copy(hash, source)
+		}
+	} else {
+		temporary, err := os.CreateTemp("", "kadmin-minio-upload-*")
+		if err != nil {
+			return nil, cleanup, 0, "", err
+		}
+		source = temporary
+		cleanup = func() {
+			temporary.Close()
+			_ = os.Remove(temporary.Name())
+		}
+		written, err = io.Copy(io.MultiWriter(hash, temporary), body)
+	}
+	if err != nil {
+		cleanup()
+		return nil, func() {}, 0, "", err
+	}
+	if _, err := source.Seek(0, io.SeekStart); err != nil {
+		cleanup()
+		return nil, func() {}, 0, "", err
+	}
+	if expectedSize >= 0 && written != expectedSize {
+		cleanup()
+		return nil, func() {}, 0, "", fmt.Errorf("upload size changed: got %d, want %d", written, expectedSize)
+	}
+	return source, cleanup, written, hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 func (m *Minio) Open(ctx context.Context, objectKey string) (io.ReadCloser, ObjectInfo, error) {
@@ -191,12 +239,14 @@ func (m *minioHTTPClient) ensureBucket(ctx context.Context) error {
 	return nil
 }
 
-func (m *minioHTTPClient) putObject(ctx context.Context, objectKey string, body []byte, contentType string) error {
-	resp, err := m.signedRequest(
+func (m *minioHTTPClient) putObject(ctx context.Context, objectKey string, body io.Reader, size int64, payloadHash string, contentType string) error {
+	resp, err := m.signedPayloadRequest(
 		ctx,
 		http.MethodPut,
 		"/"+EscapePath(m.config.Bucket)+"/"+EscapePath(objectKey),
-		bytes.NewReader(body),
+		body,
+		size,
+		payloadHash,
 		contentType,
 	)
 	if err != nil {
@@ -222,6 +272,9 @@ func (m *minioHTTPClient) getObject(ctx context.Context, objectKey string) (io.R
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		resp.Body.Close()
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, ObjectInfo{}, os.ErrNotExist
+		}
 		return nil, ObjectInfo{}, fmt.Errorf("minio get failed: %s", resp.Status)
 	}
 	return resp.Body, ObjectInfo{
@@ -243,6 +296,9 @@ func (m *minioHTTPClient) deleteObject(ctx context.Context, objectKey string) er
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if resp.StatusCode == http.StatusNotFound {
+			return os.ErrNotExist
+		}
 		return fmt.Errorf("minio delete failed: %s", resp.Status)
 	}
 	return nil
@@ -266,16 +322,28 @@ func (m *minioHTTPClient) signedRequest(ctx context.Context, method string, requ
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
-	m.sign(req, payload)
+	m.sign(req, sha256Hex(payload))
 	return m.client.Do(req)
 }
 
-func (m *minioHTTPClient) sign(req *http.Request, payload []byte) {
+func (m *minioHTTPClient) signedPayloadRequest(ctx context.Context, method string, requestPath string, body io.Reader, size int64, payloadHash string, contentType string) (*http.Response, error) {
+	endpoint := m.baseURL + requestPath
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, body)
+	if err != nil {
+		return nil, err
+	}
+	req.ContentLength = size
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	m.sign(req, payloadHash)
+	return m.client.Do(req)
+}
+
+func (m *minioHTTPClient) sign(req *http.Request, payloadHash string) {
 	now := time.Now().UTC()
 	date := now.Format("20060102")
 	amzDate := now.Format("20060102T150405Z")
-	payloadHash := sha256Hex(payload)
-
 	req.Header.Set("X-Amz-Date", amzDate)
 	req.Header.Set("X-Amz-Content-Sha256", payloadHash)
 

@@ -5,10 +5,23 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+type failingReader struct {
+	delivered bool
+}
+
+func (r *failingReader) Read(buffer []byte) (int, error) {
+	if !r.delivered {
+		r.delivered = true
+		return copy(buffer, []byte("partial")), nil
+	}
+	return 0, errors.New("read failed")
+}
 
 func TestLocalPutOpenDelete(t *testing.T) {
 	root := t.TempDir()
@@ -62,6 +75,23 @@ func TestLocalPathNeverEscapesRoot(t *testing.T) {
 		if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
 			t.Fatalf("object key %q escaped root to %q", objectKey, target)
 		}
+	}
+}
+
+func TestLocalPutDoesNotExposePartialObject(t *testing.T) {
+	root := t.TempDir()
+	store := NewLocal(root)
+	objectKey := "attachments/report.pdf"
+
+	if err := store.Put(context.Background(), objectKey, &failingReader{}, 99, "application/pdf"); err == nil {
+		t.Fatal("expected local write failure")
+	}
+	target, err := store.Path(objectKey)
+	if err != nil {
+		t.Fatalf("resolve target: %v", err)
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatalf("partial object must not be visible: %v", err)
 	}
 }
 
