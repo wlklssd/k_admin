@@ -23,9 +23,9 @@ import (
 	_ "github.com/GoAdminGroup/themes/adminlte"
 
 	"github.com/GoAdminGroup/go-admin/engine"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin"
 	"github.com/GoAdminGroup/go-admin/modules/config"
 	"github.com/GoAdminGroup/go-admin/modules/language"
-	"github.com/GoAdminGroup/go-admin/vbenapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -107,7 +107,7 @@ func run() error {
 	}
 	log.Printf("KAdmin 后端服务启动成功（模式：%s）", mode)
 	log.Printf("HTTP 监听地址：%s", listener.Addr())
-	log.Print("Vben API 前缀：/api；前端项目：admin-web（独立运行）")
+	log.Print("KAdmin API 前缀：/api；前端项目：admin-web（独立运行）")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
@@ -137,7 +137,7 @@ func run() error {
 	return nil
 }
 
-func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (requestLogs *vbenapi.RequestLogListener, err error) {
+func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (requestLogs *kadmin.RequestLogListener, err error) {
 	stage := "初始化 GoAdmin 公共组件"
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -150,14 +150,14 @@ func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (requestL
 	}()
 
 	e.AddConfig(cfg)
-	requestLogs = vbenapi.NewRequestLogListener(e.DefaultConnection())
+	requestLogs = kadmin.NewRequestLogListener(e.DefaultConnection())
 	r.Use(requestLogs.Middleware())
 	if err := e.Use(r); err != nil {
 		return nil, fmt.Errorf("%s失败: %w", stage, err)
 	}
 
-	stage = "注册 Vben API"
-	if err := vbenapi.Register(r, e.DefaultConnection()); err != nil {
+	stage = "注册 KAdmin API"
+	if err := kadmin.Register(r, e.DefaultConnection()); err != nil {
 		return nil, fmt.Errorf("%s失败: %w", stage, err)
 	}
 	return requestLogs, nil

@@ -1,6 +1,6 @@
 # KAdmin
 
-KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](https://github.com/GoAdminGroup/go-admin) 的公共组件，并在 `vbenapi` 中提供面向独立前端的接口；前端基于 [Vben Admin](https://github.com/vbenjs/vue-vben-admin) 的 Vue 3 与 Ant Design Vue 技术栈开发。
+KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](https://github.com/GoAdminGroup/go-admin) 的公共组件，并在 `internal/kadmin` 中提供独立的应用接口；前端基于 [Vben Admin](https://github.com/vbenjs/vue-vben-admin) 的 Vue 3 与 Ant Design Vue 技术栈开发。
 
 > 本项目是独立维护的二次开发项目，不是 GoAdminGroup 或 Vben 团队的官方发行版，也不代表上述项目对 KAdmin 的认可或背书。
 
@@ -32,7 +32,11 @@ KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](ht
 ```text
 .
 ├─ admin-web/          # 独立 Vue 前端，主要应用位于 apps/web-antd
-├─ vbenapi/            # KAdmin 前后端分离 API，统一挂载在 /api
+├─ internal/kadmin/    # KAdmin 应用后端，统一挂载在 /api
+│  ├─ bootstrap/       # 权限和菜单种子定义
+│  ├─ modules/files/   # 文件业务的完整 HTTP、服务和仓储链路
+│  ├─ platform/storage/ # 本地与 MinIO 对象存储实现
+│  └─ transport/httpx/ # HTTP 响应和中间件基础能力
 ├─ adapter/            # GoAdmin Web 框架适配器
 ├─ engine/             # GoAdmin 核心引擎
 ├─ modules/            # GoAdmin 公共模块
@@ -46,7 +50,7 @@ KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](ht
 项目边界：
 
 - GoAdmin 原后台保留在 `/admin`，不作为新页面的主要开发入口。
-- 新的后端接口集中维护在 `vbenapi`，默认前缀为 `/api`。
+- 新的后端接口集中维护在 `internal/kadmin`，默认前缀为 `/api`；新业务优先在 `internal/kadmin/modules` 下按业务域聚合。
 - 新的后台页面集中维护在 `admin-web`，沿用 Vben Admin 的组件和工程约定。
 
 ## 本地开发
@@ -83,7 +87,7 @@ go run .
 默认地址：
 
 - 原 GoAdmin 后台：`http://127.0.0.1:9033/admin`
-- Vben API：`http://127.0.0.1:9033/api`
+- KAdmin API：`http://127.0.0.1:9033/api`
 - 根地址：`http://127.0.0.1:9033/`，会跳转到 `/admin`
 
 首次创建 PostgreSQL volume 时，Docker Compose 会自动导入 `tests/data/admin_pg.sql`。
@@ -122,7 +126,7 @@ docker compose --profile tools up -d adminer
 后端：
 
 ```powershell
-go test ./vbenapi
+go test ./internal/kadmin/...
 go build .
 ```
 
