@@ -120,7 +120,7 @@
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'user'">
             <a-space>
-              <a-avatar :src="record.avatar">
+              <a-avatar :src="avatarSource(record.avatar)">
                 {{ (record.name || record.username).slice(0, 1).toUpperCase() }}
               </a-avatar>
               <div class="name-cell">
@@ -183,8 +183,9 @@
     <a-drawer
       v-model:open="userDrawerOpen"
       :title="editingUser ? '编辑用户' : '新增用户'"
-      width="520"
+      width="min(520px, 100vw)"
       :destroy-on-close="true"
+      @after-open-change="handleUserDrawerOpenChange"
     >
       <a-form ref="userFormRef" :model="userForm" :rules="userRules" layout="vertical">
         <a-form-item label="账号" name="username">
@@ -201,12 +202,12 @@
         </a-form-item>
         <a-form-item label="头像" name="avatar">
           <div class="avatar-uploader">
-            <a-avatar :size="64" :src="userForm.avatar">
+            <a-avatar :size="64" :src="avatarFormSource">
               {{ avatarInitial }}
             </a-avatar>
             <a-space wrap>
               <a-upload
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/bmp"
                 :before-upload="beforeAvatarUpload"
                 :disabled="avatarUploading"
                 :show-upload-list="false"
@@ -315,9 +316,16 @@ import {
   UploadOutlined,
 } from '@ant-design/icons-vue';
 import { message, type FormInstance, type UploadProps } from 'ant-design-vue';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 
 import { getDictionaryData, type DictionaryData } from '#/api/kadmin/dictionaries';
+import {
+  deleteFile,
+  getFileContent,
+  isManagedFileUrl,
+  managedFileId,
+  uploadFile,
+} from '#/api/kadmin/files';
 import { getRbacOverview, type RbacRole } from '#/api/kadmin/rbac';
 import {
   createUser,
@@ -328,7 +336,6 @@ import {
   resetUserPassword,
   updateUser,
   updateUserStatus,
-  uploadUserAvatar,
   type ManagedUser,
   type UserImportExportFormat,
 } from '#/api/kadmin/users';
@@ -345,6 +352,9 @@ const avatarUploading = ref(false);
 const importing = ref(false);
 const statusUpdatingIds = ref<number[]>([]);
 const users = ref<ManagedUser[]>([]);
+const avatarSources = ref<Record<string, string>>({});
+const avatarPreviewObjectUrl = ref('');
+const pendingAvatarFileId = ref<number>();
 const roles = ref<RbacRole[]>([]);
 const statusItems = ref<DictionaryData[]>([]);
 const userDrawerOpen = ref(false);
@@ -355,6 +365,9 @@ const editingUser = ref<ManagedUser | null>(null);
 const passwordUser = ref<ManagedUser | null>(null);
 const userFormRef = ref<FormInstance>();
 const passwordFormRef = ref<FormInstance>();
+const managedAvatarObjectUrls = new Map<string, string>();
+let avatarLoadGeneration = 0;
+let avatarUploadGeneration = 0;
 
 const filters = reactive({
   keyword: '',
@@ -435,9 +448,23 @@ const statusOptions = computed(() =>
 const avatarInitial = computed(() =>
   (userForm.name || userForm.username || 'U').slice(0, 1).toUpperCase(),
 );
+const avatarFormSource = computed(
+  () => avatarPreviewObjectUrl.value || avatarSource(userForm.avatar),
+);
 
 onMounted(() => {
   void Promise.all([loadUsers(), loadRoles(), loadStatusOptions()]);
+});
+
+onUnmounted(() => {
+  avatarLoadGeneration += 1;
+  avatarUploadGeneration += 1;
+  clearAvatarPreview();
+  for (const objectUrl of managedAvatarObjectUrls.values()) {
+    URL.revokeObjectURL(objectUrl);
+  }
+  managedAvatarObjectUrls.clear();
+  void discardPendingAvatar();
 });
 
 async function loadUsers() {
@@ -457,11 +484,92 @@ async function loadUsers() {
       departments: user.departments || [],
       status: user.status || 'enable',
     }));
+    void loadManagedAvatarSources(users.value);
   } catch (error) {
     message.error(error instanceof Error ? error.message : '加载用户失败');
   } finally {
     loading.value = false;
   }
+}
+
+function avatarSource(avatar?: string) {
+  if (!avatar) {
+    return undefined;
+  }
+  return isManagedFileUrl(avatar) ? avatarSources.value[avatar] : avatar;
+}
+
+async function loadManagedAvatarSources(records: ManagedUser[]) {
+  const generation = ++avatarLoadGeneration;
+  const requiredUrls = new Set(
+    records
+      .map((record) => record.avatar || '')
+      .filter((avatar) => isManagedFileUrl(avatar)),
+  );
+
+  for (const [stableUrl, objectUrl] of managedAvatarObjectUrls) {
+    if (!requiredUrls.has(stableUrl)) {
+      URL.revokeObjectURL(objectUrl);
+      managedAvatarObjectUrls.delete(stableUrl);
+    }
+  }
+  avatarSources.value = Object.fromEntries(managedAvatarObjectUrls);
+
+  const loaded = await Promise.all(
+    [...requiredUrls]
+      .filter((stableUrl) => !managedAvatarObjectUrls.has(stableUrl))
+      .map(async (stableUrl) => {
+        const id = managedFileId(stableUrl);
+        if (!id) {
+          return undefined;
+        }
+        try {
+          return { blob: await getFileContent(id), stableUrl };
+        } catch {
+          return undefined;
+        }
+      }),
+  );
+  if (generation !== avatarLoadGeneration) {
+    return;
+  }
+
+  for (const item of loaded) {
+    if (item) {
+      managedAvatarObjectUrls.set(item.stableUrl, URL.createObjectURL(item.blob));
+    }
+  }
+  avatarSources.value = Object.fromEntries(managedAvatarObjectUrls);
+}
+
+function setAvatarPreview(file: File) {
+  clearAvatarPreview();
+  avatarPreviewObjectUrl.value = URL.createObjectURL(file);
+}
+
+function clearAvatarPreview() {
+  if (avatarPreviewObjectUrl.value) {
+    URL.revokeObjectURL(avatarPreviewObjectUrl.value);
+    avatarPreviewObjectUrl.value = '';
+  }
+}
+
+async function discardPendingAvatar() {
+  const fileId = pendingAvatarFileId.value;
+  pendingAvatarFileId.value = undefined;
+  if (fileId) {
+    await deleteFile(fileId).catch(() => undefined);
+  }
+}
+
+function handleUserDrawerOpenChange(open: boolean) {
+  if (open) {
+    return;
+  }
+  avatarUploadGeneration += 1;
+  avatarUploading.value = false;
+  clearAvatarPreview();
+  void discardPendingAvatar();
 }
 
 async function loadRoles() {
@@ -512,6 +620,7 @@ function openUserDrawer(record?: ManagedUser) {
   userForm.avatar = record?.avatar || '';
   userForm.status = record?.status || 'enable';
   userForm.roleIds = record?.roleIds ? [...record.roleIds] : [];
+  clearAvatarPreview();
   userDrawerOpen.value = true;
 }
 
@@ -525,21 +634,35 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = async (file) => {
     return false;
   }
 
+  const generation = ++avatarUploadGeneration;
   avatarUploading.value = true;
   try {
-    const data = await uploadUserAvatar(file);
+    const data = await uploadFile(file, 'avatar');
+    if (generation !== avatarUploadGeneration || !userDrawerOpen.value) {
+      void deleteFile(data.id).catch(() => undefined);
+      return false;
+    }
+    await discardPendingAvatar();
+    pendingAvatarFileId.value = data.id;
     userForm.avatar = data.url;
-    message.success(data.storage === 'minio' ? '头像已上传至 MinIO' : '头像已上传至本地');
+    setAvatarPreview(file);
+    message.success('头像上传成功');
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '上传头像失败');
+    if (generation === avatarUploadGeneration) {
+      message.error(error instanceof Error ? error.message : '上传头像失败');
+    }
   } finally {
-    avatarUploading.value = false;
+    if (generation === avatarUploadGeneration) {
+      avatarUploading.value = false;
+    }
   }
   return false;
 };
 
 function clearAvatar() {
   userForm.avatar = '';
+  clearAvatarPreview();
+  void discardPendingAvatar();
 }
 
 async function submitUser() {
@@ -561,6 +684,8 @@ async function submitUser() {
         password: userForm.password.trim(),
       });
     }
+    pendingAvatarFileId.value = undefined;
+    clearAvatarPreview();
     userDrawerOpen.value = false;
     await loadUsers();
     message.success('用户已保存');
@@ -715,4 +840,3 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
   return window.btoa(binary);
 }
 </script>
-

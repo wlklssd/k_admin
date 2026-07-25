@@ -22,6 +22,13 @@ export async function request<T>(
   return requestWithAuth<T>(path, init, false);
 }
 
+export async function requestBlob(
+  path: string,
+  init: RequestInit = {},
+): Promise<Blob> {
+  return requestBlobWithAuth(path, init, false);
+}
+
 async function requestWithAuth<T>(
   path: string,
   init: RequestInit,
@@ -55,7 +62,40 @@ async function requestWithAuth<T>(
   return payload as T;
 }
 
+async function requestBlobWithAuth(
+  path: string,
+  init: RequestInit,
+  hasRetried: boolean,
+): Promise<Blob> {
+  const response = await sendResponse(path, init);
+
+  if (response.status === 401 && !hasRetried && useAccessStore().refreshToken) {
+    await refreshAccessToken();
+    return requestBlobWithAuth(path, init, true);
+  }
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    if (response.status === 401) {
+      markLoginExpired();
+      throw new Error('登录已过期，请重新登录');
+    }
+    throw new Error(
+      getPayloadMessage(payload) || response.statusText || '请求失败',
+    );
+  }
+
+  return response.blob();
+}
+
 async function sendRequest(path: string, init: RequestInit) {
+  const response = await sendResponse(path, init);
+  const payload = await response.json().catch(() => null);
+
+  return { payload, response };
+}
+
+async function sendResponse(path: string, init: RequestInit) {
   const headers = new Headers(init.headers);
   const hasBody = init.body !== undefined && init.body !== null;
 
@@ -72,9 +112,7 @@ async function sendRequest(path: string, init: RequestInit) {
     ...init,
     headers,
   });
-  const payload = await response.json().catch(() => null);
-
-  return { payload, response };
+  return response;
 }
 
 function refreshAccessToken(): Promise<string> {
