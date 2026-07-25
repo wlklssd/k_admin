@@ -132,27 +132,6 @@
       </a-table>
     </section>
 
-    <section class="panel">
-      <a-tabs v-model:active-key="activeTab">
-        <a-tab-pane key="permission" tab="权限树">
-          <a-tree
-            v-model:checkedKeys="checkedKeys"
-            checkable
-            default-expand-all
-            :tree-data="treeData"
-          />
-        </a-tab-pane>
-        <a-tab-pane key="transfer" tab="字段分配">
-          <a-transfer
-            v-model:target-keys="targetKeys"
-            :data-source="transferData"
-            :titles="['可选字段', '已选字段']"
-            :render="renderTransferItem"
-          />
-        </a-tab-pane>
-      </a-tabs>
-    </section>
-
     <a-drawer
       v-model:open="drawerOpen"
       :title="editingKey ? '编辑模块' : '新增模块'"
@@ -241,12 +220,6 @@ type TablePagination = {
   pageSize?: number;
 };
 
-type TransferItem = {
-  title: string;
-};
-
-const renderTransferItem = (item: TransferItem) => item.title;
-
 const filters = reactive<{
   keyword: string;
   status?: ResourceStatus;
@@ -261,7 +234,6 @@ const filters = reactive<{
 const rows = ref<ResourceItem[]>([...initialResources]);
 const selectedRowKeys = ref<string[]>([]);
 const density = ref('默认');
-const activeTab = ref('permission');
 const drawerOpen = ref(false);
 const detailOpen = ref(false);
 const detailRecord = ref<ResourceItem | null>(null);
@@ -269,8 +241,6 @@ const editingKey = ref('');
 const submitLoading = ref(false);
 const formRef = ref<FormInstance>();
 const fileList = ref<UploadProps['fileList']>([]);
-const checkedKeys = ref<string[]>(['system:user:list', 'system:user:add']);
-const targetKeys = ref<string[]>(['name', 'status', 'owner']);
 
 const formState = reactive<ResourceItem>({
   key: '',
@@ -310,40 +280,6 @@ const tagOptions = ['RBAC', '菜单', '权限', '上传', 'MinIO', 'CRUD', '审�
   label: value,
   value,
 }));
-
-const treeData = [
-  {
-    title: '系统管理',
-    key: 'system',
-    children: [
-      {
-        title: '用户管理',
-        key: 'system:user',
-        children: [
-          { title: '查询', key: 'system:user:list' },
-          { title: '新增', key: 'system:user:add' },
-          { title: '编辑', key: 'system:user:edit' },
-          { title: '删除', key: 'system:user:delete' },
-        ],
-      },
-      {
-        title: '角色管理',
-        key: 'system:role',
-        children: [
-          { title: '查询', key: 'system:role:list' },
-          { title: '授权', key: 'system:role:grant' },
-        ],
-      },
-    ],
-  },
-];
-
-const transferData = ['name', 'type', 'owner', 'status', 'priority', 'progress', 'createdAt'].map(
-  (key) => ({
-    key,
-    title: fieldTitle(key),
-  }),
-);
 
 const columns = [
   { title: '模块', dataIndex: 'name', key: 'name', width: 230, fixed: 'left' },
@@ -400,19 +336,6 @@ function avatarColor(type: string) {
   if (type === '通用服务') return 'hsl(var(--success))';
   if (type === '快速开发') return 'hsl(var(--accent-foreground))';
   return 'hsl(var(--warning))';
-}
-
-function fieldTitle(key: string) {
-  const map: Record<string, string> = {
-    name: '模块',
-    type: '类型',
-    owner: '负责人',
-    status: '状态',
-    priority: '优先级',
-    progress: '进度',
-    createdAt: '创建日期',
-  };
-  return map[key] || key;
 }
 
 function applySearch() {
