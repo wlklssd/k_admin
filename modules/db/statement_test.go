@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 
 	_ "github.com/GoAdminGroup/go-admin/modules/db/drivers/mssql"
@@ -24,6 +25,12 @@ func testSQLWhereIn(t *testing.T, conn Connection) {
 func testSQLCount(t *testing.T, conn Connection) {
 	count, _ := WithDriver(conn).Table("goadmin_users").Count()
 	assert.Equal(t, count, int64(2))
+}
+
+func TestPostgresInsertCheckTableNameIncludesOperationLog(t *testing.T) {
+	if !strings.Contains(postgresInsertCheckTableName, "goadmin_operation_log") {
+		t.Fatal("operation log inserts on PostgreSQL must use RETURNING id instead of LastInsertId")
+	}
 }
 
 // TODO
