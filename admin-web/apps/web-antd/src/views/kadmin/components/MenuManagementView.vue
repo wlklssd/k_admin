@@ -132,63 +132,87 @@
       width="560"
     >
       <a-form ref="formRef" :model="formState" :rules="rules" layout="vertical">
-        <a-form-item label="上级菜单" name="parentId">
-          <a-tree-select
-            v-model:value="formState.parentId"
-            allow-clear
-            tree-default-expand-all
-            :field-names="{ children: 'children', label: 'title', value: 'id' }"
-            :tree-data="parentOptions"
-            placeholder="根菜单"
+        <a-form-item label="菜单类型" name="type">
+          <a-select
+            v-model:value="formState.type"
+            :options="formTypeOptions"
+            placeholder="请先选择菜单类型"
+            @change="handleMenuTypeChange"
           />
         </a-form-item>
-        <a-form-item label="菜单标题" name="title">
-          <a-input
-            v-model:value="formState.title"
-            placeholder="例如：菜单管理"
-          />
-        </a-form-item>
-        <a-form-item label="访问路径" name="uri">
-          <a-input
-            v-model:value="formState.uri"
-            placeholder="例如：/kadmin/menus"
-          />
-        </a-form-item>
-        <a-form-item label="类型" name="type">
-          <a-select v-model:value="formState.type" :options="formTypeOptions" />
-        </a-form-item>
-        <a-form-item label="图标" name="icon">
-          <a-input
-            v-model:value="formState.icon"
-            placeholder="例如：lucide:menu"
-          />
-        </a-form-item>
-        <a-form-item label="分组标题" name="header">
-          <a-input
-            v-model:value="formState.header"
-            placeholder="可选，对应 header 字段"
-          />
-        </a-form-item>
-        <a-row :gutter="12">
-          <a-col :span="12">
-            <a-form-item label="插件名" name="pluginName">
+
+        <a-alert
+          v-if="!hasSelectedMenuType"
+          class="form-alert"
+          show-icon
+          type="info"
+          message="请先选择菜单类型"
+          description="目录/分组仅用于分类菜单；菜单用于配置可访问页面或外链。"
+        />
+
+        <template v-if="hasSelectedMenuType">
+          <a-form-item label="上级菜单" name="parentId">
+            <a-tree-select
+              v-model:value="formState.parentId"
+              allow-clear
+              tree-default-expand-all
+              :field-names="{ children: 'children', label: 'title', value: 'id' }"
+              :tree-data="parentOptions"
+              placeholder="根菜单"
+            />
+          </a-form-item>
+          <a-form-item label="菜单标题" name="title">
+            <a-input
+              v-model:value="formState.title"
+              :placeholder="isDirectoryType ? '例如：系统管理' : '例如：菜单管理'"
+            />
+          </a-form-item>
+          <a-form-item v-if="isMenuType" label="访问路径" name="uri">
+            <a-input
+              v-model:value="formState.uri"
+              placeholder="例如：/kadmin/menus 或 https://example.com"
+            />
+          </a-form-item>
+          <a-form-item label="图标" name="icon">
+            <a-input
+              v-model:value="formState.icon"
+              placeholder="例如：lucide:menu"
+            />
+          </a-form-item>
+          <template v-if="isMenuType">
+            <a-form-item label="分组标题" name="header">
               <a-input
-                v-model:value="formState.pluginName"
-                placeholder="可选"
+                v-model:value="formState.header"
+                placeholder="可选，对应 header 字段"
               />
             </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="UUID" name="uuid">
-              <a-input v-model:value="formState.uuid" placeholder="可选" />
-            </a-form-item>
-          </a-col>
-        </a-row>
+            <a-row :gutter="12">
+              <a-col :span="12">
+                <a-form-item label="插件名" name="pluginName">
+                  <a-input
+                    v-model:value="formState.pluginName"
+                    placeholder="可选"
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <a-form-item label="UUID" name="uuid">
+                  <a-input v-model:value="formState.uuid" placeholder="可选" />
+                </a-form-item>
+              </a-col>
+            </a-row>
+          </template>
+        </template>
       </a-form>
       <template #extra>
         <a-space>
           <a-button @click="drawerOpen = false">取消</a-button>
-          <a-button type="primary" :loading="saving" @click="submitForm">
+          <a-button
+            type="primary"
+            :disabled="!hasSelectedMenuType"
+            :loading="saving"
+            @click="submitForm"
+          >
             保存
           </a-button>
         </a-space>
@@ -265,7 +289,7 @@ const filters = reactive<{
 
 const formState = reactive<AdminMenuPayload>({
   parentId: 0,
-  type: ADMIN_MENU_TYPE.MENU,
+  type: undefined,
   order: 0,
   title: '',
   icon: '',
@@ -319,6 +343,9 @@ const filteredMenus = computed(() => {
 const parentOptions = computed(() =>
   filterMenuParentOptions(menus.value, editingMenu.value?.id),
 );
+const hasSelectedMenuType = computed(() => formState.type !== undefined);
+const isDirectoryType = computed(() => formState.type === ADMIN_MENU_TYPE.DIRECTORY);
+const isMenuType = computed(() => formState.type === ADMIN_MENU_TYPE.MENU);
 
 onMounted(() => {
   void loadMenus();
@@ -363,7 +390,7 @@ function openDrawer(record?: AdminMenu, parent?: AdminMenu) {
   editingMenu.value = record || null;
   Object.assign(formState, {
     parentId: record?.parentId ?? parent?.id ?? 0,
-    type: record?.type ?? ADMIN_MENU_TYPE.MENU,
+    type: record?.type,
     order: record?.order ?? nextChildOrder(parent),
     title: record?.title ?? '',
     icon: record?.icon ?? '',
@@ -373,6 +400,19 @@ function openDrawer(record?: AdminMenu, parent?: AdminMenu) {
     uuid: record?.uuid ?? '',
   });
   drawerOpen.value = true;
+}
+
+function handleMenuTypeChange(value: AdminMenuType) {
+  if (value === ADMIN_MENU_TYPE.DIRECTORY) {
+    clearPageFields();
+  }
+}
+
+function clearPageFields() {
+  formState.uri = '';
+  formState.header = '';
+  formState.pluginName = '';
+  formState.uuid = '';
 }
 
 async function submitForm() {
@@ -459,18 +499,20 @@ function normalizePayload(): AdminMenuPayload {
   const parentId = Number(formState.parentId) || 0;
   const parentChanged =
     editingMenu.value !== null && editingMenu.value.parentId !== parentId;
+  const menuType = formState.type ?? ADMIN_MENU_TYPE.MENU;
+  const includePageFields = menuType === ADMIN_MENU_TYPE.MENU;
   return {
     parentId,
-    type: formState.type ?? ADMIN_MENU_TYPE.MENU,
+    type: menuType,
     order: parentChanged
       ? nextChildOrder(findMenuById(menus.value, parentId))
       : Number(formState.order) || 0,
     title: formState.title.trim(),
     icon: formState.icon?.trim(),
-    uri: formState.uri?.trim(),
-    header: formState.header?.trim(),
-    pluginName: formState.pluginName?.trim(),
-    uuid: formState.uuid?.trim(),
+    uri: includePageFields ? formState.uri?.trim() : '',
+    header: includePageFields ? formState.header?.trim() : '',
+    pluginName: includePageFields ? formState.pluginName?.trim() : '',
+    uuid: includePageFields ? formState.uuid?.trim() : '',
   };
 }
 
@@ -487,6 +529,9 @@ function validateParentMenu(_rule: unknown, value: unknown): Promise<void> {
 }
 
 function validateMenuTypeChange(_rule: unknown, value: unknown): Promise<void> {
+  if (value === undefined || value === null) {
+    return Promise.reject(new Error('请选择菜单类型'));
+  }
   if (
     Number(value) === ADMIN_MENU_TYPE.MENU &&
     !canSetMenuAsItem(editingMenu.value)
