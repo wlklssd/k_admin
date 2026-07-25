@@ -174,9 +174,18 @@
             />
           </a-form-item>
           <a-form-item label="图标" name="icon">
-            <a-input
-              v-model:value="formState.icon"
-              placeholder="例如：lucide:menu"
+            <IconPicker
+              v-model="formState.icon"
+              allow-clear
+              class="menu-icon-picker"
+              :auto-fetch-api="false"
+              :icons="menuIconOptions"
+              :input-component="iconPickerInput"
+              icon-slot="addonAfter"
+              model-value-prop="value"
+              placeholder="请选择或搜索菜单图标"
+              prefix=""
+              @change="handleIconChange"
             />
           </a-form-item>
           <template v-if="isMenuType">
@@ -230,6 +239,7 @@
 
 <script setup lang="ts">
 import type { FormInstance } from 'ant-design-vue';
+import type { VNode } from 'vue';
 
 import type {
   AdminMenu,
@@ -240,6 +250,7 @@ import type {
 
 import { computed, onMounted, reactive, ref } from 'vue';
 
+import { IconPicker } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 import { useUserStore } from '@vben/stores';
 
@@ -250,7 +261,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
+import { Input, message } from 'ant-design-vue';
 
 import {
   ADMIN_MENU_TYPE,
@@ -309,6 +320,46 @@ const typeOptions = [
   { label: '菜单', value: ADMIN_MENU_TYPE.MENU },
   { label: '目录/分组', value: ADMIN_MENU_TYPE.DIRECTORY },
 ];
+
+const menuIconOptions = [
+  'lucide:layout-dashboard',
+  'lucide:home',
+  'lucide:menu',
+  'lucide:folder',
+  'lucide:folder-open',
+  'lucide:folder-kanban',
+  'lucide:book-open',
+  'lucide:file-text',
+  'lucide:scroll-text',
+  'lucide:database',
+  'lucide:server',
+  'lucide:settings',
+  'lucide:settings-2',
+  'lucide:sliders-horizontal',
+  'lucide:shield-check',
+  'lucide:lock-keyhole',
+  'lucide:users',
+  'lucide:user-cog',
+  'lucide:mail',
+  'lucide:bell',
+  'lucide:message-square',
+  'lucide:calendar-clock',
+  'lucide:chart-no-axes-column',
+  'lucide:area-chart',
+  'lucide:external-link',
+  'lucide:link',
+  'lucide:workflow',
+  'lucide:key-round',
+  'lucide:tags',
+  'lucide:list-tree',
+  'lucide:package',
+  'lucide:boxes',
+  'lucide:upload',
+  'lucide:download',
+  'carbon:workspace',
+  'carbon:api',
+];
+const iconPickerInput = Input as unknown as VNode;
 
 const formTypeOptions = computed(() =>
   typeOptions.map((option) => ({
@@ -406,6 +457,10 @@ function handleMenuTypeChange(value: AdminMenuType) {
   if (value === ADMIN_MENU_TYPE.DIRECTORY) {
     clearPageFields();
   }
+}
+
+function handleIconChange(icon: string) {
+  formState.icon = icon;
 }
 
 function clearPageFields() {
