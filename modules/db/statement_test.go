@@ -2,9 +2,10 @@ package db
 
 import (
 	"database/sql"
-	"strings"
 	"testing"
 
+	"github.com/GoAdminGroup/go-admin/modules/config"
+	"github.com/GoAdminGroup/go-admin/modules/db/dialect"
 	_ "github.com/GoAdminGroup/go-admin/modules/db/drivers/mssql"
 	_ "github.com/GoAdminGroup/go-admin/modules/db/drivers/postgres"
 	"github.com/magiconair/properties/assert"
@@ -27,10 +28,138 @@ func testSQLCount(t *testing.T, conn Connection) {
 	assert.Equal(t, count, int64(2))
 }
 
-func TestPostgresInsertCheckTableNameIncludesOperationLog(t *testing.T) {
-	if !strings.Contains(postgresInsertCheckTableName, "goadmin_operation_log") {
-		t.Fatal("operation log inserts on PostgreSQL must use RETURNING id instead of LastInsertId")
+func TestPostgresInsertUsesReturningIDWhenTableHasID(t *testing.T) {
+	conn := &postgresInsertFakeConn{columns: []map[string]interface{}{{"column_name": "id"}}}
+
+	id, err := WithDriver(conn).Table("custom_log_table").Insert(dialect.H{"name": "demo"})
+	if err != nil {
+		t.Fatalf("insert returned error: %v", err)
 	}
+	if id != 42 {
+		t.Fatalf("unexpected id: %d", id)
+	}
+	if !conn.queryWithCalled || conn.execWithCalled {
+		t.Fatalf("expected RETURNING id query path, queryWith=%v execWith=%v", conn.queryWithCalled, conn.execWithCalled)
+	}
+}
+
+func TestPostgresInsertWithoutIDDoesNotCallLastInsertID(t *testing.T) {
+	conn := &postgresInsertFakeConn{columns: []map[string]interface{}{{"column_name": "role_id"}}}
+
+	id, err := WithDriver(conn).Table("goadmin_role_users").Insert(dialect.H{"role_id": 1, "user_id": 2})
+	if err != nil {
+		t.Fatalf("insert returned error: %v", err)
+	}
+	if id != 0 {
+		t.Fatalf("tables without id should return 0, got %d", id)
+	}
+	if !conn.execWithCalled || conn.lastInsertIDCalled {
+		t.Fatalf("expected exec path without LastInsertId, execWith=%v lastInsertID=%v", conn.execWithCalled, conn.lastInsertIDCalled)
+	}
+}
+
+func TestPostgresExecDoesNotCallLastInsertID(t *testing.T) {
+	conn := &postgresInsertFakeConn{}
+	stmt := WithDriver(conn).Table("custom_table")
+	stmt.Values = dialect.H{"name": "demo"}
+
+	affectedRows, err := stmt.Exec()
+	if err != nil {
+		t.Fatalf("exec returned error: %v", err)
+	}
+	if affectedRows != 1 {
+		t.Fatalf("expected affected rows, got %d", affectedRows)
+	}
+	if !conn.execWithCalled || conn.lastInsertIDCalled {
+		t.Fatalf("expected exec path without LastInsertId, execWith=%v lastInsertID=%v", conn.execWithCalled, conn.lastInsertIDCalled)
+	}
+}
+
+type postgresInsertFakeConn struct {
+	columns            []map[string]interface{}
+	queryWithCalled    bool
+	execWithCalled     bool
+	lastInsertIDCalled bool
+}
+
+func (c *postgresInsertFakeConn) Query(string, ...interface{}) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (c *postgresInsertFakeConn) Exec(string, ...interface{}) (sql.Result, error) {
+	c.execWithCalled = true
+	return postgresInsertFakeResult{conn: c}, nil
+}
+
+func (c *postgresInsertFakeConn) QueryWithConnection(string, string, ...interface{}) ([]map[string]interface{}, error) {
+	return c.columns, nil
+}
+
+func (c *postgresInsertFakeConn) QueryWithTx(*sql.Tx, string, ...interface{}) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (c *postgresInsertFakeConn) QueryWith(*sql.Tx, string, string, ...interface{}) ([]map[string]interface{}, error) {
+	c.queryWithCalled = true
+	return []map[string]interface{}{{"id": int64(42)}}, nil
+}
+
+func (c *postgresInsertFakeConn) ExecWithConnection(string, string, ...interface{}) (sql.Result, error) {
+	c.execWithCalled = true
+	return postgresInsertFakeResult{conn: c}, nil
+}
+
+func (c *postgresInsertFakeConn) ExecWithTx(*sql.Tx, string, ...interface{}) (sql.Result, error) {
+	c.execWithCalled = true
+	return postgresInsertFakeResult{conn: c}, nil
+}
+
+func (c *postgresInsertFakeConn) ExecWith(*sql.Tx, string, string, ...interface{}) (sql.Result, error) {
+	c.execWithCalled = true
+	return postgresInsertFakeResult{conn: c}, nil
+}
+
+func (c *postgresInsertFakeConn) BeginTxWithReadUncommitted() *sql.Tx { return nil }
+func (c *postgresInsertFakeConn) BeginTxWithReadCommitted() *sql.Tx   { return nil }
+func (c *postgresInsertFakeConn) BeginTxWithRepeatableRead() *sql.Tx  { return nil }
+func (c *postgresInsertFakeConn) BeginTx() *sql.Tx                    { return nil }
+func (c *postgresInsertFakeConn) BeginTxWithLevel(sql.IsolationLevel) *sql.Tx {
+	return nil
+}
+func (c *postgresInsertFakeConn) BeginTxWithReadUncommittedAndConnection(string) *sql.Tx {
+	return nil
+}
+func (c *postgresInsertFakeConn) BeginTxWithReadCommittedAndConnection(string) *sql.Tx {
+	return nil
+}
+func (c *postgresInsertFakeConn) BeginTxWithRepeatableReadAndConnection(string) *sql.Tx {
+	return nil
+}
+func (c *postgresInsertFakeConn) BeginTxAndConnection(string) *sql.Tx { return nil }
+func (c *postgresInsertFakeConn) BeginTxWithLevelAndConnection(string, sql.IsolationLevel) *sql.Tx {
+	return nil
+}
+func (c *postgresInsertFakeConn) InitDB(map[string]config.Database) Connection { return c }
+func (c *postgresInsertFakeConn) Name() string                                 { return DriverPostgresql }
+func (c *postgresInsertFakeConn) Close() []error                               { return nil }
+func (c *postgresInsertFakeConn) GetDelimiter() string                         { return `"` }
+func (c *postgresInsertFakeConn) GetDelimiter2() string                        { return `"` }
+func (c *postgresInsertFakeConn) GetDelimiters() []string                      { return []string{`"`, `"`} }
+func (c *postgresInsertFakeConn) GetDB(string) *sql.DB                         { return nil }
+func (c *postgresInsertFakeConn) GetConfig(string) config.Database             { return config.Database{} }
+func (c *postgresInsertFakeConn) CreateDB(string, ...interface{}) error        { return nil }
+
+type postgresInsertFakeResult struct {
+	conn *postgresInsertFakeConn
+}
+
+func (r postgresInsertFakeResult) LastInsertId() (int64, error) {
+	r.conn.lastInsertIDCalled = true
+	return 0, nil
+}
+
+func (postgresInsertFakeResult) RowsAffected() (int64, error) {
+	return 1, nil
 }
 
 // TODO

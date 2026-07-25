@@ -545,14 +545,17 @@ func (sql *SQL) Exec() (int64, error) {
 		return 0, err
 	}
 
-	if affectRow, _ := res.RowsAffected(); affectRow < 1 {
+	affectRow, _ := res.RowsAffected()
+	if affectRow < 1 {
 		return 0, errors.New("no affect row")
+	}
+
+	if sql.diver.Name() == DriverPostgresql {
+		return affectRow, nil
 	}
 
 	return res.LastInsertId()
 }
-
-const postgresInsertCheckTableName = "goadmin_menu|goadmin_permissions|goadmin_roles|goadmin_users|goadmin_department|goadmin_dict_type|goadmin_dict_data|goadmin_operation_log"
 
 // Insert exec the insert method of given key/value pairs.
 func (sql *SQL) Insert(values dialect.H) (int64, error) {
@@ -562,37 +565,8 @@ func (sql *SQL) Insert(values dialect.H) (int64, error) {
 
 	sql.dialect.Insert(&sql.SQLComponent)
 
-	if sql.diver.Name() == DriverPostgresql && (strings.Contains(postgresInsertCheckTableName, sql.TableName)) {
-
-		resMap, err := sql.diver.QueryWith(sql.tx, sql.conn, sql.Statement+" RETURNING id", sql.Args...)
-
-		if err != nil {
-
-			// Fixed java h2 database postgresql mode
-			_, err := sql.diver.QueryWith(sql.tx, sql.conn, sql.Statement, sql.Args...)
-
-			if err != nil {
-				return 0, err
-			}
-
-			res, err := sql.diver.QueryWithConnection(sql.conn, `SELECT max("id") as "id" FROM "`+sql.TableName+`"`)
-
-			if err != nil {
-				return 0, err
-			}
-
-			if len(res) != 0 {
-				return res[0]["id"].(int64), nil
-			}
-
-			return 0, err
-		}
-
-		if len(resMap) == 0 {
-			return 0, errors.New("no affect row")
-		}
-
-		return resMap[0]["id"].(int64), nil
+	if sql.diver.Name() == DriverPostgresql {
+		return sql.insertPostgresql()
 	}
 
 	res, err := sql.diver.ExecWith(sql.tx, sql.conn, sql.Statement, sql.Args...)
@@ -606,6 +580,101 @@ func (sql *SQL) Insert(values dialect.H) (int64, error) {
 	}
 
 	return res.LastInsertId()
+}
+
+func (sql *SQL) insertPostgresql() (int64, error) {
+	hasID, err := sql.postgresqlTableHasID()
+	if err != nil {
+		return 0, err
+	}
+	if !hasID {
+		res, err := sql.diver.ExecWith(sql.tx, sql.conn, sql.Statement, sql.Args...)
+		if err != nil {
+			return 0, err
+		}
+		if affectRow, _ := res.RowsAffected(); affectRow < 1 {
+			return 0, errors.New("no affect row")
+		}
+		return 0, nil
+	}
+
+	resMap, err := sql.diver.QueryWith(sql.tx, sql.conn, sql.Statement+" RETURNING id", sql.Args...)
+	if err != nil {
+		// Fixed java h2 database postgresql mode
+		_, err := sql.diver.QueryWith(sql.tx, sql.conn, sql.Statement, sql.Args...)
+		if err != nil {
+			return 0, err
+		}
+
+		res, err := sql.diver.QueryWithConnection(sql.conn, `SELECT max("id") as "id" FROM "`+sql.TableName+`"`)
+		if err != nil {
+			return 0, err
+		}
+		if len(res) != 0 {
+			return postgresqlReturnedID(res[0]["id"])
+		}
+		return 0, errors.New("no affect row")
+	}
+
+	if len(resMap) == 0 {
+		return 0, errors.New("no affect row")
+	}
+	return postgresqlReturnedID(resMap[0]["id"])
+}
+
+func (sql *SQL) postgresqlTableHasID() (bool, error) {
+	columns, err := sql.diver.QueryWithConnection(sql.conn, sql.dialect.ShowColumns(sql.TableName))
+	if err != nil {
+		return false, err
+	}
+	for _, column := range columns {
+		if strings.EqualFold(postgresqlColumnName(column), "id") {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func postgresqlColumnName(column map[string]interface{}) string {
+	for _, key := range []string{"column_name", "COLUMN_NAME", "Field", "field", "name"} {
+		if value, ok := column[key]; ok {
+			if name, ok := value.(string); ok {
+				return name
+			}
+		}
+	}
+	return ""
+}
+
+func postgresqlReturnedID(value interface{}) (int64, error) {
+	switch id := value.(type) {
+	case int64:
+		return id, nil
+	case int:
+		return int64(id), nil
+	case int32:
+		return int64(id), nil
+	case int16:
+		return int64(id), nil
+	case int8:
+		return int64(id), nil
+	case uint:
+		return int64(id), nil
+	case uint64:
+		return int64(id), nil
+	case uint32:
+		return int64(id), nil
+	case uint16:
+		return int64(id), nil
+	case uint8:
+		return int64(id), nil
+	case []byte:
+		return strconv.ParseInt(string(id), 10, 64)
+	case string:
+		return strconv.ParseInt(id, 10, 64)
+	default:
+		return 0, errors.New("invalid returned id")
+	}
 }
 
 func (sql *SQL) wrap(field string) string {
