@@ -29,7 +29,8 @@ require (
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/sclevine/agouti v3.0.0+incompatible
-	github.com/stretchr/testify v1.9.0
+	github.com/shirou/gopsutil/v4 v4.24.12
+	github.com/stretchr/testify v1.10.0
 	github.com/teambition/gear v1.27.3
 	github.com/valyala/fasthttp v1.52.0
 	go.uber.org/zap v1.19.1
@@ -57,6 +58,7 @@ require (
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/ebitengine/purego v0.8.1 // indirect
 	github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
@@ -68,6 +70,7 @@ require (
 	github.com/go-http-utils/negotiator v1.0.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gobuffalo/envy v1.10.2 // indirect
 	github.com/gobuffalo/events v1.4.3 // indirect
 	github.com/gobuffalo/flect v1.0.0 // indirect
@@ -108,6 +111,7 @@ require (
 	github.com/kataras/tunnel v0.0.4 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
+	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailgun/raymond/v2 v2.0.48 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -123,6 +127,7 @@ require (
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
@@ -143,6 +148,8 @@ require (
 	github.com/tdewolff/minify/v2 v2.20.14 // indirect
 	github.com/tdewolff/parse/v2 v2.7.8 // indirect
 	github.com/teambition/trie-mux v1.5.2 // indirect
+	github.com/tklauser/go-sysconf v0.3.12 // indirect
+	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
@@ -157,6 +164,7 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect

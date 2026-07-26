@@ -13,6 +13,7 @@ KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](ht
 - 字典类型与字典数据管理
 - 系统配置管理
 - Cron 定时任务、运行时暂停/恢复、立即执行与执行日志
+- 可启停的系统监控、CPU/内存占用、服务器信息与运行时间
 - PostgreSQL 数据存储、Redis 鉴权状态存储
 - 可选的 MinIO 对象存储和 Adminer 数据库管理工具
 - 保留 GoAdmin 原有后台入口，供兼容和公共能力复用
@@ -37,6 +38,7 @@ KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](ht
 │  ├─ bootstrap/       # 权限和菜单种子定义
 │  ├─ modules/files/   # 文件业务的完整 HTTP、服务和仓储链路
 │  ├─ modules/jobs/    # 定时任务、内置处理器与执行日志
+│  ├─ modules/monitor/ # 可启停的系统指标采样与监控接口
 │  ├─ platform/storage/ # 本地与 MinIO 对象存储实现
 │  └─ transport/httpx/ # HTTP 响应和中间件基础能力
 ├─ adapter/            # GoAdmin Web 框架适配器

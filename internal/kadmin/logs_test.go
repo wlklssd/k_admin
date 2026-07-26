@@ -8,6 +8,7 @@ import (
 
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
 	"github.com/GoAdminGroup/go-admin/plugins/admin/models"
 	"github.com/gin-gonic/gin"
 )
@@ -152,6 +153,36 @@ func TestDefaultJobPermissionsAndMenu(t *testing.T) {
 		}
 	}
 	t.Fatal("default job menu seed was not found")
+}
+
+func TestDefaultMonitorPermissionsAndMenu(t *testing.T) {
+	wantedPermissions := map[string]bool{
+		monitor.ViewPermission:   false,
+		monitor.UpdatePermission: false,
+	}
+	for _, seed := range defaultPermissionSeeds {
+		if _, ok := wantedPermissions[seed.Slug]; ok {
+			wantedPermissions[seed.Slug] = true
+		}
+	}
+	for permission, found := range wantedPermissions {
+		if !found {
+			t.Fatalf("monitor permission %s was not seeded", permission)
+		}
+	}
+
+	binding, ok := vbenMenuRouteBindings["/kadmin/monitor"]
+	if !ok || binding.Component != "/kadmin/components/SystemMonitorView" {
+		t.Fatalf("unexpected monitor menu binding: %#v", binding)
+	}
+	for _, root := range defaultMenuSeeds {
+		for _, child := range root.Children {
+			if child.URI == "/kadmin/monitor" && child.Order == 9 {
+				return
+			}
+		}
+	}
+	t.Fatal("default monitor menu seed was not found")
 }
 
 func TestFilePermissionMiddlewareReturns403(t *testing.T) {

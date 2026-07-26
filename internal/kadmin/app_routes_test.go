@@ -12,19 +12,21 @@ func TestRegisterApplicationRoutesIncludesEveryModule(t *testing.T) {
 	registerApplicationRoutes(engine.Group("/api"), &Store{})
 
 	wanted := map[string]bool{
-		"POST /api/auth/login":           false,
-		"GET /api/user/info":             false,
-		"GET /api/menu/all":              false,
-		"GET /api/rbac/overview":         false,
-		"GET /api/admin-menus":           false,
-		"GET /api/users":                 false,
-		"GET /api/dictionaries/overview": false,
-		"POST /api/files":                false,
-		"POST /api/users/avatar":         false,
-		"GET /api/system/config/login":   false,
-		"GET /api/logs":                  false,
-		"GET /api/jobs":                  false,
-		"GET /api/job-logs":              false,
+		"POST /api/auth/login":             false,
+		"GET /api/user/info":               false,
+		"GET /api/menu/all":                false,
+		"GET /api/rbac/overview":           false,
+		"GET /api/admin-menus":             false,
+		"GET /api/users":                   false,
+		"GET /api/dictionaries/overview":   false,
+		"POST /api/files":                  false,
+		"POST /api/users/avatar":           false,
+		"GET /api/system/config/login":     false,
+		"GET /api/logs":                    false,
+		"GET /api/jobs":                    false,
+		"GET /api/job-logs":                false,
+		"GET /api/system-monitor":          false,
+		"PATCH /api/system-monitor/status": false,
 	}
 	for _, route := range engine.Routes() {
 		key := route.Method + " " + route.Path

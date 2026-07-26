@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
 )
 
 const (
@@ -30,5 +31,7 @@ func DefaultPermissions() []PermissionSeed {
 		{Name: "删除定时任务", Slug: jobs.DeletePermission, HTTPMethod: "DELETE", HTTPPath: "/api/jobs/*"},
 		{Name: "立即执行任务", Slug: jobs.RunPermission, HTTPMethod: "POST", HTTPPath: "/api/jobs/*/run"},
 		{Name: "查看任务日志", Slug: jobs.LogListPermission, HTTPMethod: "GET", HTTPPath: "/api/job-logs*"},
+		{Name: "查看系统监控", Slug: monitor.ViewPermission, HTTPMethod: "GET", HTTPPath: "/api/system-monitor"},
+		{Name: "启停系统监控", Slug: monitor.UpdatePermission, HTTPMethod: "PATCH", HTTPPath: "/api/system-monitor/status"},
 	}
 }

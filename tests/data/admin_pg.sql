@@ -223,6 +223,24 @@ CREATE TABLE public.kadmin_job_logs (
 ALTER TABLE public.kadmin_job_logs OWNER TO postgres;
 
 --
+-- Name: kadmin_monitor_settings; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.kadmin_monitor_settings (
+    id smallint NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    updated_by bigint DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT kadmin_monitor_settings_pkey PRIMARY KEY (id),
+    CONSTRAINT kadmin_monitor_settings_singleton_check CHECK ((id = 1))
+);
+
+ALTER TABLE public.kadmin_monitor_settings OWNER TO postgres;
+
+INSERT INTO public.kadmin_monitor_settings (id, enabled, updated_by)
+VALUES (1, false, 0);
+
+--
 -- Name: goadmin_permissions_myid_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -517,6 +535,7 @@ COPY public.goadmin_menu (id, parent_id, type, "order", title, plugin_name, head
 10	4	1	6	资源工作台		\N	lucide:folder-kanban	/kadmin/resources	2019-09-10 00:00:00	2019-09-10 00:00:00
 11	4	1	7	日志管理		\N	lucide:scroll-text	/kadmin/logs	2026-07-22 00:00:00	2026-07-22 00:00:00
 12	4	1	8	定时任务		\N	lucide:clock-3	/kadmin/jobs	2026-07-26 00:00:00	2026-07-26 00:00:00
+13	4	1	9	系统监控		\N	lucide:monitor-cog	/kadmin/monitor	2026-07-26 00:00:00	2026-07-26 00:00:00
 \.
 
 
@@ -576,6 +595,8 @@ COPY public.goadmin_permissions (id, name, slug, http_method, http_path, created
 11	删除定时任务	system:job:delete	DELETE	/api/jobs/*	2026-07-26 00:00:00	2026-07-26 00:00:00
 12	立即执行任务	system:job:run	POST	/api/jobs/*/run	2026-07-26 00:00:00	2026-07-26 00:00:00
 13	查看任务日志	system:job-log:list	GET	/api/job-logs*	2026-07-26 00:00:00	2026-07-26 00:00:00
+14	查看系统监控	system:monitor:view	GET	/api/system-monitor	2026-07-26 00:00:00	2026-07-26 00:00:00
+15	启停系统监控	system:monitor:update	PATCH	/api/system-monitor/status	2026-07-26 00:00:00	2026-07-26 00:00:00
 \.
 
 
@@ -596,6 +617,7 @@ COPY public.goadmin_role_menu (role_id, menu_id, created_at, updated_at) FROM st
 1	10	2019-09-10 00:00:00	2019-09-10 00:00:00
 1	11	2026-07-22 00:00:00	2026-07-22 00:00:00
 1	12	2026-07-26 00:00:00	2026-07-26 00:00:00
+1	13	2026-07-26 00:00:00	2026-07-26 00:00:00
 2	1	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	2	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	3	2019-09-10 00:00:00	2019-09-10 00:00:00
@@ -684,7 +706,7 @@ COPY public.goadmin_users (id, username, password, name, avatar, status, remembe
 -- Name: goadmin_menu_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.goadmin_menu_myid_seq', 12, true);
+SELECT pg_catalog.setval('public.goadmin_menu_myid_seq', 13, true);
 
 
 --
@@ -698,7 +720,7 @@ SELECT pg_catalog.setval('public.goadmin_operation_log_myid_seq', 1, true);
 -- Name: goadmin_permissions_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.goadmin_permissions_myid_seq', 13, true);
+SELECT pg_catalog.setval('public.goadmin_permissions_myid_seq', 15, true);
 
 
 --

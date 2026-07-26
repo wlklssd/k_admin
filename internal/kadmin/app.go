@@ -7,6 +7,7 @@ import (
 
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
 	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/gin-gonic/gin"
 )
@@ -21,14 +22,22 @@ type Store struct {
 	menuMutationMu sync.Mutex
 	auth           *authService
 	jobs           *jobs.Manager
+	monitor        *monitor.Manager
 }
 
 type Runtime struct {
-	jobs *jobs.Manager
+	jobs    *jobs.Manager
+	monitor *monitor.Manager
 }
 
 func (r *Runtime) Close() {
-	if r != nil && r.jobs != nil {
+	if r == nil {
+		return
+	}
+	if r.monitor != nil {
+		r.monitor.Close()
+	}
+	if r.jobs != nil {
 		r.jobs.Close()
 	}
 }
@@ -60,8 +69,18 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 		return nil, fmt.Errorf("初始化定时任务失败: %w", err)
 	}
 	s.jobs = manager
+	monitorManager, err := monitor.Register(api, monitor.Dependencies{
+		Connection:        s.conn,
+		RequireAuth:       s.requireAuth(),
+		RequirePermission: s.requirePermission,
+	})
+	if err != nil {
+		manager.Close()
+		return nil, fmt.Errorf("初始化系统监控失败: %w", err)
+	}
+	s.monitor = monitorManager
 	registerApplicationRoutes(api, s)
-	return &Runtime{jobs: manager}, nil
+	return &Runtime{jobs: manager, monitor: monitorManager}, nil
 }
 
 func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
@@ -82,6 +101,12 @@ func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
 	registerLogRoutes(api, s)
 	if s.jobs == nil {
 		jobs.RegisterRoutes(api, nil, jobs.Dependencies{
+			RequireAuth:       s.requireAuth(),
+			RequirePermission: s.requirePermission,
+		})
+	}
+	if s.monitor == nil {
+		monitor.RegisterRoutes(api, nil, monitor.Dependencies{
 			RequireAuth:       s.requireAuth(),
 			RequirePermission: s.requirePermission,
 		})
