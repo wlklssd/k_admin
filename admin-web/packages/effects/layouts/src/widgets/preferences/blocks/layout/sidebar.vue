@@ -27,7 +27,6 @@ const sidebarButtons = defineModel<string[]>('sidebarButtons', {
   default: () => [],
 });
 const sidebarCollapsedButton = defineModel<boolean>('sidebarCollapsedButton');
-const sidebarFixedButton = defineModel<boolean>('sidebarFixedButton');
 
 onMounted(() => {
   if (
@@ -36,14 +35,10 @@ onMounted(() => {
   ) {
     sidebarButtons.value.push('collapsed');
   }
-  if (sidebarFixedButton.value && !sidebarButtons.value.includes('fixed')) {
-    sidebarButtons.value.push('fixed');
-  }
 });
 
 const handleCheckboxChange = () => {
   sidebarCollapsedButton.value = !!sidebarButtons.value.includes('collapsed');
-  sidebarFixedButton.value = !!sidebarButtons.value.includes('fixed');
 };
 </script>
 
@@ -86,7 +81,6 @@ const handleCheckboxChange = () => {
   <CheckboxItem
     :items="[
       { label: $t('preferences.sidebar.buttonCollapsed'), value: 'collapsed' },
-      { label: $t('preferences.sidebar.buttonFixed'), value: 'fixed' },
     ]"
     multiple
     v-model="sidebarButtons"

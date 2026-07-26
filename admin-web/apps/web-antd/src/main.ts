@@ -23,8 +23,11 @@ async function initApplication() {
     namespace,
     overrides: overridesPreferences,
   });
-  // accessMode 是应用架构配置，不允许旧的浏览器偏好缓存切回静态前端路由。
-  updatePreferences({ app: { accessMode: KADMIN_ACCESS_MODE } });
+  // 应用级配置不允许旧的浏览器偏好缓存覆盖。
+  updatePreferences({
+    app: { accessMode: KADMIN_ACCESS_MODE },
+    sidebar: { expandOnHover: true, fixedButton: false },
+  });
 
   // 启动应用并挂载
   // vue应用主要逻辑及视图

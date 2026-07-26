@@ -27,6 +27,10 @@ export const overridesPreferences = defineOverridesPreferences({
     name: import.meta.env.VITE_APP_TITLE,
   },
   copyright: appCopyrightPreferences,
+  sidebar: {
+    expandOnHover: true,
+    fixedButton: false,
+  },
 });
 
 export const preferencesExtension =
