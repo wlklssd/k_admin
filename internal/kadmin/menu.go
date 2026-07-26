@@ -112,6 +112,12 @@ var vbenMenuRouteBindings = map[string]menuRouteBinding{
 		Component: "/kadmin/components/LogManagementView",
 		Icon:      "lucide:scroll-text",
 	},
+	"/kadmin/jobs": {
+		Name:      "KAdminJobs",
+		Path:      "/kadmin/jobs",
+		Component: "/kadmin/components/JobManagementView",
+		Icon:      "lucide:clock-3",
+	},
 }
 
 func registerMenuRoutes(api *gin.RouterGroup, s *Store) {

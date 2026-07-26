@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
 	"github.com/GoAdminGroup/go-admin/plugins/admin/models"
 	"github.com/gin-gonic/gin"
 )
@@ -117,6 +118,40 @@ func TestDefaultFilePermissions(t *testing.T) {
 	if userHasPermission(user, files.UploadPermission) {
 		t.Fatal("unrelated file permission must not grant upload access")
 	}
+}
+
+func TestDefaultJobPermissionsAndMenu(t *testing.T) {
+	wantedPermissions := map[string]bool{
+		jobs.ListPermission:    false,
+		jobs.CreatePermission:  false,
+		jobs.UpdatePermission:  false,
+		jobs.DeletePermission:  false,
+		jobs.RunPermission:     false,
+		jobs.LogListPermission: false,
+	}
+	for _, seed := range defaultPermissionSeeds {
+		if _, ok := wantedPermissions[seed.Slug]; ok {
+			wantedPermissions[seed.Slug] = true
+		}
+	}
+	for permission, found := range wantedPermissions {
+		if !found {
+			t.Fatalf("job permission %s was not seeded", permission)
+		}
+	}
+
+	binding, ok := vbenMenuRouteBindings["/kadmin/jobs"]
+	if !ok || binding.Component != "/kadmin/components/JobManagementView" {
+		t.Fatalf("unexpected job menu binding: %#v", binding)
+	}
+	for _, root := range defaultMenuSeeds {
+		for _, child := range root.Children {
+			if child.URI == "/kadmin/jobs" && child.Order == 8 {
+				return
+			}
+		}
+	}
+	t.Fatal("default job menu seed was not found")
 }
 
 func TestFilePermissionMiddlewareReturns403(t *testing.T) {

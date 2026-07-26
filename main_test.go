@@ -27,7 +27,7 @@ func TestListenHTTPReportsAddressInUse(t *testing.T) {
 }
 
 func TestSetupBackendConvertsInitializationPanicToError(t *testing.T) {
-	_, err := setupBackend(nil, nil, nil)
+	_, _, err := setupBackend(nil, nil, nil)
 	if err == nil {
 		t.Fatal("expected initialization error")
 	}

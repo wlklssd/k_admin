@@ -23,6 +23,8 @@ func TestRegisterApplicationRoutesIncludesEveryModule(t *testing.T) {
 		"POST /api/users/avatar":         false,
 		"GET /api/system/config/login":   false,
 		"GET /api/logs":                  false,
+		"GET /api/jobs":                  false,
+		"GET /api/job-logs":              false,
 	}
 	for _, route := range engine.Routes() {
 		key := route.Method + " " + route.Path

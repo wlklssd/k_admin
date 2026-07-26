@@ -76,12 +76,13 @@ func run() error {
 	}
 
 	// ④ 初始化引擎
-	requestLogs, err := setupBackend(r, e, &cfg)
+	requestLogs, appRuntime, err := setupBackend(r, e, &cfg)
 	if err != nil {
 		return err
 	}
 	defer closeDatabase(e)
 	defer requestLogs.Close()
+	defer appRuntime.Close()
 
 	// 访问根路径自动跳转到后台
 	r.GET("/", func(c *gin.Context) {
@@ -137,7 +138,7 @@ func run() error {
 	return nil
 }
 
-func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (requestLogs *kadmin.RequestLogListener, err error) {
+func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (requestLogs *kadmin.RequestLogListener, appRuntime *kadmin.Runtime, err error) {
 	stage := "初始化 GoAdmin 公共组件"
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -147,20 +148,25 @@ func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (requestL
 			requestLogs.Close()
 			requestLogs = nil
 		}
+		if err != nil && appRuntime != nil {
+			appRuntime.Close()
+			appRuntime = nil
+		}
 	}()
 
 	e.AddConfig(cfg)
 	requestLogs = kadmin.NewRequestLogListener(e.DefaultConnection())
 	r.Use(requestLogs.Middleware())
 	if err := e.Use(r); err != nil {
-		return nil, fmt.Errorf("%s失败: %w", stage, err)
+		return nil, nil, fmt.Errorf("%s失败: %w", stage, err)
 	}
 
 	stage = "注册 KAdmin API"
-	if err := kadmin.Register(r, e.DefaultConnection()); err != nil {
-		return nil, fmt.Errorf("%s失败: %w", stage, err)
+	appRuntime, err = kadmin.Register(r, e.DefaultConnection())
+	if err != nil {
+		return nil, nil, fmt.Errorf("%s失败: %w", stage, err)
 	}
-	return requestLogs, nil
+	return requestLogs, appRuntime, nil
 }
 
 func listenHTTP(addr string) (net.Listener, error) {

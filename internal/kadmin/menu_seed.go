@@ -42,14 +42,15 @@ func (s *Store) ensureMenuSeed(seed menuSeed, parentID int64, idsByURI map[strin
 	}
 	if id == 0 {
 		insertID, err := db.WithDriver(s.conn).Table("goadmin_menu").Insert(dialect.H{
-			"parent_id":  parentID,
-			"type":       menuSeedType(seed),
-			"order":      seed.Order,
-			"title":      seed.Title,
-			"icon":       seed.Icon,
-			"uri":        seed.URI,
-			"created_at": nowString(),
-			"updated_at": nowString(),
+			"parent_id":   parentID,
+			"type":        menuSeedType(seed),
+			"order":       seed.Order,
+			"title":       seed.Title,
+			"icon":        seed.Icon,
+			"uri":         seed.URI,
+			"plugin_name": "",
+			"created_at":  nowString(),
+			"updated_at":  nowString(),
 		})
 		if err != nil {
 			return err
