@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -214,10 +215,75 @@ func (s *Store) writeSystemConfig(values map[string]string) error {
 }
 
 func systemConfigPath() string {
-	if path := strings.TrimSpace(os.Getenv(systemConfigPathEnv)); path != "" {
+	return resolveSystemConfigPath(
+		strings.TrimSpace(os.Getenv(systemConfigPathEnv)),
+		systemConfigProjectRoot(),
+	)
+}
+
+func resolveSystemConfigPath(configuredPath, projectRoot string) string {
+	path := strings.TrimSpace(configuredPath)
+	if path == "" {
+		path = filepath.Join("data", "system_config.json")
+	}
+	if filepath.IsAbs(path) {
 		return filepath.Clean(path)
 	}
-	return filepath.Clean(filepath.Join("data", "system_config.json"))
+	return filepath.Clean(filepath.Join(projectRoot, path))
+}
+
+func systemConfigProjectRoot() string {
+	if workingDirectory, err := os.Getwd(); err == nil {
+		if root := findKAdminProjectRoot(workingDirectory); root != "" {
+			return root
+		}
+	}
+
+	if executable, err := os.Executable(); err == nil {
+		if root := findKAdminProjectRoot(filepath.Dir(executable)); root != "" {
+			return root
+		}
+	}
+
+	if _, sourceFile, _, ok := runtime.Caller(0); ok {
+		if root := findKAdminProjectRoot(filepath.Dir(sourceFile)); root != "" {
+			return root
+		}
+	}
+
+	if executable, err := os.Executable(); err == nil {
+		return filepath.Dir(executable)
+	}
+	if workingDirectory, err := os.Getwd(); err == nil {
+		return workingDirectory
+	}
+	return "."
+}
+
+func findKAdminProjectRoot(start string) string {
+	directory, err := filepath.Abs(start)
+	if err != nil {
+		return ""
+	}
+	for {
+		if isKAdminProjectRoot(directory) {
+			return directory
+		}
+		parent := filepath.Dir(directory)
+		if parent == directory {
+			return ""
+		}
+		directory = parent
+	}
+}
+
+func isKAdminProjectRoot(directory string) bool {
+	moduleFile, err := os.ReadFile(filepath.Join(directory, "go.mod"))
+	if err != nil || !strings.Contains(string(moduleFile), "module github.com/GoAdminGroup/go-admin") {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(directory, "internal", "kadmin"))
+	return err == nil && info.IsDir()
 }
 
 func ensureSystemConfigDir(path string) error {
