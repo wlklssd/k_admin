@@ -1,5 +1,7 @@
 package main
 
+//go:generate go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g main.go -d . --parseInternal -o internal/kadmin/docs --outputTypes go,json,yaml
+
 import (
 	"bytes"
 	"context"
@@ -36,8 +38,21 @@ func main() {
 	}
 }
 
+// @title KAdmin API
+// @version 1.0
+// @description KAdmin 前后端分离接口文档。除登录、刷新令牌和公开配置外，请使用 Bearer Token 调用接口。
+// @license.name Apache 2.0
+// @license.url https://www.apache.org/licenses/LICENSE-2.0.html
+// @BasePath /api
+// @schemes http https
+// @accept json
+// @produce json
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func run() error {
 	debug := getenvBool("KADMIN_APP_DEBUG", true)
+	swaggerEnabled := getenvBool("KADMIN_SWAGGER_ENABLED", debug)
 	if debug {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -83,6 +98,7 @@ func run() error {
 	defer closeDatabase(e)
 	defer requestLogs.Close()
 	defer appRuntime.Close()
+	kadmin.RegisterSwagger(r, swaggerEnabled)
 
 	// 访问根路径自动跳转到后台
 	r.GET("/", func(c *gin.Context) {
@@ -109,6 +125,9 @@ func run() error {
 	log.Printf("KAdmin 后端服务启动成功（模式：%s）", mode)
 	log.Printf("HTTP 监听地址：%s", listener.Addr())
 	log.Print("KAdmin API 前缀：/api；前端项目：admin-web（独立运行）")
+	if swaggerEnabled {
+		log.Print("Swagger API 文档：/swagger/index.html")
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)

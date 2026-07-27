@@ -42,7 +42,7 @@ type Job struct {
 	Name           string          `json:"name"`
 	Handler        string          `json:"handler"`
 	CronExpression string          `json:"cronExpression"`
-	Parameters     json.RawMessage `json:"parameters"`
+	Parameters     json.RawMessage `json:"parameters" swaggertype:"object"`
 	Description    string          `json:"description"`
 	Status         string          `json:"status"`
 	BuiltIn        bool            `json:"builtIn"`
@@ -57,7 +57,7 @@ type JobPayload struct {
 	Name           string          `json:"name"`
 	Handler        string          `json:"handler"`
 	CronExpression string          `json:"cronExpression"`
-	Parameters     json.RawMessage `json:"parameters"`
+	Parameters     json.RawMessage `json:"parameters" swaggertype:"object"`
 	Description    string          `json:"description"`
 	Status         string          `json:"status"`
 }

@@ -1,0 +1,747 @@
+package kadmin
+
+// This file keeps the generated API contract close to the KAdmin route registry.
+// The functions are documentation anchors consumed by swag and are not handlers.
+
+// swaggerLogin documents POST /auth/login.
+// @Summary 登录
+// @Tags 认证
+// @Param payload body loginRequest true "登录信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 401 {object} SwaggerErrorResponse
+// @Router /auth/login [post]
+func swaggerLogin() {}
+
+// swaggerRefreshToken documents POST /auth/refresh.
+// @Summary 刷新令牌
+// @Tags 认证
+// @Param payload body refreshTokenRequest true "刷新令牌"
+// @Success 200 {object} SwaggerResponse
+// @Failure 401 {object} SwaggerErrorResponse
+// @Router /auth/refresh [post]
+func swaggerRefreshToken() {}
+
+// swaggerLogout documents POST /auth/logout.
+// @Summary 退出登录
+// @Tags 认证
+// @Security BearerAuth
+// @Param payload body refreshTokenRequest false "刷新令牌"
+// @Success 200 {object} SwaggerResponse
+// @Failure 401 {object} SwaggerErrorResponse
+// @Router /auth/logout [post]
+func swaggerLogout() {}
+
+// swaggerAccessCodes documents GET /auth/codes.
+// @Summary 获取权限码
+// @Tags 认证
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 401 {object} SwaggerErrorResponse
+// @Router /auth/codes [get]
+func swaggerAccessCodes() {}
+
+// swaggerUserInfo documents GET /user/info.
+// @Summary 获取当前用户信息
+// @Tags 当前用户
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 401 {object} SwaggerErrorResponse
+// @Router /user/info [get]
+func swaggerUserInfo() {}
+
+// swaggerUserMenu documents GET /user/menu.
+// @Summary 获取当前用户菜单
+// @Tags 当前用户
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 401 {object} SwaggerErrorResponse
+// @Router /user/menu [get]
+func swaggerUserMenu() {}
+
+// swaggerUserPermissions documents GET /user/permissions.
+// @Summary 获取当前用户权限
+// @Tags 当前用户
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 401 {object} SwaggerErrorResponse
+// @Router /user/permissions [get]
+func swaggerUserPermissions() {}
+
+// swaggerAllMenus documents GET /menu/all.
+// @Summary 获取全部可访问菜单
+// @Tags 菜单
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 401 {object} SwaggerErrorResponse
+// @Router /menu/all [get]
+func swaggerAllMenus() {}
+
+// swaggerAdminMenus documents GET /admin-menus.
+// @Summary 获取菜单管理列表
+// @Tags 菜单管理
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /admin-menus [get]
+func swaggerAdminMenus() {}
+
+// swaggerAdminMenuTree documents GET /admin-menus/tree.
+// @Summary 获取菜单管理树
+// @Tags 菜单管理
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /admin-menus/tree [get]
+func swaggerAdminMenuTree() {}
+
+// swaggerCreateAdminMenu documents POST /admin-menus.
+// @Summary 新增菜单
+// @Tags 菜单管理
+// @Security BearerAuth
+// @Param payload body menuPayload true "菜单信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /admin-menus [post]
+func swaggerCreateAdminMenu() {}
+
+// swaggerUpdateAdminMenuLayout documents PUT /admin-menus.
+// @Summary 更新菜单布局
+// @Tags 菜单管理
+// @Security BearerAuth
+// @Param payload body menuLayoutPayload true "菜单位置列表"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /admin-menus [put]
+func swaggerUpdateAdminMenuLayout() {}
+
+// swaggerUpdateAdminMenu documents PUT /admin-menus/{id}.
+// @Summary 修改菜单
+// @Tags 菜单管理
+// @Security BearerAuth
+// @Param id path int true "菜单 ID"
+// @Param payload body menuPayload true "菜单信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /admin-menus/{id} [put]
+func swaggerUpdateAdminMenu() {}
+
+// swaggerDeleteAdminMenu documents DELETE /admin-menus/{id}.
+// @Summary 删除菜单
+// @Tags 菜单管理
+// @Security BearerAuth
+// @Param id path int true "菜单 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /admin-menus/{id} [delete]
+func swaggerDeleteAdminMenu() {}
+
+// swaggerListUsers documents GET /users.
+// @Summary 查询用户列表
+// @Tags 用户管理
+// @Security BearerAuth
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Param keyword query string false "关键词"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users [get]
+func swaggerListUsers() {}
+
+// swaggerCreateUser documents POST /users.
+// @Summary 新增用户
+// @Tags 用户管理
+// @Security BearerAuth
+// @Param payload body userPayload true "用户信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users [post]
+func swaggerCreateUser() {}
+
+// swaggerExportUsers documents GET /users/export.
+// @Summary 导出用户
+// @Tags 用户管理
+// @Security BearerAuth
+// @Success 200 {file} file
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users/export [get]
+func swaggerExportUsers() {}
+
+// swaggerImportUsers documents POST /users/import.
+// @Summary 导入用户
+// @Tags 用户管理
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Param file formData file true "用户导入文件"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users/import [post]
+func swaggerImportUsers() {}
+
+// swaggerUpdateUserStatus documents PUT /users/{id}/status.
+// @Summary 修改用户状态
+// @Tags 用户管理
+// @Security BearerAuth
+// @Param id path int true "用户 ID"
+// @Param payload body userStatusPayload true "用户状态"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users/{id}/status [put]
+func swaggerUpdateUserStatus() {}
+
+// swaggerUpdateUser documents PUT /users/{id}.
+// @Summary 修改用户
+// @Tags 用户管理
+// @Security BearerAuth
+// @Param id path int true "用户 ID"
+// @Param payload body userPayload true "用户信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users/{id} [put]
+func swaggerUpdateUser() {}
+
+// swaggerDeleteUser documents DELETE /users/{id}.
+// @Summary 删除用户
+// @Tags 用户管理
+// @Security BearerAuth
+// @Param id path int true "用户 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users/{id} [delete]
+func swaggerDeleteUser() {}
+
+// swaggerResetUserPassword documents PUT /users/{id}/password.
+// @Summary 重置用户密码
+// @Tags 用户管理
+// @Security BearerAuth
+// @Param id path int true "用户 ID"
+// @Param payload body resetPasswordPayload true "新密码"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users/{id}/password [put]
+func swaggerResetUserPassword() {}
+
+// swaggerPublicLoginConfig documents GET /system/config/login.
+// @Summary 获取公开登录配置
+// @Tags 系统配置
+// @Success 200 {object} SwaggerResponse
+// @Router /system/config/login [get]
+func swaggerPublicLoginConfig() {}
+
+// swaggerSystemConfig documents GET /system/config.
+// @Summary 获取系统配置
+// @Tags 系统配置
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /system/config [get]
+func swaggerSystemConfig() {}
+
+// swaggerUpdateSystemConfig documents PUT /system/config.
+// @Summary 修改系统配置
+// @Tags 系统配置
+// @Security BearerAuth
+// @Param payload body systemConfigPayload true "系统配置"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /system/config [put]
+func swaggerUpdateSystemConfig() {}
+
+// swaggerRBACOverview documents GET /rbac/overview.
+// @Summary 获取权限管理概览
+// @Tags 权限管理
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/overview [get]
+func swaggerRBACOverview() {}
+
+// swaggerRBACDepartments documents GET /rbac/departments.
+// @Summary 获取部门列表
+// @Tags 权限管理
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/departments [get]
+func swaggerRBACDepartments() {}
+
+// swaggerCreateDepartment documents POST /rbac/departments.
+// @Summary 新增部门
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param payload body departmentPayload true "部门信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/departments [post]
+func swaggerCreateDepartment() {}
+
+// swaggerUpdateDepartment documents PUT /rbac/departments/{id}.
+// @Summary 修改部门
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param id path int true "部门 ID"
+// @Param payload body departmentPayload true "部门信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/departments/{id} [put]
+func swaggerUpdateDepartment() {}
+
+// swaggerDeleteDepartment documents DELETE /rbac/departments/{id}.
+// @Summary 删除部门
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param id path int true "部门 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/departments/{id} [delete]
+func swaggerDeleteDepartment() {}
+
+// swaggerUpdateDepartmentRoles documents PUT /rbac/departments/{id}/roles.
+// @Summary 设置部门角色
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param id path int true "部门 ID"
+// @Param payload body departmentRolesPayload true "角色 ID 列表"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/departments/{id}/roles [put]
+func swaggerUpdateDepartmentRoles() {}
+
+// swaggerRBACRoles documents GET /rbac/roles.
+// @Summary 获取角色列表
+// @Tags 权限管理
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/roles [get]
+func swaggerRBACRoles() {}
+
+// swaggerCreateRole documents POST /rbac/roles.
+// @Summary 新增角色
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param payload body rolePayload true "角色信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/roles [post]
+func swaggerCreateRole() {}
+
+// swaggerUpdateRole documents PUT /rbac/roles/{id}.
+// @Summary 修改角色
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param id path int true "角色 ID"
+// @Param payload body rolePayload true "角色信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/roles/{id} [put]
+func swaggerUpdateRole() {}
+
+// swaggerDeleteRole documents DELETE /rbac/roles/{id}.
+// @Summary 删除角色
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param id path int true "角色 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/roles/{id} [delete]
+func swaggerDeleteRole() {}
+
+// swaggerUpdateRoleMenus documents PUT /rbac/roles/{id}/menus.
+// @Summary 设置角色菜单
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param id path int true "角色 ID"
+// @Param payload body roleMenuPayload true "菜单 ID 列表"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/roles/{id}/menus [put]
+func swaggerUpdateRoleMenus() {}
+
+// swaggerUpdateRoleUsers documents PUT /rbac/roles/{id}/users.
+// @Summary 设置角色用户
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param id path int true "角色 ID"
+// @Param payload body roleUsersPayload true "用户 ID 列表"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/roles/{id}/users [put]
+func swaggerUpdateRoleUsers() {}
+
+// swaggerRBACMenus documents GET /rbac/menus.
+// @Summary 获取授权菜单
+// @Tags 权限管理
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/menus [get]
+func swaggerRBACMenus() {}
+
+// swaggerRBACUsers documents GET /rbac/users.
+// @Summary 获取授权用户
+// @Tags 权限管理
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/users [get]
+func swaggerRBACUsers() {}
+
+// swaggerDictionaryOverview documents GET /dictionaries/overview.
+// @Summary 获取字典概览
+// @Tags 字典管理
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/overview [get]
+func swaggerDictionaryOverview() {}
+
+// swaggerDictionaryTypes documents GET /dictionaries/types.
+// @Summary 查询字典类型
+// @Tags 字典管理
+// @Security BearerAuth
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Param keyword query string false "关键词"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/types [get]
+func swaggerDictionaryTypes() {}
+
+// swaggerCreateDictionaryType documents POST /dictionaries/types.
+// @Summary 新增字典类型
+// @Tags 字典管理
+// @Security BearerAuth
+// @Param payload body dictionaryTypePayload true "字典类型"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/types [post]
+func swaggerCreateDictionaryType() {}
+
+// swaggerUpdateDictionaryType documents PUT /dictionaries/types/{id}.
+// @Summary 修改字典类型
+// @Tags 字典管理
+// @Security BearerAuth
+// @Param id path int true "字典类型 ID"
+// @Param payload body dictionaryTypePayload true "字典类型"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/types/{id} [put]
+func swaggerUpdateDictionaryType() {}
+
+// swaggerDeleteDictionaryType documents DELETE /dictionaries/types/{id}.
+// @Summary 删除字典类型
+// @Tags 字典管理
+// @Security BearerAuth
+// @Param id path int true "字典类型 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/types/{id} [delete]
+func swaggerDeleteDictionaryType() {}
+
+// swaggerDictionaryData documents GET /dictionaries/data.
+// @Summary 查询字典数据
+// @Tags 字典管理
+// @Security BearerAuth
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Param typeId query int false "字典类型 ID"
+// @Param keyword query string false "关键词"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/data [get]
+func swaggerDictionaryData() {}
+
+// swaggerCreateDictionaryData documents POST /dictionaries/data.
+// @Summary 新增字典数据
+// @Tags 字典管理
+// @Security BearerAuth
+// @Param payload body dictionaryDataPayload true "字典数据"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/data [post]
+func swaggerCreateDictionaryData() {}
+
+// swaggerUpdateDictionaryData documents PUT /dictionaries/data/{id}.
+// @Summary 修改字典数据
+// @Tags 字典管理
+// @Security BearerAuth
+// @Param id path int true "字典数据 ID"
+// @Param payload body dictionaryDataPayload true "字典数据"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/data/{id} [put]
+func swaggerUpdateDictionaryData() {}
+
+// swaggerDeleteDictionaryData documents DELETE /dictionaries/data/{id}.
+// @Summary 删除字典数据
+// @Tags 字典管理
+// @Security BearerAuth
+// @Param id path int true "字典数据 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /dictionaries/data/{id} [delete]
+func swaggerDeleteDictionaryData() {}
+
+// swaggerListLogs documents GET /logs.
+// @Summary 查询请求日志
+// @Tags 日志管理
+// @Security BearerAuth
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Param keyword query string false "关键词"
+// @Param eventType query string false "事件类型"
+// @Param level query string false "日志级别"
+// @Param success query bool false "是否成功"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /logs [get]
+func swaggerListLogs() {}
+
+// swaggerLogDetail documents GET /logs/{id}.
+// @Summary 获取请求日志详情
+// @Tags 日志管理
+// @Security BearerAuth
+// @Param id path int true "日志 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /logs/{id} [get]
+func swaggerLogDetail() {}
+
+// swaggerDeleteLogs documents DELETE /logs.
+// @Summary 批量删除请求日志
+// @Tags 日志管理
+// @Security BearerAuth
+// @Param payload body deleteLogsPayload true "日志 ID 列表或清理条件"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /logs [delete]
+func swaggerDeleteLogs() {}
+
+// swaggerDeleteLog documents DELETE /logs/{id}.
+// @Summary 删除请求日志
+// @Tags 日志管理
+// @Security BearerAuth
+// @Param id path int true "日志 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /logs/{id} [delete]
+func swaggerDeleteLog() {}
+
+// swaggerListJobs documents GET /jobs.
+// @Summary 查询定时任务
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Param keyword query string false "关键词"
+// @Param handler query string false "处理器"
+// @Param status query string false "状态" Enums(enabled,paused)
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /jobs [get]
+func swaggerListJobs() {}
+
+// swaggerGetJob documents GET /jobs/{id}.
+// @Summary 获取定时任务详情
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param id path int true "任务 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /jobs/{id} [get]
+func swaggerGetJob() {}
+
+// swaggerCreateJob documents POST /jobs.
+// @Summary 新增定时任务
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param payload body SwaggerJobPayload true "任务信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /jobs [post]
+func swaggerCreateJob() {}
+
+// swaggerUpdateJob documents PUT /jobs/{id}.
+// @Summary 修改定时任务
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param id path int true "任务 ID"
+// @Param payload body SwaggerJobPayload true "任务信息"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /jobs/{id} [put]
+func swaggerUpdateJob() {}
+
+// swaggerSetJobStatus documents PATCH /jobs/{id}/status.
+// @Summary 暂停或恢复定时任务
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param id path int true "任务 ID"
+// @Param payload body object true "任务状态，status 为 enabled 或 paused"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /jobs/{id}/status [patch]
+func swaggerSetJobStatus() {}
+
+// swaggerDeleteJob documents DELETE /jobs/{id}.
+// @Summary 删除定时任务
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param id path int true "任务 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 409 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /jobs/{id} [delete]
+func swaggerDeleteJob() {}
+
+// swaggerRunJob documents POST /jobs/{id}/run.
+// @Summary 立即执行定时任务
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param id path int true "任务 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 409 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /jobs/{id}/run [post]
+func swaggerRunJob() {}
+
+// swaggerListJobLogs documents GET /job-logs.
+// @Summary 查询任务执行日志
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Param jobId query int false "任务 ID"
+// @Param keyword query string false "关键词"
+// @Param status query string false "执行状态" Enums(running,success,failed)
+// @Param trigger query string false "触发方式" Enums(manual,scheduled)
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /job-logs [get]
+func swaggerListJobLogs() {}
+
+// swaggerGetJobLog documents GET /job-logs/{id}.
+// @Summary 获取任务执行日志详情
+// @Tags 定时任务
+// @Security BearerAuth
+// @Param id path int true "执行日志 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /job-logs/{id} [get]
+func swaggerGetJobLog() {}
+
+// swaggerSystemMonitor documents GET /system-monitor.
+// @Summary 获取系统监控状态
+// @Tags 系统监控
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /system-monitor [get]
+func swaggerSystemMonitor() {}
+
+// swaggerUpdateSystemMonitorStatus documents PATCH /system-monitor/status.
+// @Summary 启用或关闭系统监控
+// @Tags 系统监控
+// @Security BearerAuth
+// @Param payload body object true "监控开关，enabled 为布尔值"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /system-monitor/status [patch]
+func swaggerUpdateSystemMonitorStatus() {}
+
+// swaggerUploadManagedFile documents POST /files.
+// @Summary 上传文件
+// @Tags 文件管理
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Param file formData file true "文件"
+// @Param purpose formData string false "用途"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /files [post]
+func swaggerUploadManagedFile() {}
+
+// swaggerManagedFileMetadata documents GET /files/{id}.
+// @Summary 获取文件元数据
+// @Tags 文件管理
+// @Security BearerAuth
+// @Param id path int true "文件 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /files/{id} [get]
+func swaggerManagedFileMetadata() {}
+
+// swaggerManagedFileContent documents GET /files/{id}/content.
+// @Summary 下载文件内容
+// @Tags 文件管理
+// @Security BearerAuth
+// @Produce application/octet-stream
+// @Param id path int true "文件 ID"
+// @Success 200 {file} file
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /files/{id}/content [get]
+func swaggerManagedFileContent() {}
+
+// swaggerDeleteManagedFile documents DELETE /files/{id}.
+// @Summary 删除文件
+// @Tags 文件管理
+// @Security BearerAuth
+// @Param id path int true "文件 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /files/{id} [delete]
+func swaggerDeleteManagedFile() {}
+
+// swaggerUploadedFile documents GET /uploads/{path}.
+// @Summary 读取公开上传文件
+// @Tags 文件管理
+// @Param path path string true "对象路径"
+// @Success 200 {file} file
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /uploads/{path} [get]
+func swaggerUploadedFile() {}
+
+// swaggerUploadAvatar documents POST /users/avatar.
+// @Summary 上传用户头像
+// @Tags 用户管理
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Param file formData file true "头像文件"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /users/avatar [post]
+func swaggerUploadAvatar() {}

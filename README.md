@@ -14,6 +14,7 @@ KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](ht
 - 系统配置管理
 - Cron 定时任务、运行时暂停/恢复、立即执行与执行日志
 - 可启停的系统监控、CPU/内存占用、服务器信息与运行时间
+- 自动生成的 Swagger API 文档与在线调试界面
 - PostgreSQL 数据存储、Redis 鉴权状态存储
 - 可选的 MinIO 对象存储和 Adminer 数据库管理工具
 - 保留 GoAdmin 原有后台入口，供兼容和公共能力复用
@@ -92,7 +93,23 @@ go run .
 
 - 原 GoAdmin 后台：`http://127.0.0.1:9033/admin`
 - KAdmin API：`http://127.0.0.1:9033/api`
+- Swagger 文档：`http://127.0.0.1:9033/swagger/index.html`
 - 根地址：`http://127.0.0.1:9033/`，会跳转到 `/admin`
+
+Swagger 默认在调试模式下启用，可通过进程环境变量显式控制：
+
+```powershell
+$env:KADMIN_SWAGGER_ENABLED = 'true'
+go run .
+```
+
+生产环境建议设置 `KADMIN_SWAGGER_ENABLED=false`。修改接口注释后，在项目根目录重新生成文档：
+
+```powershell
+go generate .
+```
+
+接口注释集中维护在 `internal/kadmin/swagger_operations.go`。生成文件位于 `internal/kadmin/docs`，包含可供 Swagger UI 使用的 Go、JSON 和 YAML 文档。
 
 首次创建 PostgreSQL volume 时，Docker Compose 会自动导入 `tests/data/admin_pg.sql`。
 
