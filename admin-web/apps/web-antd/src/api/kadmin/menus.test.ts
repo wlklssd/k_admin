@@ -49,3 +49,9 @@ describe('updateAdminMenuLayout', () => {
     expect(requestMock).toHaveBeenNthCalledWith(2, '/api/admin-menus/tree');
   });
 });
+
+describe('admin menu types', () => {
+  it('keeps external links distinct from internal menus', () => {
+    expect(ADMIN_MENU_TYPE.EXTERNAL).toBe(2);
+  });
+});

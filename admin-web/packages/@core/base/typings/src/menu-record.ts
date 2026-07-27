@@ -40,6 +40,11 @@ interface MenuRecordRaw extends MenuRecordBadgeRaw {
    */
   children?: MenuRecordRaw[];
   /**
+   * 打开外链前是否需要用户确认
+   * @default false
+   */
+  confirmExternal?: boolean;
+  /**
    * 是否禁用菜单
    * @default false
    */

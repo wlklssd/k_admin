@@ -135,13 +135,29 @@ func TestValidateMenuPositions(t *testing.T) {
 }
 
 func TestValidateMenuType(t *testing.T) {
-	for _, menuType := range []int64{menuTypeDirectory, menuTypeItem} {
+	for _, menuType := range []int64{menuTypeDirectory, menuTypeItem, menuTypeExternal} {
 		if err := validateMenuType(menuType); err != nil {
 			t.Fatalf("expected menu type %d to be valid: %v", menuType, err)
 		}
 	}
-	if err := validateMenuType(2); err == nil {
+	if err := validateMenuType(3); err == nil {
 		t.Fatal("expected unsupported menu type to be rejected")
+	}
+}
+
+func TestValidateExternalMenuURI(t *testing.T) {
+	for _, uri := range []string{"https://example.com/docs", "http://example.com", "HTTPS://EXAMPLE.COM"} {
+		if err := validateMenuURI(menuTypeExternal, uri); err != nil {
+			t.Fatalf("expected external URI %q to be valid: %v", uri, err)
+		}
+	}
+	for _, uri := range []string{"", "/internal", "https://", "javascript:alert(1)"} {
+		if err := validateMenuURI(menuTypeExternal, uri); err == nil {
+			t.Fatalf("expected external URI %q to be rejected", uri)
+		}
+	}
+	if err := validateMenuURI(menuTypeItem, "/internal"); err != nil {
+		t.Fatalf("expected internal menu URI to remain valid: %v", err)
 	}
 }
 

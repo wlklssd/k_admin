@@ -278,6 +278,12 @@ func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
 	if icon != "" {
 		meta["icon"] = icon
 	}
+	if m.Type == menuTypeExternal {
+		meta["link"] = normalizeMenuURI(m.URI)
+		meta["openInNewWindow"] = true
+		meta["confirmExternal"] = true
+		iframeSrc = ""
+	}
 	if iframeSrc != "" && !hasBinding {
 		meta["iframeSrc"] = iframeSrc
 	}
@@ -307,6 +313,9 @@ func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
 		menu.Component = binding.Component
 		return menu
 	}
+	if m.Type == menuTypeExternal {
+		return menu
+	}
 
 	if iframeSrc != "" {
 		menu.Component = "IFrameView"
@@ -320,7 +329,7 @@ func menuPath(m menuItem) (path string, iframeSrc string) {
 		return "/goadmin/menu-" + strconv.FormatInt(m.ID, 10), ""
 	}
 
-	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
+	if isExternalHTTPURL(uri) {
 		return "/goadmin/external-" + strconv.FormatInt(m.ID, 10), uri
 	}
 
@@ -337,7 +346,7 @@ func normalizeMenuURI(uri string) string {
 	if uri == "" || uri == "#" {
 		return uri
 	}
-	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
+	if isExternalHTTPURL(uri) {
 		return uri
 	}
 	if !strings.HasPrefix(uri, "/") {

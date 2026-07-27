@@ -93,3 +93,22 @@ func TestDirectoryWithoutChildrenDoesNotBecomePage(t *testing.T) {
 		t.Fatalf("expected directory component to be empty, got %q", menu.Component)
 	}
 }
+
+func TestExternalMenuRequiresConfirmationMetadata(t *testing.T) {
+	menu := menuItem{
+		ID: 31, Type: menuTypeExternal, Title: "Docs", URI: "https://example.com/docs",
+	}.toVbenMenu(nil)
+
+	if menu.Meta["link"] != "https://example.com/docs" {
+		t.Fatalf("expected external link metadata, got %#v", menu.Meta)
+	}
+	if menu.Meta["openInNewWindow"] != true || menu.Meta["confirmExternal"] != true {
+		t.Fatalf("expected confirmed new-window metadata, got %#v", menu.Meta)
+	}
+	if menu.Component != "" {
+		t.Fatalf("expected external menu component to be empty, got %q", menu.Component)
+	}
+	if _, exists := menu.Meta["iframeSrc"]; exists {
+		t.Fatalf("external menu must not use iframe metadata: %#v", menu.Meta)
+	}
+}

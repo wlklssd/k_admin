@@ -3,6 +3,7 @@ import { request } from './client';
 export const ADMIN_MENU_TYPE = {
   DIRECTORY: 0,
   MENU: 1,
+  EXTERNAL: 2,
 } as const;
 
 export type AdminMenuType =

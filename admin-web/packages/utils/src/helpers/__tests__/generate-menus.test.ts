@@ -100,6 +100,27 @@ describe('generateMenus', () => {
     ]);
   });
 
+  it('preserves external navigation confirmation metadata', () => {
+    const routes = [
+      {
+        meta: {
+          confirmExternal: true,
+          link: 'https://example.com',
+          title: 'External site',
+        },
+        name: 'external-site',
+        path: '/external-site',
+      },
+    ] as RouteRecordRaw[];
+
+    const menus = generateMenus(routes, mockRouter as any);
+    expect(menus[0]).toMatchObject({
+      confirmExternal: true,
+      name: 'External site',
+      path: 'https://example.com',
+    });
+  });
+
   it('handles dynamic route parameters correctly', async () => {
     const mockRoutesWithParams = [
       {

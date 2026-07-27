@@ -80,6 +80,10 @@ interface RouteMeta {
    */
   iframeSrc?: string;
   /**
+   * 打开外链前需要用户确认
+   */
+  confirmExternal?: boolean;
+  /**
    * 忽略权限，直接可以访问
    * @default false
    */

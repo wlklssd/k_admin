@@ -93,9 +93,7 @@
           </template>
 
           <template v-else-if="column.key === 'type'">
-            <a-tag
-              :color="record.type === ADMIN_MENU_TYPE.MENU ? 'blue' : 'default'"
-            >
+            <a-tag :color="typeColor(record.type)">
               {{ typeText(record.type) }}
             </a-tag>
           </template>
@@ -147,7 +145,7 @@
           show-icon
           type="info"
           message="请先选择菜单类型"
-          description="目录/分组仅用于分类菜单；菜单用于配置可访问页面或外链。"
+          description="目录/分组用于分类；菜单访问系统页面；外链会在用户确认后打开新窗口。"
         />
 
         <template v-if="hasSelectedMenuType">
@@ -156,7 +154,11 @@
               v-model:value="formState.parentId"
               allow-clear
               tree-default-expand-all
-              :field-names="{ children: 'children', label: 'title', value: 'id' }"
+              :field-names="{
+                children: 'children',
+                label: 'title',
+                value: 'id',
+              }"
               :tree-data="parentOptions"
               placeholder="根菜单"
             />
@@ -164,13 +166,23 @@
           <a-form-item label="菜单标题" name="title">
             <a-input
               v-model:value="formState.title"
-              :placeholder="isDirectoryType ? '例如：系统管理' : '例如：菜单管理'"
+              :placeholder="
+                isDirectoryType ? '例如：系统管理' : '例如：菜单管理'
+              "
             />
           </a-form-item>
-          <a-form-item v-if="isMenuType" label="访问路径" name="uri">
+          <a-form-item
+            v-if="isMenuType || isExternalType"
+            :label="isExternalType ? '外链地址' : '访问路径'"
+            name="uri"
+          >
             <a-input
               v-model:value="formState.uri"
-              placeholder="例如：/kadmin/menus 或 https://example.com"
+              :placeholder="
+                isExternalType
+                  ? '例如：https://example.com'
+                  : '例如：/kadmin/menus'
+              "
             />
           </a-form-item>
           <a-form-item label="图标" name="icon">
@@ -314,10 +326,12 @@ const rules = {
   parentId: [{ validator: validateParentMenu }],
   title: [{ required: true, message: '请输入菜单标题' }],
   type: [{ validator: validateMenuTypeChange }],
+  uri: [{ validator: validateMenuURI }],
 };
 
 const typeOptions = [
   { label: '菜单', value: ADMIN_MENU_TYPE.MENU },
+  { label: '外链', value: ADMIN_MENU_TYPE.EXTERNAL },
   { label: '目录/分组', value: ADMIN_MENU_TYPE.DIRECTORY },
 ];
 
@@ -365,7 +379,7 @@ const formTypeOptions = computed(() =>
   typeOptions.map((option) => ({
     ...option,
     disabled:
-      option.value === ADMIN_MENU_TYPE.MENU &&
+      option.value !== ADMIN_MENU_TYPE.DIRECTORY &&
       !canSetMenuAsItem(editingMenu.value),
   })),
 );
@@ -395,8 +409,13 @@ const parentOptions = computed(() =>
   filterMenuParentOptions(menus.value, editingMenu.value?.id),
 );
 const hasSelectedMenuType = computed(() => formState.type !== undefined);
-const isDirectoryType = computed(() => formState.type === ADMIN_MENU_TYPE.DIRECTORY);
+const isDirectoryType = computed(
+  () => formState.type === ADMIN_MENU_TYPE.DIRECTORY,
+);
 const isMenuType = computed(() => formState.type === ADMIN_MENU_TYPE.MENU);
+const isExternalType = computed(
+  () => formState.type === ADMIN_MENU_TYPE.EXTERNAL,
+);
 
 onMounted(() => {
   void loadMenus();
@@ -456,6 +475,8 @@ function openDrawer(record?: AdminMenu, parent?: AdminMenu) {
 function handleMenuTypeChange(value: AdminMenuType) {
   if (value === ADMIN_MENU_TYPE.DIRECTORY) {
     clearPageFields();
+  } else if (value === ADMIN_MENU_TYPE.EXTERNAL) {
+    clearPageMetadata();
   }
 }
 
@@ -465,6 +486,10 @@ function handleIconChange(icon: string) {
 
 function clearPageFields() {
   formState.uri = '';
+  clearPageMetadata();
+}
+
+function clearPageMetadata() {
   formState.header = '';
   formState.pluginName = '';
   formState.uuid = '';
@@ -555,6 +580,7 @@ function normalizePayload(): AdminMenuPayload {
   const parentChanged =
     editingMenu.value !== null && editingMenu.value.parentId !== parentId;
   const menuType = formState.type ?? ADMIN_MENU_TYPE.MENU;
+  const includeURI = menuType !== ADMIN_MENU_TYPE.DIRECTORY;
   const includePageFields = menuType === ADMIN_MENU_TYPE.MENU;
   return {
     parentId,
@@ -564,7 +590,7 @@ function normalizePayload(): AdminMenuPayload {
       : Number(formState.order) || 0,
     title: formState.title.trim(),
     icon: formState.icon?.trim(),
-    uri: includePageFields ? formState.uri?.trim() : '',
+    uri: includeURI ? formState.uri?.trim() : '',
     header: includePageFields ? formState.header?.trim() : '',
     pluginName: includePageFields ? formState.pluginName?.trim() : '',
     uuid: includePageFields ? formState.uuid?.trim() : '',
@@ -588,10 +614,24 @@ function validateMenuTypeChange(_rule: unknown, value: unknown): Promise<void> {
     return Promise.reject(new Error('请选择菜单类型'));
   }
   if (
-    Number(value) === ADMIN_MENU_TYPE.MENU &&
+    Number(value) !== ADMIN_MENU_TYPE.DIRECTORY &&
     !canSetMenuAsItem(editingMenu.value)
   ) {
     return Promise.reject(new Error('存在子菜单的节点必须保持为目录/分组'));
+  }
+  return Promise.resolve();
+}
+
+function validateMenuURI(): Promise<void> {
+  const uri = formState.uri?.trim() || '';
+  if (formState.type === ADMIN_MENU_TYPE.EXTERNAL) {
+    if (!/^https?:\/\//i.test(uri)) {
+      return Promise.reject(
+        new Error('外链地址必须以 http:// 或 https:// 开头'),
+      );
+    }
+  } else if (formState.type === ADMIN_MENU_TYPE.MENU && !uri) {
+    return Promise.reject(new Error('请输入访问路径'));
   }
   return Promise.resolve();
 }
@@ -659,7 +699,15 @@ function menuRowClassName(record: AdminMenu) {
 }
 
 function typeText(type: AdminMenuType) {
-  return type === ADMIN_MENU_TYPE.MENU ? '菜单' : '目录/分组';
+  if (type === ADMIN_MENU_TYPE.MENU) return '菜单';
+  if (type === ADMIN_MENU_TYPE.EXTERNAL) return '外链';
+  return '目录/分组';
+}
+
+function typeColor(type: AdminMenuType) {
+  if (type === ADMIN_MENU_TYPE.MENU) return 'blue';
+  if (type === ADMIN_MENU_TYPE.EXTERNAL) return 'green';
+  return 'default';
 }
 
 function getMenuDepth(

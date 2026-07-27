@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { NotificationItem } from '@vben/layouts';
 
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
@@ -12,11 +12,13 @@ import {
   BasicLayout,
   LockScreen,
   Notification,
+  setExternalNavigationGuard,
   UserDropdown,
 } from '@vben/layouts';
 import { preferences, usePreferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { openWindow } from '@vben/utils';
+import { Modal } from 'ant-design-vue';
 
 import { $t } from '#/locales';
 import { useAuthStore } from '#/store';
@@ -84,6 +86,29 @@ const { isDark } = usePreferences();
 const showDot = computed(() =>
   notifications.value.some((item) => !item.isRead),
 );
+
+const removeExternalNavigationGuard = setExternalNavigationGuard(
+  ({ title, url }) =>
+    new Promise<boolean>((resolve) => {
+      let settled = false;
+      const settle = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      Modal.confirm({
+        cancelText: '取消',
+        content: `即将在新窗口打开：${url}`,
+        okText: '继续访问',
+        onCancel: () => settle(false),
+        onOk: () => settle(true),
+        afterClose: () => settle(false),
+        title: title ? `确认访问“${title}”？` : '确认访问外部链接？',
+      });
+    }),
+);
+
+onBeforeUnmount(removeExternalNavigationGuard);
 
 const menus = computed(() => [
   {

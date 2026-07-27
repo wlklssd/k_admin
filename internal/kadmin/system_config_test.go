@@ -45,13 +45,14 @@ func TestSystemConfigPathDoesNotFollowWorkingDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get working directory: %v", err)
 	}
+	temporaryWorkingDirectory := t.TempDir()
 	t.Cleanup(func() {
 		if err := os.Chdir(originalWorkingDirectory); err != nil {
 			t.Errorf("restore working directory: %v", err)
 		}
 	})
 	t.Setenv(systemConfigPathEnv, "")
-	if err := os.Chdir(t.TempDir()); err != nil {
+	if err := os.Chdir(temporaryWorkingDirectory); err != nil {
 		t.Fatalf("change working directory: %v", err)
 	}
 

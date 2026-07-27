@@ -38,6 +38,7 @@ function generateMenus(
       badge,
       badgeType,
       badgeVariants,
+      confirmExternal,
       hideChildrenInMenu = false,
       icon,
       link,
@@ -79,6 +80,7 @@ function generateMenus(
       path: resultPath,
       show: !meta.hideInMenu,
       children: resultChildren,
+      ...(confirmExternal === undefined ? {} : { confirmExternal }),
     };
   });
 

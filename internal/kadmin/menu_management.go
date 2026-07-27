@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 const (
 	menuTypeDirectory int64 = iota
 	menuTypeItem
+	menuTypeExternal
 )
 
 type managedMenu struct {
@@ -98,6 +100,10 @@ func (s *Store) createAdminMenu(c *gin.Context) {
 		fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	if err := validateMenuURI(*req.Type, req.URI); err != nil {
+		fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	s.menuMutationMu.Lock()
 	defer s.menuMutationMu.Unlock()
 
@@ -155,6 +161,10 @@ func (s *Store) updateAdminMenu(c *gin.Context) {
 		fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	if err := validateMenuURI(*req.Type, req.URI); err != nil {
+		fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	if req.ParentID == menuID {
 		fail(c, http.StatusBadRequest, "parent menu cannot be itself")
 		return
@@ -172,7 +182,7 @@ func (s *Store) updateAdminMenu(c *gin.Context) {
 		return
 	}
 
-	if *req.Type == menuTypeItem {
+	if *req.Type != menuTypeDirectory {
 		hasChildren, err := s.menuHasChildren(menuID)
 		if err != nil {
 			fail(c, http.StatusInternalServerError, err.Error())
@@ -427,10 +437,28 @@ func normalizeMenuPayload(req *menuPayload) {
 }
 
 func validateMenuType(menuType int64) error {
-	if menuType != menuTypeDirectory && menuType != menuTypeItem {
-		return fmt.Errorf("menu type must be directory or menu")
+	if menuType != menuTypeDirectory && menuType != menuTypeItem && menuType != menuTypeExternal {
+		return fmt.Errorf("menu type must be directory, menu, or external link")
 	}
 	return nil
+}
+
+func validateMenuURI(menuType int64, uri string) error {
+	if menuType != menuTypeExternal {
+		return nil
+	}
+	if !isExternalHTTPURL(uri) {
+		return fmt.Errorf("external link must use http or https")
+	}
+	return nil
+}
+
+func isExternalHTTPURL(value string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(value))
+	if err != nil || parsed.Host == "" {
+		return false
+	}
+	return strings.EqualFold(parsed.Scheme, "http") || strings.EqualFold(parsed.Scheme, "https")
 }
 
 func validateMenuPositions(menus []managedMenu, positions []menuPosition) error {
