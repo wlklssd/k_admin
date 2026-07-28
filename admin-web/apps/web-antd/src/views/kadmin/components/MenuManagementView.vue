@@ -145,7 +145,7 @@
           show-icon
           type="info"
           message="请先选择菜单类型"
-          description="目录/分组用于分类；菜单访问系统页面；外链会在用户确认后打开新窗口。"
+          description="目录/分组用于分类；菜单访问系统页面；外链会在用户确认后按系统参数设置跳转。"
         />
 
         <template v-if="hasSelectedMenuType">

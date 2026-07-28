@@ -85,6 +85,15 @@ var systemConfigMetas = []systemConfigMeta{
 		Description: "跟随电脑主题 / 白天 / 黑夜模式",
 		Order:       40,
 	},
+	{
+		Key:         "navigation.external_link_target",
+		Label:       "外链跳转方式",
+		Type:        "select",
+		Default:     "new_tab",
+		Options:     []string{"new_tab", "current_page"},
+		Description: "外链确认后在新标签页或当前页面打开",
+		Order:       50,
+	},
 }
 
 func registerSystemConfigRoutes(api *gin.RouterGroup, s *Store) {

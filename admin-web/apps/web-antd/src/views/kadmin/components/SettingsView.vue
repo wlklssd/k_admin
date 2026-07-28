@@ -189,6 +189,7 @@ import {
 } from '@ant-design/icons-vue';
 import type { ThemeModeType } from '@vben/types';
 import { updatePreferences } from '@vben/preferences';
+import { useUserStore } from '@vben/stores';
 import { message, type FormInstance } from 'ant-design-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -197,12 +198,15 @@ import {
   updateSystemConfig,
   type SystemConfigItem,
 } from '#/api/kadmin/systemConfig';
+import { router } from '#/router';
+import { refreshNavigation } from '#/router/access';
 
 const defaultValues: Record<string, string> = {
   'auth.default_username': 'admin',
   'auth.default_password': 'admin',
   'security.captcha_enabled': 'false',
   'ui.theme_mode': 'auto',
+  'navigation.external_link_target': 'new_tab',
 };
 
 const themeModes = new Set<ThemeModeType>(['auto', 'light', 'dark']);
@@ -215,6 +219,7 @@ const items = ref<SystemConfigItem[]>([]);
 const customModalOpen = ref(false);
 const customSaving = ref(false);
 const customFormRef = ref<FormInstance>();
+const userStore = useUserStore();
 
 const filters = reactive<{
   keyword: string;
@@ -295,10 +300,22 @@ async function submit() {
     items.value = data.items || [];
     syncThemeModePreference(items.value);
     message.success('参数配置已保存');
+    await refreshNavigationMenusSafely();
   } catch (error) {
     apiError.value = error instanceof Error ? error.message : '保存参数配置失败';
   } finally {
     submitLoading.value = false;
+  }
+}
+
+async function refreshNavigationMenusSafely() {
+  try {
+    await refreshNavigation({
+      roles: userStore.userInfo?.roles ?? [],
+      router,
+    });
+  } catch {
+    message.warning('配置已保存，导航刷新失败，请刷新页面后生效');
   }
 }
 
@@ -332,15 +349,15 @@ function updateInputValue(key: string, event: Event) {
 }
 
 function optionItems(item: SystemConfigItem) {
+  const labels: Record<string, string> = {
+    auto: '跟随电脑主题',
+    current_page: '当前页面跳转',
+    dark: '黑夜',
+    light: '白天',
+    new_tab: '新标签页跳转',
+  };
   return (item.options || []).map((value) => ({
-    label:
-      value === 'auto'
-        ? '跟随电脑主题'
-        : value === 'light'
-          ? '白天'
-          : value === 'dark'
-            ? '黑夜'
-            : value,
+    label: labels[value] || value,
     value,
   }));
 }

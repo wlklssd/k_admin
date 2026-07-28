@@ -112,3 +112,25 @@ func TestExternalMenuRequiresConfirmationMetadata(t *testing.T) {
 		t.Fatalf("external menu must not use iframe metadata: %#v", menu.Meta)
 	}
 }
+
+func TestApplyExternalLinkTargetSupportsCurrentPage(t *testing.T) {
+	menus := []vbenMenu{
+		{Meta: map[string]interface{}{"title": "Directory"}, Children: []vbenMenu{
+			{Meta: map[string]interface{}{"link": "https://example.com", "openInNewWindow": true}},
+		}},
+		{Meta: map[string]interface{}{"title": "Internal"}},
+	}
+
+	applyExternalLinkTarget(menus, "current_page")
+	if got := menus[0].Children[0].Meta["openInNewWindow"]; got != false {
+		t.Fatalf("current-page external target = %v, want false", got)
+	}
+	if _, exists := menus[1].Meta["openInNewWindow"]; exists {
+		t.Fatalf("internal menu must not receive external target metadata: %#v", menus[1].Meta)
+	}
+
+	applyExternalLinkTarget(menus, "new_tab")
+	if got := menus[0].Children[0].Meta["openInNewWindow"]; got != true {
+		t.Fatalf("new-tab external target = %v, want true", got)
+	}
+}

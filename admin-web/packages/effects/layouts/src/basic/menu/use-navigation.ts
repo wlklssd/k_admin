@@ -8,6 +8,7 @@ import { useAccessStore } from '@vben/stores';
 import { isHttpUrl, openRouteInNewWindow, openWindow } from '@vben/utils';
 
 interface ExternalNavigationDetails {
+  openInNewWindow: boolean;
   title?: string;
   url: string;
 }
@@ -37,9 +38,24 @@ async function confirmExternalNavigation(
   const routeTitle = isRoute ? route.meta.title : route?.name;
   const title = typeof routeTitle === 'string' ? routeTitle : undefined;
   if (externalNavigationGuard) {
-    return Boolean(await externalNavigationGuard({ title, url }));
+    return Boolean(
+      await externalNavigationGuard({
+        openInNewWindow: externalNavigationOpensNewWindow(route),
+        title,
+        url,
+      }),
+    );
   }
   return window.confirm(`即将打开外部链接：\n${url}\n\n是否继续？`);
+}
+
+function externalNavigationOpensNewWindow(
+  route: MenuRecordRaw | RouteRecordNormalized | undefined,
+) {
+  if (!route) return true;
+  return 'meta' in route
+    ? route.meta.openInNewWindow !== false
+    : route.openInNewWindow !== false;
 }
 
 function useNavigation() {
@@ -65,11 +81,13 @@ function useNavigation() {
   // 检查是否应该在新窗口打开
   const shouldOpenInNewWindow = (path: string): boolean => {
     if (isHttpUrl(path)) {
-      return true;
+      return externalNavigationOpensNewWindow(accessStore.getMenuByPath(path));
     }
     const route = routeMetaMap.get(path);
-    // 如果有外链或者设置了在新窗口打开，返回 true
-    return !!(route?.meta?.link || route?.meta?.openInNewWindow);
+    if (route?.meta?.link) {
+      return externalNavigationOpensNewWindow(route);
+    }
+    return route?.meta?.openInNewWindow === true;
   };
 
   const resolveHref = (path: string): string => {
@@ -85,13 +103,19 @@ function useNavigation() {
       // 检查是否有外链
       if (link && typeof link === 'string') {
         if (!(await confirmExternalNavigation(route ?? menu, link))) return;
-        openWindow(link, { target: '_blank' });
+        openWindow(link, {
+          target: externalNavigationOpensNewWindow(route ?? menu)
+            ? '_blank'
+            : '_self',
+        });
         return;
       }
 
       if (isHttpUrl(path)) {
         if (!(await confirmExternalNavigation(menu, path))) return;
-        openWindow(path, { target: '_blank' });
+        openWindow(path, {
+          target: externalNavigationOpensNewWindow(menu) ? '_blank' : '_self',
+        });
       } else if (openInNewWindow) {
         openRouteInNewWindow(resolveHref(path));
       } else {
@@ -113,5 +137,10 @@ function useNavigation() {
   return { navigation, willOpenedByWindow };
 }
 
-export { confirmExternalNavigation, setExternalNavigationGuard, useNavigation };
+export {
+  confirmExternalNavigation,
+  externalNavigationOpensNewWindow,
+  setExternalNavigationGuard,
+  useNavigation,
+};
 export type { ExternalNavigationDetails, ExternalNavigationGuard };

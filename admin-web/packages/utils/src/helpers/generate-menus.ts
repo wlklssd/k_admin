@@ -42,6 +42,7 @@ function generateMenus(
       hideChildrenInMenu = false,
       icon,
       link,
+      openInNewWindow,
       order,
       title = '',
       query,
@@ -81,6 +82,7 @@ function generateMenus(
       show: !meta.hideInMenu,
       children: resultChildren,
       ...(confirmExternal === undefined ? {} : { confirmExternal }),
+      ...(openInNewWindow === undefined ? {} : { openInNewWindow }),
     };
   });
 

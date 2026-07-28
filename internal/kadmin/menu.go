@@ -190,7 +190,14 @@ func (s *Store) menus(c *gin.Context) {
 		visibleItems = append(visibleItems, item)
 	}
 
-	success(c, buildMenuTree(visibleItems, 0))
+	menus := buildMenuTree(visibleItems, 0)
+	values, err := s.readSystemConfig()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	applyExternalLinkTarget(menus, values["navigation.external_link_target"])
+	success(c, menus)
 }
 
 func (s *Store) loadAllowedMenuIDsForRoles(roleIDs []interface{}) (map[int64]bool, error) {
@@ -256,6 +263,16 @@ func buildMenuTree(items []menuItem, parentID int64) []vbenMenu {
 		res = append(res, menu)
 	}
 	return res
+}
+
+func applyExternalLinkTarget(menus []vbenMenu, target string) {
+	openInNewWindow := target != "current_page"
+	for index := range menus {
+		if _, external := menus[index].Meta["link"]; external {
+			menus[index].Meta["openInNewWindow"] = openInNewWindow
+		}
+		applyExternalLinkTarget(menus[index].Children, target)
+	}
 }
 
 func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {

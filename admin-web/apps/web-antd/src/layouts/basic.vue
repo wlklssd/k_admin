@@ -88,7 +88,7 @@ const showDot = computed(() =>
 );
 
 const removeExternalNavigationGuard = setExternalNavigationGuard(
-  ({ title, url }) =>
+  ({ openInNewWindow, title, url }) =>
     new Promise<boolean>((resolve) => {
       let settled = false;
       const settle = (value: boolean) => {
@@ -98,7 +98,9 @@ const removeExternalNavigationGuard = setExternalNavigationGuard(
       };
       Modal.confirm({
         cancelText: '取消',
-        content: `即将在新窗口打开：${url}`,
+        content: openInNewWindow
+          ? `即将在新标签页打开：${url}`
+          : `当前页面将离开系统并访问：${url}`,
         okText: '继续访问',
         onCancel: () => settle(false),
         onOk: () => settle(true),

@@ -58,6 +58,11 @@ interface MenuRecordRaw extends MenuRecordBadgeRaw {
    */
   name: string;
   /**
+   * 外链是否在新标签页打开
+   * @default true
+   */
+  openInNewWindow?: boolean;
+  /**
    * 排序号
    */
   order?: number;

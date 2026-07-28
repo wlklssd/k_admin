@@ -67,11 +67,12 @@ func TestSystemConfigReadWriteUsesExplicitPath(t *testing.T) {
 	t.Setenv(systemConfigPathEnv, path)
 	store := &Store{}
 	want := map[string]string{
-		"auth.default_password":         "changed",
-		"auth.default_username":         "admin",
-		"security.captcha_enabled":      "true",
-		"ui.theme_mode":                 "dark",
-		"custom.relative_path_verified": "yes",
+		"auth.default_password":           "changed",
+		"auth.default_username":           "admin",
+		"security.captcha_enabled":        "true",
+		"ui.theme_mode":                   "dark",
+		"navigation.external_link_target": "current_page",
+		"custom.relative_path_verified":   "yes",
 	}
 	if err := store.writeSystemConfig(want); err != nil {
 		t.Fatalf("write system config: %v", err)
@@ -87,5 +88,23 @@ func TestSystemConfigReadWriteUsesExplicitPath(t *testing.T) {
 		if got[key] != value {
 			t.Fatalf("config %s = %q, want %q", key, got[key], value)
 		}
+	}
+}
+
+func TestExternalLinkTargetConfigDefaultsAndNormalizes(t *testing.T) {
+	defaults := defaultSystemConfigValues()
+	if got := defaults["navigation.external_link_target"]; got != "new_tab" {
+		t.Fatalf("external link target default = %q, want new_tab", got)
+	}
+
+	meta, ok := systemConfigMetaByKey("navigation.external_link_target")
+	if !ok {
+		t.Fatal("external link target metadata was not found")
+	}
+	if got := normalizeSystemConfigValue(meta, "current_page"); got != "current_page" {
+		t.Fatalf("normalized target = %q, want current_page", got)
+	}
+	if got := normalizeSystemConfigValue(meta, "popup"); got != "new_tab" {
+		t.Fatalf("invalid target fallback = %q, want new_tab", got)
 	}
 }

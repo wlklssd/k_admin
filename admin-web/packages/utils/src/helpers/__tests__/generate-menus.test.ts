@@ -106,6 +106,7 @@ describe('generateMenus', () => {
         meta: {
           confirmExternal: true,
           link: 'https://example.com',
+          openInNewWindow: false,
           title: 'External site',
         },
         name: 'external-site',
@@ -117,6 +118,7 @@ describe('generateMenus', () => {
     expect(menus[0]).toMatchObject({
       confirmExternal: true,
       name: 'External site',
+      openInNewWindow: false,
       path: 'https://example.com',
     });
   });

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   confirmExternalNavigation,
+  externalNavigationOpensNewWindow,
   setExternalNavigationGuard,
 } from './use-navigation';
 
@@ -19,6 +20,7 @@ describe('external navigation confirmation', () => {
       confirmExternalNavigation(route, 'https://example.com/docs'),
     ).resolves.toBe(false);
     expect(guard).toHaveBeenCalledWith({
+      openInNewWindow: true,
       title: 'Documentation',
       url: 'https://example.com/docs',
     });
@@ -49,8 +51,34 @@ describe('external navigation confirmation', () => {
       ),
     ).resolves.toBe(true);
     expect(guard).toHaveBeenCalledWith({
+      openInNewWindow: true,
       title: 'External documentation',
       url: 'https://example.com',
     });
+  });
+});
+
+describe('external navigation target', () => {
+  it('defaults external links to a new window', () => {
+    expect(
+      externalNavigationOpensNewWindow({
+        meta: { link: 'https://example.com' },
+      } as never),
+    ).toBe(true);
+  });
+
+  it('supports current-page route and menu metadata', () => {
+    expect(
+      externalNavigationOpensNewWindow({
+        meta: { link: 'https://example.com', openInNewWindow: false },
+      } as never),
+    ).toBe(false);
+    expect(
+      externalNavigationOpensNewWindow({
+        name: 'Example',
+        openInNewWindow: false,
+        path: 'https://example.com',
+      }),
+    ).toBe(false);
   });
 });
