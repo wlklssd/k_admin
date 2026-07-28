@@ -112,6 +112,12 @@ var vbenMenuRouteBindings = map[string]menuRouteBinding{
 		Component: "/kadmin/components/LogManagementView",
 		Icon:      "lucide:scroll-text",
 	},
+	"/kadmin/login-audits": {
+		Name:      "KAdminLoginAudits",
+		Path:      "/kadmin/login-audits",
+		Component: "/kadmin/components/LoginAuditManagementView",
+		Icon:      "lucide:shield-check",
+	},
 	"/kadmin/jobs": {
 		Name:      "KAdminJobs",
 		Path:      "/kadmin/jobs",

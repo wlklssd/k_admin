@@ -27,6 +27,7 @@ require (
 	github.com/lib/pq v1.10.5
 	github.com/magiconair/properties v1.8.6
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
+	github.com/medama-io/go-useragent v1.2.3
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/sclevine/agouti v3.0.0+incompatible
 	github.com/shirou/gopsutil/v4 v4.24.12
@@ -56,6 +57,7 @@ require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/boyter/go-string v1.0.5 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/clbanning/mxj v1.8.5-0.20200714211355-ff02cfb8ea28 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect

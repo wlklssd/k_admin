@@ -1,9 +1,12 @@
 package kadmin
 
 import (
+	"log"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
 	"github.com/GoAdminGroup/go-admin/modules/auth"
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +37,7 @@ func registerAuthRoutes(api *gin.RouterGroup, s *Store) {
 }
 
 func (s *Store) login(c *gin.Context) {
+	startedAt := time.Now()
 	var req loginRequest
 	_ = c.ShouldBind(&req)
 	if req.Username == "" {
@@ -43,31 +47,62 @@ func (s *Store) login(c *gin.Context) {
 		req.Password = c.PostForm("password")
 	}
 
+	knownUserID, accountStatus, err := s.loginAccountState(req.Username)
+	if err != nil {
+		s.recordLoginAttempt(c, startedAt, req.Username, nil, loginlogs.ResultSystemError, "账号状态检查失败")
+		fail(c, http.StatusInternalServerError, "account lookup failed")
+		return
+	}
+	if accountStatus == "locked" || accountStatus == "lock" {
+		s.recordLoginAttempt(c, startedAt, req.Username, knownUserID, loginlogs.ResultAccountLocked, "账号已锁定")
+		fail(c, http.StatusForbidden, "account locked")
+		return
+	}
+
 	user, ok := auth.Check(req.Password, req.Username, s.conn)
 	if !ok {
 		user, ok = s.checkConfiguredDefaultAdmin(req.Username, req.Password)
 		if !ok {
+			if knownUserID == nil {
+				s.recordLoginAttempt(c, startedAt, req.Username, nil, loginlogs.ResultAccountNotFound, "账号不存在")
+			} else {
+				s.recordLoginAttempt(c, startedAt, req.Username, knownUserID, loginlogs.ResultInvalidPassword, "密码错误")
+			}
 			fail(c, http.StatusUnauthorized, "wrong username or password")
 			return
 		}
 	}
-	enabled, err := s.userAccountEnabled(user.Id)
+	accountStatus, found, err := s.userAccountStatus(user.Id)
 	if err != nil {
+		userID := user.Id
+		s.recordLoginAttempt(c, startedAt, req.Username, &userID, loginlogs.ResultSystemError, "账号状态检查失败")
 		fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if !enabled {
+	if found && (accountStatus == "locked" || accountStatus == "lock") {
+		userID := user.Id
+		s.recordLoginAttempt(c, startedAt, req.Username, &userID, loginlogs.ResultAccountLocked, "账号已锁定")
+		fail(c, http.StatusForbidden, "account locked")
+		return
+	}
+	if !found || accountStatus != "enable" {
+		userID := user.Id
+		s.recordLoginAttempt(c, startedAt, req.Username, &userID, loginlogs.ResultAccountDisabled, "账号已禁用")
 		fail(c, http.StatusForbidden, "account disabled")
 		return
 	}
 
 	tokens, err := s.auth.issueTokenPair(user.Id)
 	if err != nil {
+		userID := user.Id
+		s.recordLoginAttempt(c, startedAt, req.Username, &userID, loginlogs.ResultSystemError, "令牌签发失败")
 		fail(c, http.StatusInternalServerError, "create token failed: "+err.Error())
 		return
 	}
 	c.Set("vben_user_id", user.Id)
 	c.Set("vben_user", user)
+	userID := user.Id
+	s.recordLoginAttempt(c, startedAt, req.Username, &userID, loginlogs.ResultSuccess, "")
 
 	success(c, loginResponse{
 		AccessToken:  tokens.AccessToken,
@@ -76,6 +111,19 @@ func (s *Store) login(c *gin.Context) {
 		TokenType:    "Bearer",
 		ExpiresAt:    tokens.AccessExpiresAt.UnixMilli(),
 	})
+}
+
+func (s *Store) recordLoginAttempt(c *gin.Context, startedAt time.Time, account string, userID *int64, result, reason string) {
+	if s.loginLogs == nil {
+		return
+	}
+	duration := time.Since(startedAt).Milliseconds()
+	if err := s.loginLogs.Record(loginlogs.Attempt{
+		Account: account, UserID: userID, IP: c.ClientIP(), UserAgent: c.GetHeader("User-Agent"),
+		Result: result, FailureReason: reason, DurationMs: duration, OccurredAt: time.Now(),
+	}); err != nil {
+		log.Printf("kadmin login audit write failed: %v", err)
+	}
 }
 
 func (s *Store) refreshToken(c *gin.Context) {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
 	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/gin-gonic/gin"
@@ -22,12 +23,14 @@ type Store struct {
 	menuMutationMu sync.Mutex
 	auth           *authService
 	jobs           *jobs.Manager
+	loginLogs      *loginlogs.Manager
 	monitor        *monitor.Manager
 }
 
 type Runtime struct {
-	jobs    *jobs.Manager
-	monitor *monitor.Manager
+	jobs      *jobs.Manager
+	loginLogs *loginlogs.Manager
+	monitor   *monitor.Manager
 }
 
 func (r *Runtime) Close() {
@@ -39,6 +42,9 @@ func (r *Runtime) Close() {
 	}
 	if r.jobs != nil {
 		r.jobs.Close()
+	}
+	if r.loginLogs != nil {
+		r.loginLogs.Close()
 	}
 }
 
@@ -59,6 +65,16 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 		c.Status(http.StatusNoContent)
 	})
 
+	loginLogManager, err := loginlogs.Register(api, loginlogs.Dependencies{
+		Connection:        s.conn,
+		RequireAuth:       s.requireAuth(),
+		RequirePermission: s.requirePermission,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("初始化登录审计失败: %w", err)
+	}
+	s.loginLogs = loginLogManager
+
 	manager, err := jobs.Register(api, jobs.Dependencies{
 		Connection:        s.conn,
 		RequireAuth:       s.requireAuth(),
@@ -66,6 +82,7 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 		RefreshCache:      s.refreshBuiltInCache,
 	})
 	if err != nil {
+		loginLogManager.Close()
 		return nil, fmt.Errorf("初始化定时任务失败: %w", err)
 	}
 	s.jobs = manager
@@ -76,11 +93,12 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 	})
 	if err != nil {
 		manager.Close()
+		loginLogManager.Close()
 		return nil, fmt.Errorf("初始化系统监控失败: %w", err)
 	}
 	s.monitor = monitorManager
 	registerApplicationRoutes(api, s)
-	return &Runtime{jobs: manager, monitor: monitorManager}, nil
+	return &Runtime{jobs: manager, loginLogs: loginLogManager, monitor: monitorManager}, nil
 }
 
 func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
@@ -99,6 +117,12 @@ func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
 	})
 	registerSystemConfigRoutes(api, s)
 	registerLogRoutes(api, s)
+	if s.loginLogs == nil {
+		loginlogs.RegisterRoutes(api, nil, loginlogs.Dependencies{
+			RequireAuth:       s.requireAuth(),
+			RequirePermission: s.requirePermission,
+		})
+	}
 	if s.jobs == nil {
 		jobs.RegisterRoutes(api, nil, jobs.Dependencies{
 			RequireAuth:       s.requireAuth(),

@@ -33,8 +33,9 @@ func DefaultMenus() []MenuSeed {
 				{Title: "参数配置", Icon: "lucide:sliders-horizontal", URI: "/kadmin/settings", Order: 5},
 				{Title: "资源工作台", Icon: "lucide:folder-kanban", URI: "/kadmin/resources", Order: 6},
 				{Title: "日志管理", Icon: "lucide:scroll-text", URI: "/kadmin/logs", Order: 7},
-				{Title: "定时任务", Icon: "lucide:clock-3", URI: "/kadmin/jobs", Order: 8},
-				{Title: "系统监控", Icon: "lucide:monitor-cog", URI: "/kadmin/monitor", Order: 9},
+				{Title: "登录审计", Icon: "lucide:shield-check", URI: "/kadmin/login-audits", Order: 8},
+				{Title: "定时任务", Icon: "lucide:clock-3", URI: "/kadmin/jobs", Order: 9},
+				{Title: "系统监控", Icon: "lucide:monitor-cog", URI: "/kadmin/monitor", Order: 10},
 			},
 		},
 	}

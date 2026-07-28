@@ -1078,6 +1078,153 @@ paths:
       summary: 暂停或恢复定时任务
       tags:
       - 定时任务
+  /login-audits:
+    delete:
+      parameters:
+      - description: 审计记录 ID 列表
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 批量删除登录审计记录
+      tags:
+      - 登录审计
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 账号
+        in: query
+        name: account
+        type: string
+      - description: IP 地址
+        in: query
+        name: ip
+        type: string
+      - description: 登录状态
+        enum:
+        - success
+        - failed
+        in: query
+        name: status
+        type: string
+      - description: 登录结果
+        enum:
+        - success
+        - account_not_found
+        - invalid_password
+        - account_disabled
+        - account_locked
+        - system_error
+        in: query
+        name: result
+        type: string
+      - description: 开始时间，RFC3339
+        in: query
+        name: startedAt
+        type: string
+      - description: 结束时间，RFC3339
+        in: query
+        name: endedAt
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 查询登录审计记录
+      tags:
+      - 登录审计
+  /login-audits/cleanup:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 清理超过保留周期的登录审计记录
+      tags:
+      - 登录审计
+  /login-audits/retention:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取登录审计保留周期
+      tags:
+      - 登录审计
+    patch:
+      parameters:
+      - description: 保留天数，范围 1 至 3650
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 设置登录审计保留周期
+      tags:
+      - 登录审计
   /logs:
     delete:
       parameters:

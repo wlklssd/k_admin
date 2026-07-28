@@ -8,6 +8,7 @@ import (
 
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
 	"github.com/GoAdminGroup/go-admin/plugins/admin/models"
 	"github.com/gin-gonic/gin"
@@ -147,7 +148,7 @@ func TestDefaultJobPermissionsAndMenu(t *testing.T) {
 	}
 	for _, root := range defaultMenuSeeds {
 		for _, child := range root.Children {
-			if child.URI == "/kadmin/jobs" && child.Order == 8 {
+			if child.URI == "/kadmin/jobs" && child.Order == 9 {
 				return
 			}
 		}
@@ -177,7 +178,7 @@ func TestDefaultMonitorPermissionsAndMenu(t *testing.T) {
 	}
 	for _, root := range defaultMenuSeeds {
 		for _, child := range root.Children {
-			if child.URI == "/kadmin/monitor" && child.Order == 9 {
+			if child.URI == "/kadmin/monitor" && child.Order == 10 {
 				return
 			}
 		}
@@ -216,4 +217,32 @@ func TestDefaultLogMenuBinding(t *testing.T) {
 		}
 	}
 	t.Fatal("default log menu seed was not found")
+}
+
+func TestDefaultLoginAuditPermissionsAndMenu(t *testing.T) {
+	wantedPermissions := map[string]bool{
+		loginlogs.ListPermission: false, loginlogs.DeletePermission: false, loginlogs.RetentionPermission: false,
+	}
+	for _, seed := range defaultPermissionSeeds {
+		if _, ok := wantedPermissions[seed.Slug]; ok {
+			wantedPermissions[seed.Slug] = true
+		}
+	}
+	for permission, found := range wantedPermissions {
+		if !found {
+			t.Fatalf("login audit permission %s was not seeded", permission)
+		}
+	}
+	binding, ok := vbenMenuRouteBindings["/kadmin/login-audits"]
+	if !ok || binding.Component != "/kadmin/components/LoginAuditManagementView" {
+		t.Fatalf("unexpected login audit menu binding: %#v", binding)
+	}
+	for _, root := range defaultMenuSeeds {
+		for _, child := range root.Children {
+			if child.URI == "/kadmin/login-audits" && child.Order == 8 {
+				return
+			}
+		}
+	}
+	t.Fatal("default login audit menu seed was not found")
 }

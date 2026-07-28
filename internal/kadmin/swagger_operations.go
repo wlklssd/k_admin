@@ -725,6 +725,64 @@ func swaggerManagedFileContent() {}
 // @Router /files/{id} [delete]
 func swaggerDeleteManagedFile() {}
 
+// swaggerListLoginAudits documents GET /login-audits.
+// @Summary 查询登录审计记录
+// @Tags 登录审计
+// @Security BearerAuth
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Param account query string false "账号"
+// @Param ip query string false "IP 地址"
+// @Param status query string false "登录状态" Enums(success,failed)
+// @Param result query string false "登录结果" Enums(success,account_not_found,invalid_password,account_disabled,account_locked,system_error)
+// @Param startedAt query string false "开始时间，RFC3339"
+// @Param endedAt query string false "结束时间，RFC3339"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /login-audits [get]
+func swaggerListLoginAudits() {}
+
+// swaggerDeleteLoginAudits documents DELETE /login-audits.
+// @Summary 批量删除登录审计记录
+// @Tags 登录审计
+// @Security BearerAuth
+// @Param payload body object true "审计记录 ID 列表"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /login-audits [delete]
+func swaggerDeleteLoginAudits() {}
+
+// swaggerCleanupLoginAudits documents POST /login-audits/cleanup.
+// @Summary 清理超过保留周期的登录审计记录
+// @Tags 登录审计
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /login-audits/cleanup [post]
+func swaggerCleanupLoginAudits() {}
+
+// swaggerLoginAuditRetention documents GET /login-audits/retention.
+// @Summary 获取登录审计保留周期
+// @Tags 登录审计
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /login-audits/retention [get]
+func swaggerLoginAuditRetention() {}
+
+// swaggerUpdateLoginAuditRetention documents PATCH /login-audits/retention.
+// @Summary 设置登录审计保留周期
+// @Tags 登录审计
+// @Security BearerAuth
+// @Param payload body object true "保留天数，范围 1 至 3650"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /login-audits/retention [patch]
+func swaggerUpdateLoginAuditRetention() {}
+
 // swaggerUploadedFile documents GET /uploads/{path}.
 // @Summary 读取公开上传文件
 // @Tags 文件管理

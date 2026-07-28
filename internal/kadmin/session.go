@@ -78,14 +78,31 @@ func (s *Store) currentUser(c *gin.Context) (models.UserModel, bool) {
 }
 
 func (s *Store) userAccountEnabled(userID int64) (bool, error) {
+	status, found, err := s.userAccountStatus(userID)
+	return found && status == "enable", err
+}
+
+func (s *Store) userAccountStatus(userID int64) (string, bool, error) {
 	rows, err := db.WithDriver(s.conn).Table("goadmin_users").Where("id", "=", userID).All()
 	if err != nil {
-		return false, err
+		return "", false, err
 	}
 	if len(rows) == 0 {
-		return false, nil
+		return "", false, nil
 	}
-	return normalizeUserStatus(toString(rows[0]["status"])) == "enable", nil
+	return normalizeUserStatus(toString(rows[0]["status"])), true, nil
+}
+
+func (s *Store) loginAccountState(username string) (*int64, string, error) {
+	rows, err := db.WithDriver(s.conn).Table("goadmin_users").Where("username", "=", username).All()
+	if err != nil {
+		return nil, "", err
+	}
+	if len(rows) == 0 {
+		return nil, "", nil
+	}
+	id := toInt64(rows[0]["id"])
+	return &id, normalizeUserStatus(toString(rows[0]["status"])), nil
 }
 
 func tokenFromRequest(c *gin.Context) string {
