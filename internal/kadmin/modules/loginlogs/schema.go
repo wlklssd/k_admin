@@ -25,6 +25,19 @@ var schemaStatements = []string{
 		CONSTRAINT kadmin_login_audits_result_check CHECK (result IN ('success', 'account_not_found', 'invalid_password', 'account_disabled', 'account_locked', 'system_error')),
 		CONSTRAINT kadmin_login_audits_duration_check CHECK (duration_ms >= 0)
 	)`,
+	`DO $$
+	BEGIN
+		IF NOT EXISTS (
+			SELECT 1 FROM pg_constraint
+			WHERE conname = 'kadmin_login_audits_result_check'
+			  AND pg_get_constraintdef(oid) LIKE '%captcha_invalid%'
+			  AND pg_get_constraintdef(oid) LIKE '%account_unlocked%'
+		) THEN
+			ALTER TABLE public.kadmin_login_audits DROP CONSTRAINT IF EXISTS kadmin_login_audits_result_check;
+			ALTER TABLE public.kadmin_login_audits ADD CONSTRAINT kadmin_login_audits_result_check
+				CHECK (result IN ('success', 'account_not_found', 'invalid_password', 'account_disabled', 'account_locked', 'account_unlocked', 'captcha_invalid', 'system_error'));
+		END IF;
+	END $$`,
 	`CREATE INDEX IF NOT EXISTS kadmin_login_audits_account_time_index
 		ON public.kadmin_login_audits (account, occurred_at DESC, id DESC)`,
 	`CREATE INDEX IF NOT EXISTS kadmin_login_audits_ip_time_index

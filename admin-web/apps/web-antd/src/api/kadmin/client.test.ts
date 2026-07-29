@@ -28,7 +28,9 @@ describe('kadmin request client', () => {
 
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse({ code: 1, message: 'invalid token' }, 401))
+      .mockResolvedValueOnce(
+        jsonResponse({ code: 1, message: 'invalid token' }, 401),
+      )
       .mockResolvedValueOnce(
         jsonResponse({
           code: 0,
@@ -62,7 +64,9 @@ describe('kadmin request client', () => {
 
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse({ code: 1, message: 'invalid token' }, 401))
+      .mockResolvedValueOnce(
+        jsonResponse({ code: 1, message: 'invalid token' }, 401),
+      )
       .mockResolvedValueOnce(
         jsonResponse({
           code: 0,
@@ -79,5 +83,36 @@ describe('kadmin request client', () => {
     expect(
       (fetchMock.mock.calls[2]?.[1]?.headers as Headers).get('Authorization'),
     ).toBe('Bearer new-access-token');
+  });
+
+  it('adds an idempotency key to mutation requests', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ code: 0, data: { id: 7 } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await request('/api/users', {
+      body: JSON.stringify({ username: 'operator' }),
+      method: 'POST',
+    });
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers;
+    expect(headers.get('Idempotency-Key')).toMatch(/^[\w.:-]{8,128}$/);
+  });
+
+  it('preserves a caller-provided idempotency key', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ code: 0, data: { id: 8 } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await request('/api/users', {
+      body: JSON.stringify({ username: 'operator' }),
+      headers: { 'Idempotency-Key': 'caller-request-42' },
+      method: 'POST',
+    });
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers;
+    expect(headers.get('Idempotency-Key')).toBe('caller-request-42');
   });
 });

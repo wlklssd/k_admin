@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
 	"github.com/GoAdminGroup/go-admin/modules/auth"
 	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/GoAdminGroup/go-admin/modules/db/dialect"
@@ -57,6 +59,10 @@ type userStatusPayload struct {
 	Status string `json:"status"`
 }
 
+type unlockUserPayload struct {
+	IP string `json:"ip"`
+}
+
 type importUsersPayload struct {
 	Format  string `json:"format"`
 	Content string `json:"content"`
@@ -72,6 +78,7 @@ func registerUserManagementRoutes(api *gin.RouterGroup, s *Store) {
 	usersGroup.PUT("/:id", s.updateManagedUser)
 	usersGroup.DELETE("/:id", s.deleteManagedUser)
 	usersGroup.PUT("/:id/password", s.resetManagedUserPassword)
+	usersGroup.PUT("/:id/unlock", s.unlockManagedUser)
 }
 
 func (s *Store) listManagedUsers(c *gin.Context) {
@@ -300,6 +307,31 @@ func (s *Store) resetManagedUserPassword(c *gin.Context) {
 		fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	success(c, true)
+}
+
+func (s *Store) unlockManagedUser(c *gin.Context) {
+	userID, ok := pathID(c)
+	if !ok {
+		return
+	}
+	user, err := s.loadManagedUser(userID)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if user.ID == 0 {
+		fail(c, http.StatusNotFound, "user not found")
+		return
+	}
+	var req unlockUserPayload
+	_ = c.ShouldBindJSON(&req)
+	if err := s.security.unlockLogin(user.Username, strings.TrimSpace(req.IP)); err != nil {
+		fail(c, http.StatusServiceUnavailable, "login security storage unavailable")
+		return
+	}
+	targetID := user.ID
+	s.recordLoginAttempt(c, time.Now(), user.Username, &targetID, loginlogs.ResultAccountUnlocked, "管理员解除临时登录锁定")
 	success(c, true)
 }
 

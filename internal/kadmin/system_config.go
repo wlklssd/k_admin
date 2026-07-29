@@ -3,11 +3,14 @@ package kadmin
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/GoAdminGroup/go-admin/plugins/admin/models"
@@ -75,6 +78,70 @@ var systemConfigMetas = []systemConfigMeta{
 		Default:     "false",
 		Description: "登录验证码开关",
 		Order:       30,
+	},
+	{
+		Key:         "security.captcha_ttl_seconds",
+		Label:       "验证码有效期（秒）",
+		Type:        "text",
+		Default:     "120",
+		Description: "服务端验证码一次性挑战有效期，范围 30-600 秒",
+		Order:       31,
+	},
+	{
+		Key:         "security.login_lock_enabled",
+		Label:       "登录失败自动锁定",
+		Type:        "boolean",
+		Default:     "true",
+		Description: "使用 Redis 在多实例间共享登录失败计数和临时锁定状态",
+		Order:       32,
+	},
+	{
+		Key:         "security.login_failure_threshold",
+		Label:       "账号失败阈值",
+		Type:        "text",
+		Default:     "5",
+		Description: "失败窗口内同一账号允许的失败次数，范围 2-20",
+		Order:       33,
+	},
+	{
+		Key:         "security.login_ip_failure_threshold",
+		Label:       "IP 失败阈值",
+		Type:        "text",
+		Default:     "20",
+		Description: "失败窗口内同一 IP 允许的失败次数，范围 5-100",
+		Order:       34,
+	},
+	{
+		Key:         "security.login_failure_window_minutes",
+		Label:       "失败统计窗口（分钟）",
+		Type:        "text",
+		Default:     "15",
+		Description: "登录失败计数窗口，范围 1-1440 分钟",
+		Order:       35,
+	},
+	{
+		Key:         "security.login_lock_minutes",
+		Label:       "自动锁定时长（分钟）",
+		Type:        "text",
+		Default:     "15",
+		Description: "达到阈值后的临时锁定时长，范围 1-1440 分钟",
+		Order:       36,
+	},
+	{
+		Key:         "security.login_ip_whitelist",
+		Label:       "登录 IP 白名单",
+		Type:        "text",
+		Default:     "127.0.0.1,::1",
+		Description: "逗号分隔的 IP 或 CIDR；仅跳过 IP 维度锁定，账号维度仍生效",
+		Order:       37,
+	},
+	{
+		Key:         "security.idempotency_ttl_seconds",
+		Label:       "幂等结果有效期（秒）",
+		Type:        "text",
+		Default:     "300",
+		Description: "创建、导入和立即执行等接口的幂等结果保留时间，范围 30-86400 秒",
+		Order:       38,
 	},
 	{
 		Key:         "ui.theme_mode",
@@ -343,7 +410,40 @@ func normalizeSystemConfigPayload(items []systemConfigItem) (map[string]string, 
 		}
 		values[key] = value
 	}
+	if err := validateSecurityConfigValues(values); err != nil {
+		return nil, err
+	}
 	return values, nil
+}
+
+func validateSecurityConfigValues(values map[string]string) error {
+	ranges := []struct {
+		key     string
+		minimum int
+		maximum int
+	}{
+		{key: "security.captcha_ttl_seconds", minimum: 30, maximum: 600},
+		{key: "security.login_failure_threshold", minimum: 2, maximum: 20},
+		{key: "security.login_ip_failure_threshold", minimum: 5, maximum: 100},
+		{key: "security.login_failure_window_minutes", minimum: 1, maximum: 1440},
+		{key: "security.login_lock_minutes", minimum: 1, maximum: 1440},
+		{key: "security.idempotency_ttl_seconds", minimum: 30, maximum: 86400},
+	}
+	for _, item := range ranges {
+		value, err := strconv.Atoi(strings.TrimSpace(values[item.key]))
+		if err != nil || value < item.minimum || value > item.maximum {
+			return fmt.Errorf("%s must be between %d and %d", item.key, item.minimum, item.maximum)
+		}
+	}
+	for _, item := range splitConfigList(values["security.login_ip_whitelist"]) {
+		if net.ParseIP(item) != nil {
+			continue
+		}
+		if _, _, err := net.ParseCIDR(item); err != nil {
+			return fmt.Errorf("security.login_ip_whitelist contains invalid IP or CIDR %q", item)
+		}
+	}
+	return nil
 }
 
 func validSystemConfigKey(key string) bool {

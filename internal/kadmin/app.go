@@ -22,12 +22,15 @@ type Store struct {
 	configMu       sync.Mutex
 	menuMutationMu sync.Mutex
 	auth           *authService
+	security       *securityService
+	audit          *businessAuditRecorder
 	jobs           *jobs.Manager
 	loginLogs      *loginlogs.Manager
 	monitor        *monitor.Manager
 }
 
 type Runtime struct {
+	audit     *businessAuditRecorder
 	jobs      *jobs.Manager
 	loginLogs *loginlogs.Manager
 	monitor   *monitor.Manager
@@ -36,6 +39,9 @@ type Runtime struct {
 func (r *Runtime) Close() {
 	if r == nil {
 		return
+	}
+	if r.audit != nil {
+		r.audit.Close()
 	}
 	if r.monitor != nil {
 		r.monitor.Close()
@@ -53,14 +59,16 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 		conn: conn,
 		auth: newAuthServiceFromEnv(),
 	}
+	s.security = newSecurityService(s.auth)
 	if err := s.syncDefaultPermissions(); err != nil {
 		return nil, fmt.Errorf("同步默认权限失败: %w", err)
 	}
 	if err := s.syncDefaultMenus(); err != nil {
 		return nil, fmt.Errorf("同步默认菜单失败: %w", err)
 	}
+	s.audit = newBusinessAuditRecorder(conn)
 
-	api := r.Group("/api", cors())
+	api := r.Group("/api", cors(), s.idempotencyMiddleware(), s.businessAuditMiddleware())
 	api.OPTIONS("/*path", func(c *gin.Context) {
 		c.Status(http.StatusNoContent)
 	})
@@ -71,6 +79,7 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 		RequirePermission: s.requirePermission,
 	})
 	if err != nil {
+		s.audit.Close()
 		return nil, fmt.Errorf("初始化登录审计失败: %w", err)
 	}
 	s.loginLogs = loginLogManager
@@ -83,6 +92,7 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 	})
 	if err != nil {
 		loginLogManager.Close()
+		s.audit.Close()
 		return nil, fmt.Errorf("初始化定时任务失败: %w", err)
 	}
 	s.jobs = manager
@@ -94,11 +104,12 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 	if err != nil {
 		manager.Close()
 		loginLogManager.Close()
+		s.audit.Close()
 		return nil, fmt.Errorf("初始化系统监控失败: %w", err)
 	}
 	s.monitor = monitorManager
 	registerApplicationRoutes(api, s)
-	return &Runtime{jobs: manager, loginLogs: loginLogManager, monitor: monitorManager}, nil
+	return &Runtime{audit: s.audit, jobs: manager, loginLogs: loginLogManager, monitor: monitorManager}, nil
 }
 
 func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {

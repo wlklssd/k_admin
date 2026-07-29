@@ -4,6 +4,8 @@ export type LoginAuditStatus = 'failed' | 'success';
 export type LoginAuditResult =
   | 'account_disabled'
   | 'account_locked'
+  | 'account_unlocked'
+  | 'captcha_invalid'
   | 'account_not_found'
   | 'invalid_password'
   | 'success'

@@ -99,13 +99,28 @@ async function sendResponse(path: string, init: RequestInit) {
   const headers = new Headers(init.headers);
   const hasBody = init.body !== undefined && init.body !== null;
 
-  if (hasBody && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+  if (
+    hasBody &&
+    !(init.body instanceof FormData) &&
+    !headers.has('Content-Type')
+  ) {
     headers.set('Content-Type', 'application/json');
   }
 
   const token = useAccessStore().accessToken;
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+  const method = String(init.method || 'GET').toUpperCase();
+  if (
+    ['DELETE', 'PATCH', 'POST', 'PUT'].includes(method) &&
+    !headers.has('Idempotency-Key')
+  ) {
+    headers.set(
+      'Idempotency-Key',
+      globalThis.crypto?.randomUUID?.() ??
+        `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    );
   }
 
   const response = await fetch(buildApiUrl(path), {
@@ -148,7 +163,9 @@ async function refreshAccessTokenOnce(): Promise<string> {
     const envelope = payload as ApiEnvelope<LoginResult>;
     if (envelope.code !== 0) {
       markLoginExpired();
-      throw new Error(envelope.message || envelope.msg || '登录已过期，请重新登录');
+      throw new Error(
+        envelope.message || envelope.msg || '登录已过期，请重新登录',
+      );
     }
     if (!envelope.data?.accessToken) {
       markLoginExpired();

@@ -3,6 +3,14 @@ package kadmin
 // This file keeps the generated API contract close to the KAdmin route registry.
 // The functions are documentation anchors consumed by swag and are not handlers.
 
+// swaggerCaptcha documents GET /auth/captcha.
+// @Summary 获取一次性登录验证码
+// @Tags 认证
+// @Success 200 {object} SwaggerResponse
+// @Failure 503 {object} SwaggerErrorResponse
+// @Router /auth/captcha [get]
+func swaggerCaptcha() {}
+
 // swaggerLogin documents POST /auth/login.
 // @Summary 登录
 // @Tags 认证
@@ -99,9 +107,11 @@ func swaggerAdminMenuTree() {}
 // @Tags 菜单管理
 // @Security BearerAuth
 // @Param payload body menuPayload true "菜单信息"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
 // @Success 200 {object} SwaggerResponse
 // @Failure 400 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
 // @Router /admin-menus [post]
 func swaggerCreateAdminMenu() {}
 
@@ -156,9 +166,11 @@ func swaggerListUsers() {}
 // @Tags 用户管理
 // @Security BearerAuth
 // @Param payload body userPayload true "用户信息"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
 // @Success 200 {object} SwaggerResponse
 // @Failure 400 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
 // @Router /users [post]
 func swaggerCreateUser() {}
 
@@ -175,11 +187,13 @@ func swaggerExportUsers() {}
 // @Summary 导入用户
 // @Tags 用户管理
 // @Security BearerAuth
-// @Accept multipart/form-data
-// @Param file formData file true "用户导入文件"
+// @Accept application/json
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
+// @Param payload body importUsersPayload true "导入格式与文件内容"
 // @Success 200 {object} SwaggerResponse
 // @Failure 400 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
 // @Router /users/import [post]
 func swaggerImportUsers() {}
 
@@ -229,6 +243,18 @@ func swaggerDeleteUser() {}
 // @Failure 403 {object} SwaggerErrorResponse
 // @Router /users/{id}/password [put]
 func swaggerResetUserPassword() {}
+
+// swaggerUnlockUser documents PUT /users/{id}/unlock.
+// @Summary 清除用户临时登录锁定
+// @Tags 用户管理
+// @Security BearerAuth
+// @Param id path int true "用户 ID"
+// @Param payload body unlockUserPayload false "可选 IP"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 503 {object} SwaggerErrorResponse
+// @Router /users/{id}/unlock [put]
+func swaggerUnlockUser() {}
 
 // swaggerPublicLoginConfig documents GET /system/config/login.
 // @Summary 获取公开登录配置
@@ -280,9 +306,11 @@ func swaggerRBACDepartments() {}
 // @Tags 权限管理
 // @Security BearerAuth
 // @Param payload body departmentPayload true "部门信息"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
 // @Success 200 {object} SwaggerResponse
 // @Failure 400 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
 // @Router /rbac/departments [post]
 func swaggerCreateDepartment() {}
 
@@ -335,9 +363,11 @@ func swaggerRBACRoles() {}
 // @Tags 权限管理
 // @Security BearerAuth
 // @Param payload body rolePayload true "角色信息"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
 // @Success 200 {object} SwaggerResponse
 // @Failure 400 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
 // @Router /rbac/roles [post]
 func swaggerCreateRole() {}
 
@@ -432,9 +462,11 @@ func swaggerDictionaryTypes() {}
 // @Tags 字典管理
 // @Security BearerAuth
 // @Param payload body dictionaryTypePayload true "字典类型"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
 // @Success 200 {object} SwaggerResponse
 // @Failure 400 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
 // @Router /dictionaries/types [post]
 func swaggerCreateDictionaryType() {}
 
@@ -479,9 +511,11 @@ func swaggerDictionaryData() {}
 // @Tags 字典管理
 // @Security BearerAuth
 // @Param payload body dictionaryDataPayload true "字典数据"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
 // @Success 200 {object} SwaggerResponse
 // @Failure 400 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
 // @Router /dictionaries/data [post]
 func swaggerCreateDictionaryData() {}
 
@@ -583,9 +617,11 @@ func swaggerGetJob() {}
 // @Tags 定时任务
 // @Security BearerAuth
 // @Param payload body SwaggerJobPayload true "任务信息"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
 // @Success 200 {object} SwaggerResponse
 // @Failure 400 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
 // @Router /jobs [post]
 func swaggerCreateJob() {}
 
@@ -629,6 +665,7 @@ func swaggerDeleteJob() {}
 // @Tags 定时任务
 // @Security BearerAuth
 // @Param id path int true "任务 ID"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
 // @Success 200 {object} SwaggerResponse
 // @Failure 409 {object} SwaggerErrorResponse
 // @Failure 403 {object} SwaggerErrorResponse
@@ -734,7 +771,7 @@ func swaggerDeleteManagedFile() {}
 // @Param account query string false "账号"
 // @Param ip query string false "IP 地址"
 // @Param status query string false "登录状态" Enums(success,failed)
-// @Param result query string false "登录结果" Enums(success,account_not_found,invalid_password,account_disabled,account_locked,system_error)
+// @Param result query string false "登录结果" Enums(success,account_not_found,invalid_password,account_disabled,account_locked,account_unlocked,captcha_invalid,system_error)
 // @Param startedAt query string false "开始时间，RFC3339"
 // @Param endedAt query string false "结束时间，RFC3339"
 // @Success 200 {object} SwaggerResponse

@@ -104,8 +104,6 @@
         </a-space>
       </div>
 
-
-
       <a-table
         row-key="id"
         class="compact-user-table"
@@ -143,7 +141,9 @@
             <a-space :size="4" wrap>
               <a-tag v-for="role in record.roles" :key="role">{{ role }}</a-tag>
               <a-tag v-if="record.id === 1" color="gold">最高权限</a-tag>
-              <a-tag v-if="record.roles.length === 0 && record.id !== 1">未分配</a-tag>
+              <a-tag v-if="record.roles.length === 0 && record.id !== 1"
+                >未分配</a-tag
+              >
             </a-space>
           </template>
 
@@ -165,12 +165,32 @@
 
           <template v-else-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" size="small" @click="openUserDrawer(record)">编辑</a-button>
-              <a-button type="link" size="small" @click="openPasswordModal(record)">
+              <a-button type="link" size="small" @click="openUserDrawer(record)"
+                >编辑</a-button
+              >
+              <a-button
+                type="link"
+                size="small"
+                @click="openPasswordModal(record)"
+              >
                 重置密码
               </a-button>
-              <a-popconfirm title="确认删除该用户？" @confirm="removeUser(record)">
-                <a-button type="link" size="small" danger :disabled="record.id === 1">
+              <a-popconfirm
+                title="确认清除该账号的临时登录锁定？"
+                @confirm="unlockUserLogin(record)"
+              >
+                <a-button type="link" size="small">解锁登录</a-button>
+              </a-popconfirm>
+              <a-popconfirm
+                title="确认删除该用户？"
+                @confirm="removeUser(record)"
+              >
+                <a-button
+                  type="link"
+                  size="small"
+                  danger
+                  :disabled="record.id === 1"
+                >
                   删除
                 </a-button>
               </a-popconfirm>
@@ -187,9 +207,17 @@
       :destroy-on-close="true"
       @after-open-change="handleUserDrawerOpenChange"
     >
-      <a-form ref="userFormRef" :model="userForm" :rules="userRules" layout="vertical">
+      <a-form
+        ref="userFormRef"
+        :model="userForm"
+        :rules="userRules"
+        layout="vertical"
+      >
         <a-form-item label="账号" name="username">
-          <a-input v-model:value="userForm.username" placeholder="请输入登录账号" />
+          <a-input
+            v-model:value="userForm.username"
+            placeholder="请输入登录账号"
+          />
         </a-form-item>
         <a-form-item v-if="!editingUser" label="初始密码" name="password">
           <a-input-password
@@ -198,7 +226,10 @@
           />
         </a-form-item>
         <a-form-item label="昵称" name="name">
-          <a-input v-model:value="userForm.name" placeholder="可留空，默认使用账号" />
+          <a-input
+            v-model:value="userForm.name"
+            placeholder="可留空，默认使用账号"
+          />
         </a-form-item>
         <a-form-item label="头像" name="avatar">
           <div class="avatar-uploader">
@@ -217,7 +248,11 @@
                   上传头像
                 </a-button>
               </a-upload>
-              <a-button v-if="userForm.avatar" :disabled="avatarUploading" @click="clearAvatar">
+              <a-button
+                v-if="userForm.avatar"
+                :disabled="avatarUploading"
+                @click="clearAvatar"
+              >
                 <DeleteOutlined />
                 清除
               </a-button>
@@ -245,7 +280,9 @@
       <template #extra>
         <a-space>
           <a-button @click="userDrawerOpen = false">取消</a-button>
-          <a-button type="primary" :loading="savingUser" @click="submitUser">保存</a-button>
+          <a-button type="primary" :loading="savingUser" @click="submitUser"
+            >保存</a-button
+          >
         </a-space>
       </template>
     </a-drawer>
@@ -256,7 +293,12 @@
       :confirm-loading="savingPassword"
       @ok="submitPassword"
     >
-      <a-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" layout="vertical">
+      <a-form
+        ref="passwordFormRef"
+        :model="passwordForm"
+        :rules="passwordRules"
+        layout="vertical"
+      >
         <a-form-item label="新密码" name="password">
           <a-input-password
             v-model:value="passwordForm.password"
@@ -291,7 +333,9 @@
               选择文件
             </a-button>
           </a-upload>
-          <p class="muted-text">{{ importFileName || '支持导入导出的 users.xlsx 格式' }}</p>
+          <p class="muted-text">
+            {{ importFileName || '支持导入导出的 users.xlsx 格式' }}
+          </p>
         </a-form-item>
         <a-form-item v-else label="导入内容">
           <a-textarea
@@ -318,7 +362,10 @@ import {
 import { message, type FormInstance, type UploadProps } from 'ant-design-vue';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 
-import { getDictionaryData, type DictionaryData } from '#/api/kadmin/dictionaries';
+import {
+  getDictionaryData,
+  type DictionaryData,
+} from '#/api/kadmin/dictionaries';
 import {
   deleteFile,
   getFileContent,
@@ -336,6 +383,7 @@ import {
   resetUserPassword,
   updateUser,
   updateUserStatus,
+  unlockUser,
   type ManagedUser,
   type UserImportExportFormat,
 } from '#/api/kadmin/users';
@@ -410,7 +458,7 @@ const columns = [
   { title: '职位', key: 'roles', width: 260 },
   { title: '状态', key: 'status', width: 170 },
   { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 160 },
-  { title: '操作', key: 'action', width: 190, fixed: 'right' },
+  { title: '操作', key: 'action', width: 280, fixed: 'right' },
 ];
 
 const userRules = computed(() => ({
@@ -536,7 +584,10 @@ async function loadManagedAvatarSources(records: ManagedUser[]) {
 
   for (const item of loaded) {
     if (item) {
-      managedAvatarObjectUrls.set(item.stableUrl, URL.createObjectURL(item.blob));
+      managedAvatarObjectUrls.set(
+        item.stableUrl,
+        URL.createObjectURL(item.blob),
+      );
     }
   }
   avatarSources.value = Object.fromEntries(managedAvatarObjectUrls);
@@ -587,8 +638,26 @@ async function loadStatusOptions() {
     statusItems.value = data.items || [];
   } catch {
     statusItems.value = [
-      { id: 1, dictType: 'sys_status', label: 'Enable', value: 'enable', isDefault: true, sort: 1, status: 1, color: 'green' },
-      { id: 2, dictType: 'sys_status', label: 'Disable', value: 'disable', isDefault: false, sort: 2, status: 1, color: 'red' },
+      {
+        id: 1,
+        dictType: 'sys_status',
+        label: 'Enable',
+        value: 'enable',
+        isDefault: true,
+        sort: 1,
+        status: 1,
+        color: 'green',
+      },
+      {
+        id: 2,
+        dictType: 'sys_status',
+        label: 'Disable',
+        value: 'disable',
+        isDefault: false,
+        sort: 2,
+        status: 1,
+        color: 'red',
+      },
     ];
   }
 }
@@ -710,13 +779,25 @@ async function submitPassword() {
   if (!passwordUser.value) return;
   savingPassword.value = true;
   try {
-    await resetUserPassword(passwordUser.value.id, passwordForm.password.trim());
+    await resetUserPassword(
+      passwordUser.value.id,
+      passwordForm.password.trim(),
+    );
     passwordModalOpen.value = false;
     message.success('密码已重置');
   } catch (error) {
     message.error(error instanceof Error ? error.message : '重置密码失败');
   } finally {
     savingPassword.value = false;
+  }
+}
+
+async function unlockUserLogin(record: ManagedUser) {
+  try {
+    await unlockUser(record.id);
+    message.success('临时登录锁定已清除');
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '解锁登录失败');
   }
 }
 
@@ -751,7 +832,9 @@ async function toggleUserStatus(record: ManagedUser, checked: boolean) {
     record.status = previousStatus;
     message.error(error instanceof Error ? error.message : '更新账号状态失败');
   } finally {
-    statusUpdatingIds.value = statusUpdatingIds.value.filter((id) => id !== record.id);
+    statusUpdatingIds.value = statusUpdatingIds.value.filter(
+      (id) => id !== record.id,
+    );
   }
 }
 
@@ -775,7 +858,9 @@ const beforeImportUpload: UploadProps['beforeUpload'] = async (file) => {
 
 async function submitImport() {
   if (!importForm.content.trim()) {
-    message.warning(importForm.format === 'xlsx' ? '请选择 Excel 文件' : '请粘贴导入内容');
+    message.warning(
+      importForm.format === 'xlsx' ? '请选择 Excel 文件' : '请粘贴导入内容',
+    );
     return;
   }
   importing.value = true;
@@ -806,11 +891,18 @@ async function handleExport(event: { key: UserImportExportFormat }) {
 }
 
 function statusLabel(status: string) {
-  return statusItems.value.find((item) => item.value === status)?.label || status || 'Enable';
+  return (
+    statusItems.value.find((item) => item.value === status)?.label ||
+    status ||
+    'Enable'
+  );
 }
 
 function statusColor(status: string) {
-  return statusItems.value.find((item) => item.value === status)?.color || (status === 'disable' ? 'red' : 'green');
+  return (
+    statusItems.value.find((item) => item.value === status)?.color ||
+    (status === 'disable' ? 'red' : 'green')
+  );
 }
 
 function readFileAsBase64(file: File) {

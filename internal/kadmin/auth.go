@@ -1,6 +1,7 @@
 package kadmin
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -12,8 +13,10 @@ import (
 )
 
 type loginRequest struct {
-	Username string `json:"username" form:"username"`
-	Password string `json:"password" form:"password"`
+	Username      string `json:"username" form:"username"`
+	Password      string `json:"password" form:"password"`
+	CaptchaID     string `json:"captchaId" form:"captchaId"`
+	CaptchaAnswer string `json:"captchaAnswer" form:"captchaAnswer"`
 }
 
 type refreshTokenRequest struct {
@@ -30,10 +33,30 @@ type loginResponse struct {
 
 func registerAuthRoutes(api *gin.RouterGroup, s *Store) {
 	authGroup := api.Group("/auth")
+	authGroup.GET("/captcha", s.captcha)
 	authGroup.POST("/login", s.login)
 	authGroup.POST("/refresh", s.refreshToken)
 	authGroup.POST("/logout", s.logout)
 	authGroup.GET("/codes", s.requireAuth(), s.accessCodes)
+}
+
+func (s *Store) captcha(c *gin.Context) {
+	policy := s.loadSecurityPolicy()
+	if !policy.CaptchaEnabled {
+		success(c, gin.H{"enabled": false})
+		return
+	}
+	challenge, err := s.security.issueCaptcha(policy.CaptchaTTL)
+	if err != nil {
+		fail(c, http.StatusServiceUnavailable, "captcha storage unavailable")
+		return
+	}
+	success(c, gin.H{
+		"enabled":   true,
+		"id":        challenge.ID,
+		"image":     challenge.Image,
+		"expiresIn": challenge.ExpiresIn,
+	})
 }
 
 func (s *Store) login(c *gin.Context) {
@@ -45,6 +68,29 @@ func (s *Store) login(c *gin.Context) {
 	}
 	if req.Password == "" {
 		req.Password = c.PostForm("password")
+	}
+	policy := s.loadSecurityPolicy()
+	if policy.CaptchaEnabled {
+		if err := s.security.verifyCaptcha(req.CaptchaID, req.CaptchaAnswer); err != nil {
+			s.recordLoginAttempt(c, startedAt, req.Username, nil, loginlogs.ResultCaptchaInvalid, "验证码错误或已过期")
+			if errors.Is(err, errCaptchaInvalid) {
+				fail(c, http.StatusBadRequest, "captcha invalid or expired")
+			} else {
+				fail(c, http.StatusServiceUnavailable, "captcha storage unavailable")
+			}
+			return
+		}
+	}
+	locked, err := s.security.loginLocked(req.Username, c.ClientIP(), policy)
+	if err != nil {
+		s.recordLoginAttempt(c, startedAt, req.Username, nil, loginlogs.ResultSystemError, "登录锁定状态检查失败")
+		fail(c, http.StatusServiceUnavailable, "login security storage unavailable")
+		return
+	}
+	if locked {
+		s.recordLoginAttempt(c, startedAt, req.Username, nil, loginlogs.ResultAccountLocked, "登录失败次数达到阈值")
+		fail(c, http.StatusTooManyRequests, "too many login attempts; try again later")
+		return
 	}
 
 	knownUserID, accountStatus, err := s.loginAccountState(req.Username)
@@ -63,12 +109,28 @@ func (s *Store) login(c *gin.Context) {
 	if !ok {
 		user, ok = s.checkConfiguredDefaultAdmin(req.Username, req.Password)
 		if !ok {
+			result := loginlogs.ResultInvalidPassword
+			userID := knownUserID
 			if knownUserID == nil {
-				s.recordLoginAttempt(c, startedAt, req.Username, nil, loginlogs.ResultAccountNotFound, "账号不存在")
-			} else {
-				s.recordLoginAttempt(c, startedAt, req.Username, knownUserID, loginlogs.ResultInvalidPassword, "密码错误")
+				result = loginlogs.ResultAccountNotFound
 			}
-			fail(c, http.StatusUnauthorized, "wrong username or password")
+			lockedNow, lockErr := s.security.recordLoginFailure(req.Username, c.ClientIP(), policy)
+			if lockErr != nil {
+				s.recordLoginAttempt(c, startedAt, req.Username, userID, loginlogs.ResultSystemError, "登录失败计数写入失败")
+				fail(c, http.StatusServiceUnavailable, "login security storage unavailable")
+				return
+			}
+			reason := "账号或密码错误"
+			if lockedNow {
+				reason = "登录失败次数达到阈值"
+				result = loginlogs.ResultAccountLocked
+			}
+			s.recordLoginAttempt(c, startedAt, req.Username, userID, result, reason)
+			if lockedNow {
+				fail(c, http.StatusTooManyRequests, "too many login attempts; try again later")
+			} else {
+				fail(c, http.StatusUnauthorized, "wrong username or password")
+			}
 			return
 		}
 	}
@@ -89,6 +151,13 @@ func (s *Store) login(c *gin.Context) {
 		userID := user.Id
 		s.recordLoginAttempt(c, startedAt, req.Username, &userID, loginlogs.ResultAccountDisabled, "账号已禁用")
 		fail(c, http.StatusForbidden, "account disabled")
+		return
+	}
+
+	if err := s.security.clearLoginFailures(req.Username, c.ClientIP()); err != nil {
+		userID := user.Id
+		s.recordLoginAttempt(c, startedAt, req.Username, &userID, loginlogs.ResultSystemError, "登录失败计数清理失败")
+		fail(c, http.StatusServiceUnavailable, "login security storage unavailable")
 		return
 	}
 

@@ -71,7 +71,7 @@ func TestUniqueIDsAndValidResults(t *testing.T) {
 	if len(ids) != 2 || ids[0] != 3 || ids[1] != 5 {
 		t.Fatalf("unexpected ids: %#v", ids)
 	}
-	for _, result := range []string{ResultSuccess, ResultAccountNotFound, ResultInvalidPassword, ResultAccountDisabled, ResultAccountLocked, ResultSystemError} {
+	for _, result := range []string{ResultSuccess, ResultAccountNotFound, ResultInvalidPassword, ResultAccountDisabled, ResultAccountLocked, ResultAccountUnlocked, ResultCaptchaInvalid, ResultSystemError} {
 		if !validResult(result) {
 			t.Fatalf("expected %s to be valid", result)
 		}

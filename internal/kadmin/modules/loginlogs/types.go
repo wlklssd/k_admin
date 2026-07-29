@@ -15,6 +15,8 @@ const (
 	ResultInvalidPassword = "invalid_password"
 	ResultAccountDisabled = "account_disabled"
 	ResultAccountLocked   = "account_locked"
+	ResultAccountUnlocked = "account_unlocked"
+	ResultCaptchaInvalid  = "captcha_invalid"
 	ResultSystemError     = "system_error"
 
 	defaultRetentionDays = 90
@@ -80,7 +82,7 @@ type CleanupResult struct {
 func validResult(value string) bool {
 	switch value {
 	case ResultSuccess, ResultAccountNotFound, ResultInvalidPassword,
-		ResultAccountDisabled, ResultAccountLocked, ResultSystemError:
+		ResultAccountDisabled, ResultAccountLocked, ResultAccountUnlocked, ResultCaptchaInvalid, ResultSystemError:
 		return true
 	default:
 		return false

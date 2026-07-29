@@ -74,7 +74,9 @@
         <a-space wrap>
           <span class="muted-text">保留 {{ retentionDays }} 天</span>
           <a-tooltip v-if="canRetention" title="设置保留周期">
-            <a-button shape="circle" @click="openRetention"><SettingOutlined /></a-button>
+            <a-button shape="circle" @click="openRetention"
+              ><SettingOutlined
+            /></a-button>
           </a-tooltip>
           <a-tooltip title="刷新">
             <a-button shape="circle" :loading="loading" @click="loadAudits">
@@ -93,7 +95,11 @@
             title="确认删除选中的登录审计记录？此操作无法撤销。"
             @confirm="removeSelected"
           >
-            <a-button danger :disabled="selectedRowKeys.length === 0" :loading="deleting">
+            <a-button
+              danger
+              :disabled="selectedRowKeys.length === 0"
+              :loading="deleting"
+            >
               <DeleteOutlined />批量删除
             </a-button>
           </a-popconfirm>
@@ -127,7 +133,13 @@
             </div>
           </template>
           <template v-else-if="column.key === 'result'">
-            <a-tag :color="record.status === 'success' ? 'green' : resultColor(record.result)">
+            <a-tag
+              :color="
+                record.status === 'success'
+                  ? 'green'
+                  : resultColor(record.result)
+              "
+            >
               {{ resultLabel(record.result) }}
             </a-tag>
           </template>
@@ -151,24 +163,48 @@
       </a-table>
     </section>
 
-    <a-drawer v-model:open="detailOpen" title="登录审计详情" width="min(640px, 94vw)">
+    <a-drawer
+      v-model:open="detailOpen"
+      title="登录审计详情"
+      width="min(640px, 94vw)"
+    >
       <a-descriptions v-if="detailAudit" bordered size="small" :column="1">
-        <a-descriptions-item label="登录时间">{{ detailAudit.occurredAt }}</a-descriptions-item>
+        <a-descriptions-item label="登录时间">{{
+          detailAudit.occurredAt
+        }}</a-descriptions-item>
         <a-descriptions-item label="账号 / 用户 ID">
           {{ detailAudit.account || '-' }} / {{ detailAudit.userId ?? '-' }}
         </a-descriptions-item>
         <a-descriptions-item label="登录结果">
-          <a-tag :color="detailAudit.status === 'success' ? 'green' : resultColor(detailAudit.result)">
+          <a-tag
+            :color="
+              detailAudit.status === 'success'
+                ? 'green'
+                : resultColor(detailAudit.result)
+            "
+          >
             {{ resultLabel(detailAudit.result) }}
           </a-tag>
         </a-descriptions-item>
-        <a-descriptions-item label="失败原因">{{ detailAudit.failureReason || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="耗时">{{ formatDuration(detailAudit.durationMs) }}</a-descriptions-item>
-        <a-descriptions-item label="IP">{{ detailAudit.ip || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="浏览器">{{ detailAudit.browser || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="操作系统">{{ detailAudit.os || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="失败原因">{{
+          detailAudit.failureReason || '-'
+        }}</a-descriptions-item>
+        <a-descriptions-item label="耗时">{{
+          formatDuration(detailAudit.durationMs)
+        }}</a-descriptions-item>
+        <a-descriptions-item label="IP">{{
+          detailAudit.ip || '-'
+        }}</a-descriptions-item>
+        <a-descriptions-item label="浏览器">{{
+          detailAudit.browser || '-'
+        }}</a-descriptions-item>
+        <a-descriptions-item label="操作系统">{{
+          detailAudit.os || '-'
+        }}</a-descriptions-item>
         <a-descriptions-item label="User-Agent">
-          <span class="audit-break-text">{{ detailAudit.userAgent || '-' }}</span>
+          <span class="audit-break-text">{{
+            detailAudit.userAgent || '-'
+          }}</span>
         </a-descriptions-item>
       </a-descriptions>
     </a-drawer>
@@ -181,7 +217,12 @@
     >
       <a-form layout="vertical">
         <a-form-item label="保留天数" required>
-          <a-input-number v-model:value="retentionDraft" :min="1" :max="3650" class="retention-input" />
+          <a-input-number
+            v-model:value="retentionDraft"
+            :min="1"
+            :max="3650"
+            class="retention-input"
+          />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -216,8 +257,12 @@ import {
 type TablePagination = { current?: number; pageSize?: number };
 
 const { hasAccessByCodes } = useAccess();
-const canDelete = computed(() => hasAccessByCodes(['system:login-log:delete', '*']));
-const canRetention = computed(() => hasAccessByCodes(['system:login-log:retention', '*']));
+const canDelete = computed(() =>
+  hasAccessByCodes(['system:login-log:delete', '*']),
+);
+const canRetention = computed(() =>
+  hasAccessByCodes(['system:login-log:retention', '*']),
+);
 const audits = ref<LoginAudit[]>([]);
 const loading = ref(false);
 const deleting = ref(false);
@@ -246,7 +291,13 @@ const pagination = reactive({
   total: 0,
 });
 const columns = [
-  { title: '登录时间', dataIndex: 'occurredAt', key: 'occurredAt', width: 180, fixed: 'left' },
+  {
+    title: '登录时间',
+    dataIndex: 'occurredAt',
+    key: 'occurredAt',
+    width: 180,
+    fixed: 'left',
+  },
   { title: '账号', key: 'account', width: 180 },
   { title: 'IP', dataIndex: 'ip', key: 'ip', width: 150 },
   { title: '浏览器 / OS', key: 'client', width: 240 },
@@ -265,6 +316,8 @@ const resultOptions = [
   { label: '密码错误', value: 'invalid_password' },
   { label: '账号禁用', value: 'account_disabled' },
   { label: '锁定拒绝', value: 'account_locked' },
+  { label: '管理员解锁', value: 'account_unlocked' },
+  { label: '验证码错误', value: 'captcha_invalid' },
   { label: '系统异常', value: 'system_error' },
 ];
 const rowSelection = computed(() =>
@@ -297,7 +350,9 @@ async function loadAudits() {
     });
     audits.value = data.items || [];
     pagination.total = data.total || 0;
-    selectedRowKeys.value = selectedRowKeys.value.filter((id) => audits.value.some((item) => item.id === id));
+    selectedRowKeys.value = selectedRowKeys.value.filter((id) =>
+      audits.value.some((item) => item.id === id),
+    );
   } catch (error) {
     message.error(error instanceof Error ? error.message : '加载登录审计失败');
   } finally {
@@ -374,7 +429,11 @@ function openRetention() {
 }
 
 async function saveRetention() {
-  if (!retentionDraft.value || retentionDraft.value < 1 || retentionDraft.value > 3650) {
+  if (
+    !retentionDraft.value ||
+    retentionDraft.value < 1 ||
+    retentionDraft.value > 3650
+  ) {
     message.warning('保留天数必须在 1 至 3650 之间');
     return;
   }
@@ -397,13 +456,21 @@ function resultLabel(result: LoginAuditResult) {
 }
 
 function resultColor(result: LoginAuditResult) {
-  if (result === 'account_disabled' || result === 'account_locked') return 'red';
+  if (result === 'account_unlocked') return 'green';
+  if (
+    result === 'account_disabled' ||
+    result === 'account_locked' ||
+    result === 'captcha_invalid'
+  )
+    return 'red';
   if (result === 'system_error') return 'magenta';
   return 'orange';
 }
 
 function formatDuration(duration: number) {
-  return duration < 1000 ? `${duration} ms` : `${(duration / 1000).toFixed(2)} s`;
+  return duration < 1000
+    ? `${duration} ms`
+    : `${(duration / 1000).toFixed(2)} s`;
 }
 </script>
 

@@ -16,7 +16,7 @@ type repository struct {
 
 func (r *repository) insert(attempt Attempt, browser, operatingSystem string) error {
 	status := StatusFailed
-	if attempt.Result == ResultSuccess {
+	if attempt.Result == ResultSuccess || attempt.Result == ResultAccountUnlocked {
 		status = StatusSuccess
 	}
 	_, err := r.conn.Exec(`INSERT INTO public.kadmin_login_audits

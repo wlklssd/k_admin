@@ -252,9 +252,13 @@ func sanitizeJSONValue(value interface{}, depth int) interface{} {
 	}
 	switch typed := value.(type) {
 	case map[string]interface{}:
+		configuredKey := ""
+		if value, ok := typed["key"].(string); ok {
+			configuredKey = value
+		}
 		result := make(map[string]interface{}, len(typed))
 		for key, child := range typed {
-			if sensitiveLogField(key) {
+			if sensitiveLogField(key) || key == "value" && sensitiveLogField(configuredKey) {
 				result[key] = "[REDACTED]"
 			} else {
 				result[key] = sanitizeJSONValue(child, depth+1)
@@ -281,7 +285,7 @@ func sensitiveLogField(field string) bool {
 		}
 		return -1
 	}, field)
-	for _, keyword := range []string{"password", "passwd", "token", "authorization", "cookie", "secret", "apikey"} {
+	for _, keyword := range []string{"password", "passwd", "token", "authorization", "cookie", "secret", "apikey", "captcha", "content"} {
 		if strings.Contains(normalized, keyword) {
 			return true
 		}

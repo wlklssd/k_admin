@@ -248,8 +248,8 @@ func managedLogWhere(filter managedLogFilter) (string, []interface{}) {
 	}
 	if filter.Keyword != "" {
 		pattern := "%" + filter.Keyword + "%"
-		conditions = append(conditions, `(l.path ILIKE ? OR l.message ILIKE ? OR l.request_id ILIKE ? OR l.trace_id ILIKE ? OR l.actor_name ILIKE ? OR u.username ILIKE ? OR u.name ILIKE ?)`)
-		for i := 0; i < 7; i++ {
+		conditions = append(conditions, `(l.path ILIKE ? OR l.message ILIKE ? OR l.request_id ILIKE ? OR l.trace_id ILIKE ? OR l.actor_name ILIKE ? OR l.input ILIKE ? OR l.metadata::text ILIKE ? OR u.username ILIKE ? OR u.name ILIKE ?)`)
+		for range 9 {
 			args = append(args, pattern)
 		}
 	}

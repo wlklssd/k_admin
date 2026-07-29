@@ -12,12 +12,14 @@ func TestRegisterApplicationRoutesIncludesEveryModule(t *testing.T) {
 	registerApplicationRoutes(engine.Group("/api"), &Store{})
 
 	wanted := map[string]bool{
+		"GET /api/auth/captcha":             false,
 		"POST /api/auth/login":              false,
 		"GET /api/user/info":                false,
 		"GET /api/menu/all":                 false,
 		"GET /api/rbac/overview":            false,
 		"GET /api/admin-menus":              false,
 		"GET /api/users":                    false,
+		"PUT /api/users/:id/unlock":         false,
 		"GET /api/dictionaries/overview":    false,
 		"POST /api/files":                   false,
 		"POST /api/users/avatar":            false,

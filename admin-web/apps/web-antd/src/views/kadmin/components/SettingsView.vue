@@ -136,7 +136,6 @@
               <a-tag :color="record.builtin ? 'blue' : 'default'">
                 {{ record.builtin ? '内置' : '自定义' }}
               </a-tag>
-
             </a-space>
           </template>
 
@@ -146,7 +145,9 @@
 
           <template v-else-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" size="small" @click="resetItem(record)">默认值</a-button>
+              <a-button type="link" size="small" @click="resetItem(record)"
+                >默认值</a-button
+              >
               <a-popconfirm
                 v-if="!record.builtin"
                 title="确认删除该配置项？"
@@ -166,9 +167,17 @@
       :confirm-loading="customSaving"
       @ok="addCustomItem"
     >
-      <a-form ref="customFormRef" :model="customForm" :rules="customRules" layout="vertical">
+      <a-form
+        ref="customFormRef"
+        :model="customForm"
+        :rules="customRules"
+        layout="vertical"
+      >
         <a-form-item label="配置键" name="key">
-          <a-input v-model:value="customForm.key" placeholder="例如：site.notice" />
+          <a-input
+            v-model:value="customForm.key"
+            placeholder="例如：site.notice"
+          />
         </a-form-item>
         <a-form-item label="配置值" name="value">
           <a-input v-model:value="customForm.value" />
@@ -205,6 +214,14 @@ const defaultValues: Record<string, string> = {
   'auth.default_username': 'admin',
   'auth.default_password': 'admin',
   'security.captcha_enabled': 'false',
+  'security.captcha_ttl_seconds': '120',
+  'security.login_lock_enabled': 'true',
+  'security.login_failure_threshold': '5',
+  'security.login_ip_failure_threshold': '20',
+  'security.login_failure_window_minutes': '15',
+  'security.login_lock_minutes': '15',
+  'security.login_ip_whitelist': '127.0.0.1,::1',
+  'security.idempotency_ttl_seconds': '300',
   'ui.theme_mode': 'auto',
   'navigation.external_link_target': 'new_tab',
 };
@@ -269,7 +286,9 @@ const filteredItems = computed(() => {
     if (filters.scope === 'builtin' && !item.builtin) return false;
     if (filters.scope === 'custom' && item.builtin) return false;
     if (!keyword) return true;
-    return `${item.key} ${item.label || ''} ${item.description || ''}`.toLowerCase().includes(keyword);
+    return `${item.key} ${item.label || ''} ${item.description || ''}`
+      .toLowerCase()
+      .includes(keyword);
   });
 });
 
@@ -285,7 +304,8 @@ async function loadSettings() {
     filePath.value = data.filePath;
     items.value = data.items || [];
   } catch (error) {
-    apiError.value = error instanceof Error ? error.message : '加载参数配置失败';
+    apiError.value =
+      error instanceof Error ? error.message : '加载参数配置失败';
   } finally {
     initialLoading.value = false;
   }
@@ -302,7 +322,8 @@ async function submit() {
     message.success('参数配置已保存');
     await refreshNavigationMenusSafely();
   } catch (error) {
-    apiError.value = error instanceof Error ? error.message : '保存参数配置失败';
+    apiError.value =
+      error instanceof Error ? error.message : '保存参数配置失败';
   } finally {
     submitLoading.value = false;
   }

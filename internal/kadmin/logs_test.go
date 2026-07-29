@@ -68,6 +68,18 @@ func TestParseManagedLogFilter(t *testing.T) {
 	}
 }
 
+func TestManagedLogKeywordSearchIncludesBusinessAuditFields(t *testing.T) {
+	where, args := managedLogWhere(managedLogFilter{Keyword: "resource-42"})
+	for _, field := range []string{"l.input ILIKE ?", "l.metadata::text ILIKE ?"} {
+		if !strings.Contains(where, field) {
+			t.Fatalf("business audit search is missing %q in %q", field, where)
+		}
+	}
+	if len(args) != 9 {
+		t.Fatalf("keyword query arguments = %d, want 9", len(args))
+	}
+}
+
 func TestParseManagedLogFilterRejectsInvalidValues(t *testing.T) {
 	for _, query := range []string{
 		"eventType=unknown",

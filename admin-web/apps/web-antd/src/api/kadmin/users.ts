@@ -46,7 +46,9 @@ export function getUsers(filters: UserListFilters = {}) {
   if (filters.role) params.set('role', filters.role);
   if (filters.status) params.set('status', filters.status);
   const query = params.toString();
-  return request<ManagedUserListResponse>(`/api/users${query ? `?${query}` : ''}`);
+  return request<ManagedUserListResponse>(
+    `/api/users${query ? `?${query}` : ''}`,
+  );
 }
 
 export function createUser(payload: UserPayload & { password: string }) {
@@ -83,6 +85,13 @@ export function resetUserPassword(id: number, password: string) {
   });
 }
 
+export function unlockUser(id: number, ip = '') {
+  return request<boolean>(`/api/users/${id}/unlock`, {
+    method: 'PUT',
+    body: JSON.stringify({ ip }),
+  });
+}
+
 export type UserImportExportFormat = 'csv' | 'sql' | 'xlsx';
 
 export function importUsers(format: UserImportExportFormat, content: string) {
@@ -99,14 +108,23 @@ export async function exportUsers(format: UserImportExportFormat) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE}/users/export?format=${format}`, { headers });
+  const response = await fetch(`${API_BASE}/users/export?format=${format}`, {
+    headers,
+  });
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    throw new Error(payload?.message || payload?.msg || response.statusText || '导出失败');
+    throw new Error(
+      payload?.message || payload?.msg || response.statusText || '导出失败',
+    );
   }
 
   const blob = await response.blob();
-  const fallbackName = format === 'sql' ? 'users.sql' : format === 'xlsx' ? 'users.xlsx' : 'users.csv';
+  const fallbackName =
+    format === 'sql'
+      ? 'users.sql'
+      : format === 'xlsx'
+        ? 'users.xlsx'
+        : 'users.csv';
   const disposition = response.headers.get('Content-Disposition') || '';
   const match = disposition.match(/filename="?([^";]+)"?/i);
   return {

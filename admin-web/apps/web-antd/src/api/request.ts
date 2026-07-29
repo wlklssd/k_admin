@@ -62,7 +62,9 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
       }
 
       accessStore.setAccessToken(result.accessToken);
-      accessStore.setRefreshToken(result.refreshToken || accessStore.refreshToken);
+      accessStore.setRefreshToken(
+        result.refreshToken || accessStore.refreshToken,
+      );
       return result.accessToken;
     } catch (error) {
       throw Object.assign(
@@ -76,6 +78,13 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     return token ? `Bearer ${token}` : null;
   }
 
+  function idempotencyKey() {
+    return (
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(16).slice(2)}`
+    );
+  }
+
   // 请求头处理
   client.addRequestInterceptor({
     fulfilled: async (config) => {
@@ -83,6 +92,13 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
 
       config.headers.Authorization = formatToken(accessStore.accessToken);
       config.headers['Accept-Language'] = preferences.app.locale;
+      const method = String(config.method || 'get').toLowerCase();
+      if (
+        ['delete', 'patch', 'post', 'put'].includes(method) &&
+        !config.headers['Idempotency-Key']
+      ) {
+        config.headers['Idempotency-Key'] = idempotencyKey();
+      }
       return config;
     },
   });

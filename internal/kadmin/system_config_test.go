@@ -108,3 +108,39 @@ func TestExternalLinkTargetConfigDefaultsAndNormalizes(t *testing.T) {
 		t.Fatalf("invalid target fallback = %q, want new_tab", got)
 	}
 }
+
+func TestSecurityConfigValidationRejectsUnsafeRangesAndWhitelist(t *testing.T) {
+	values := defaultSystemConfigValues()
+	values["security.login_failure_threshold"] = "1"
+	if err := validateSecurityConfigValues(values); err == nil {
+		t.Fatal("login failure threshold below minimum should fail")
+	}
+
+	values = defaultSystemConfigValues()
+	values["security.login_ip_whitelist"] = "127.0.0.1,10.0.0.0/8,not-an-ip"
+	if err := validateSecurityConfigValues(values); err == nil {
+		t.Fatal("invalid login IP whitelist should fail")
+	}
+
+	values["security.login_ip_whitelist"] = "127.0.0.1,10.0.0.0/8"
+	if err := validateSecurityConfigValues(values); err != nil {
+		t.Fatalf("valid security config failed: %v", err)
+	}
+}
+
+func TestDefaultSecurityPolicyValues(t *testing.T) {
+	values := defaultSystemConfigValues()
+	for key, want := range map[string]string{
+		"security.captcha_ttl_seconds":          "120",
+		"security.idempotency_ttl_seconds":      "300",
+		"security.login_failure_threshold":      "5",
+		"security.login_failure_window_minutes": "15",
+		"security.login_ip_failure_threshold":   "20",
+		"security.login_lock_enabled":           "true",
+		"security.login_lock_minutes":           "15",
+	} {
+		if got := values[key]; got != want {
+			t.Fatalf("default %s = %q, want %q", key, got, want)
+		}
+	}
+}

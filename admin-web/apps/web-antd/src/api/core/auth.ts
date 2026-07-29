@@ -5,6 +5,8 @@ export namespace AuthApi {
   export interface LoginParams {
     password?: string;
     username?: string;
+    captchaAnswer?: string;
+    captchaId?: string;
   }
 
   /** 登录接口返回值 */
@@ -14,6 +16,13 @@ export namespace AuthApi {
     refreshToken?: string;
     token?: string;
     tokenType?: string;
+  }
+
+  export interface CaptchaChallenge {
+    enabled: boolean;
+    expiresIn?: number;
+    id?: string;
+    image?: string;
   }
 
   export interface LogoutParams {
@@ -27,6 +36,11 @@ export namespace AuthApi {
     message: string;
     msg?: string;
   }
+}
+
+export async function getCaptchaApi() {
+  const response = await baseRequestClient.get<any>('/auth/captcha');
+  return (response.data?.data ?? response.data) as AuthApi.CaptchaChallenge;
 }
 
 /**

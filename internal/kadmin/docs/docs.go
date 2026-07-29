@@ -112,6 +112,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/kadmin.menuPayload"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -129,6 +136,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -247,6 +260,28 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/captcha": {
+            "get": {
+                "tags": [
+                    "认证"
+                ],
+                "summary": "获取一次性登录验证码",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -455,6 +490,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/kadmin.dictionaryDataPayload"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -472,6 +514,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -662,6 +710,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/kadmin.dictionaryTypePayload"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -679,6 +734,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -1134,6 +1195,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerJobPayload"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1151,6 +1219,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -1301,6 +1375,13 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1429,6 +1510,8 @@ const docTemplate = `{
                             "invalid_password",
                             "account_disabled",
                             "account_locked",
+                            "account_unlocked",
+                            "captcha_invalid",
                             "system_error"
                         ],
                         "type": "string",
@@ -1858,6 +1941,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/kadmin.departmentPayload"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1875,6 +1965,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -2123,6 +2219,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/kadmin.rolePayload"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2140,6 +2243,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -2700,6 +2809,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/kadmin.userPayload"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2717,6 +2833,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -2804,7 +2926,7 @@ const docTemplate = `{
                     }
                 ],
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "tags": [
                     "用户管理"
@@ -2812,11 +2934,20 @@ const docTemplate = `{
                 "summary": "导入用户",
                 "parameters": [
                     {
-                        "type": "file",
-                        "description": "用户导入文件",
-                        "name": "file",
-                        "in": "formData",
+                        "type": "string",
+                        "description": "幂等键（8-128 位）",
+                        "name": "Idempotency-Key",
+                        "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "导入格式与文件内容",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.importUsersPayload"
+                        }
                     }
                 ],
                 "responses": {
@@ -2834,6 +2965,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
                         }
@@ -3033,6 +3170,56 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{id}/unlock": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "清除用户临时登录锁定",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "可选 IP",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.unlockUserPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -3189,9 +3376,26 @@ const docTemplate = `{
                 }
             }
         },
+        "kadmin.importUsersPayload": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "format": {
+                    "type": "string"
+                }
+            }
+        },
         "kadmin.loginRequest": {
             "type": "object",
             "properties": {
+                "captchaAnswer": {
+                    "type": "string"
+                },
+                "captchaId": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
                 },
@@ -3346,6 +3550,14 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/kadmin.systemConfigItem"
                     }
+                }
+            }
+        },
+        "kadmin.unlockUserPayload": {
+            "type": "object",
+            "properties": {
+                "ip": {
+                    "type": "string"
                 }
             }
         },
