@@ -3,7 +3,7 @@
     <section class="page-heading">
       <div>
         <h1>权限管理</h1>
-        <p>按部门配置职位，职位的人员分配在用户管理中维护</p>
+        <p>选择部门后，在子菜单中管理部门职位与职位菜单权限</p>
       </div>
       <a-space wrap>
         <a-button @click="loadOverview">
@@ -13,12 +13,16 @@
       </a-space>
     </section>
 
-    <a-row :gutter="[16, 16]">
+    <a-row class="rbac-layout" :gutter="[16, 16]">
       <a-col :xs="24" :lg="8">
         <section class="panel">
           <div class="panel-title">
             <h2>部门</h2>
-            <a-button size="small" type="primary" @click="openDepartmentDrawer()">
+            <a-button
+              size="small"
+              type="primary"
+              @click="openDepartmentDrawer()"
+            >
               <PlusOutlined />
               新建部门
             </a-button>
@@ -41,12 +45,22 @@
           >
             <template #renderItem="{ item }">
               <a-list-item
-                :class="['role-list-item', { active: item.id === selectedDepartmentId }]"
+                :class="[
+                  'role-list-item',
+                  { active: item.id === selectedDepartmentId },
+                ]"
                 @click="selectDepartment(item.id)"
               >
                 <a-list-item-meta>
                   <template #avatar>
-                    <a-avatar :style="{ backgroundColor: item.status === 1 ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }">
+                    <a-avatar
+                      :style="{
+                        backgroundColor:
+                          item.status === 1
+                            ? 'hsl(var(--primary))'
+                            : 'hsl(var(--muted-foreground))',
+                      }"
+                    >
                       {{ item.name.slice(0, 1) }}
                     </a-avatar>
                   </template>
@@ -57,7 +71,8 @@
                     </a-space>
                   </template>
                   <template #description>
-                    {{ item.code || '未设置编码' }} · {{ item.roleIds.length }} 个职位
+                    {{ item.code || '未设置编码' }} ·
+                    {{ item.roleIds.length }} 个职位
                   </template>
                 </a-list-item-meta>
               </a-list-item>
@@ -85,7 +100,10 @@
                   <EditOutlined />
                   编辑部门
                 </a-button>
-                <a-popconfirm title="确认删除该部门？" @confirm="removeDepartment">
+                <a-popconfirm
+                  title="确认删除该部门？"
+                  @confirm="removeDepartment"
+                >
                   <a-button danger>
                     <DeleteOutlined />
                     删除
@@ -96,23 +114,124 @@
 
             <a-tabs v-model:active-key="activeTab" class="rbac-tabs">
               <a-tab-pane key="departmentRoles" tab="部门职位">
-                <div class="table-toolbar">
-                  <span class="muted-text">配置该部门下包含哪些职位，职位即现有权限组</span>
-                  <a-space>
-                    <a-button type="primary" :loading="savingDepartmentRoles" @click="saveDepartmentRoles">
-                      保存部门职位
+                <div class="table-toolbar department-role-toolbar">
+                  <div>
+                    <strong>部门下的职位</strong>
+                    <p class="muted-text">
+                      选择已有职位加入当前部门，或直接新建职位
+                    </p>
+                  </div>
+                  <a-space wrap>
+                    <a-select
+                      v-model:value="pendingDepartmentRoleId"
+                      allow-clear
+                      show-search
+                      option-filter-prop="label"
+                      class="control-lg"
+                      :options="availableRoleOptions"
+                      placeholder="选择已有职位"
+                    />
+                    <a-button
+                      :disabled="!pendingDepartmentRoleId"
+                      :loading="savingDepartmentRoles"
+                      @click="addRoleToDepartment"
+                    >
+                      添加职位
+                    </a-button>
+                    <a-button type="primary" @click="openRoleDrawer()">
+                      <PlusOutlined />
+                      新建职位
                     </a-button>
                   </a-space>
+                  <p class="position-scroll-hint muted-text">
+                    表格内容较多时可左右滑动查看全部操作
+                  </p>
                 </div>
-                <a-transfer
-                  v-model:target-keys="selectedDepartmentRoleKeys"
-                  class="rbac-transfer"
-                  :data-source="transferRoles"
-                  :list-style="{ height: '360px' }"
-                  :render="renderTransferItem"
-                  :titles="['可选职位', '部门职位']"
-                  show-search
+
+                <a-empty
+                  v-if="departmentRoles.length === 0"
+                  description="当前部门暂无职位"
                 />
+                <a-table
+                  v-else
+                  row-key="id"
+                  size="small"
+                  :columns="roleColumns"
+                  :data-source="departmentRoles"
+                  :pagination="false"
+                  :scroll="{ x: 840 }"
+                >
+                  <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'role'">
+                      <a-space>
+                        <a-avatar
+                          :style="{
+                            backgroundColor: record.isAdmin
+                              ? 'hsl(var(--warning))'
+                              : 'hsl(var(--primary))',
+                          }"
+                        >
+                          {{ record.name.slice(0, 1) }}
+                        </a-avatar>
+                        <div class="name-cell">
+                          <strong>{{ record.name }}</strong>
+                          <span>{{ record.slug }}</span>
+                        </div>
+                      </a-space>
+                    </template>
+                    <template v-else-if="column.key === 'summary'">
+                      <a-space :size="4" wrap>
+                        <a-tag>{{ record.menuIds.length }} 菜单</a-tag>
+                        <a-tag>{{ record.userIds.length }} 人</a-tag>
+                        <a-tag v-if="record.isAdmin" color="gold"
+                          >最高权限</a-tag
+                        >
+                      </a-space>
+                    </template>
+                    <template v-else-if="column.key === 'action'">
+                      <a-space wrap>
+                        <a-button
+                          size="small"
+                          type="primary"
+                          ghost
+                          @click="selectRoleForMenus(record)"
+                        >
+                          配置权限
+                        </a-button>
+                        <a-button
+                          size="small"
+                          :disabled="record.isAdmin"
+                          @click="openRoleDrawer(record)"
+                        >
+                          改名
+                        </a-button>
+                        <a-popconfirm
+                          title="确认将该职位移出当前部门？职位本身不会被删除。"
+                          @confirm="removeRoleFromDepartment(record)"
+                        >
+                          <a-button
+                            size="small"
+                            :disabled="savingDepartmentRoles"
+                          >
+                            移出部门
+                          </a-button>
+                        </a-popconfirm>
+                        <a-popconfirm
+                          title="确认全局删除该职位？所有部门、人员和菜单权限关联将同步删除。"
+                          @confirm="removeRole(record)"
+                        >
+                          <a-button
+                            size="small"
+                            danger
+                            :disabled="record.isAdmin"
+                          >
+                            删除
+                          </a-button>
+                        </a-popconfirm>
+                      </a-space>
+                    </template>
+                  </template>
+                </a-table>
               </a-tab-pane>
 
               <a-tab-pane key="roleMenus" tab="职位菜单权限">
@@ -132,7 +251,10 @@
                     保存菜单权限
                   </a-button>
                 </div>
-                <a-empty v-if="!selectedRole" description="请先在部门职位中选择或添加职位" />
+                <a-empty
+                  v-if="!selectedRole"
+                  description="请先在部门职位中选择或添加职位"
+                />
                 <template v-else>
                   <a-alert
                     v-if="selectedRole.isAdmin"
@@ -153,55 +275,6 @@
             </a-tabs>
           </template>
         </section>
-
-        <section class="panel">
-          <div class="panel-title">
-            <h2>职位</h2>
-            <a-button size="small" type="primary" @click="openRoleDrawer()">
-              <PlusOutlined />
-              新建职位
-            </a-button>
-          </div>
-          <a-table
-            row-key="id"
-            size="small"
-            :columns="roleColumns"
-            :data-source="roles"
-            :pagination="{ pageSize: 6, showTotal: (total: number) => `共 ${total} 个职位` }"
-            :scroll="{ x: 720 }"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'role'">
-                <a-space>
-                  <a-avatar :style="{ backgroundColor: record.isAdmin ? 'hsl(var(--warning))' : 'hsl(var(--primary))' }">
-                    {{ record.name.slice(0, 1) }}
-                  </a-avatar>
-                  <div class="name-cell">
-                    <strong>{{ record.name }}</strong>
-                    <span>{{ record.slug }}</span>
-                  </div>
-                </a-space>
-              </template>
-              <template v-else-if="column.key === 'summary'">
-                <a-space :size="4" wrap>
-                  <a-tag>{{ record.menuIds.length }} 菜单</a-tag>
-                  <a-tag>{{ record.userIds.length }} 人</a-tag>
-                  <a-tag v-if="record.isAdmin" color="gold">最高权限</a-tag>
-                </a-space>
-              </template>
-              <template v-else-if="column.key === 'action'">
-                <a-space>
-                  <a-button size="small" :disabled="record.isAdmin" @click="openRoleDrawer(record)">
-                    改名
-                  </a-button>
-                  <a-popconfirm title="确认删除该职位？" @confirm="removeRole(record)">
-                    <a-button size="small" danger :disabled="record.isAdmin">删除</a-button>
-                  </a-popconfirm>
-                </a-space>
-              </template>
-            </template>
-          </a-table>
-        </section>
       </a-col>
     </a-row>
 
@@ -218,13 +291,23 @@
         layout="vertical"
       >
         <a-form-item label="部门名称" name="name">
-          <a-input v-model:value="departmentForm.name" placeholder="例如：运营部" />
+          <a-input
+            v-model:value="departmentForm.name"
+            placeholder="例如：运营部"
+          />
         </a-form-item>
         <a-form-item label="部门编码" name="code">
-          <a-input v-model:value="departmentForm.code" placeholder="例如：operation" />
+          <a-input
+            v-model:value="departmentForm.code"
+            placeholder="例如：operation"
+          />
         </a-form-item>
         <a-form-item label="排序" name="sort">
-          <a-input-number v-model:value="departmentForm.sort" class="full-width" :min="0" />
+          <a-input-number
+            v-model:value="departmentForm.sort"
+            class="full-width"
+            :min="0"
+          />
         </a-form-item>
         <a-form-item label="状态" name="status">
           <a-select
@@ -246,7 +329,11 @@
       <template #extra>
         <a-space>
           <a-button @click="departmentDrawerOpen = false">取消</a-button>
-          <a-button type="primary" :loading="savingDepartment" @click="submitDepartment">
+          <a-button
+            type="primary"
+            :loading="savingDepartment"
+            @click="submitDepartment"
+          >
             保存
           </a-button>
         </a-space>
@@ -259,7 +346,12 @@
       width="420"
       :destroy-on-close="true"
     >
-      <a-form ref="roleFormRef" :model="roleForm" :rules="roleRules" layout="vertical">
+      <a-form
+        ref="roleFormRef"
+        :model="roleForm"
+        :rules="roleRules"
+        layout="vertical"
+      >
         <a-form-item label="职位名称" name="name">
           <a-input v-model:value="roleForm.name" placeholder="例如：运营人员" />
         </a-form-item>
@@ -270,7 +362,9 @@
       <template #extra>
         <a-space>
           <a-button @click="roleDrawerOpen = false">取消</a-button>
-          <a-button type="primary" :loading="savingRole" @click="submitRole">保存</a-button>
+          <a-button type="primary" :loading="savingRole" @click="submitRole"
+            >保存</a-button
+          >
         </a-space>
       </template>
     </a-drawer>
@@ -309,12 +403,6 @@ type TreeNode = {
   children?: TreeNode[];
 };
 
-type TransferItem = {
-  title: string;
-};
-
-const renderTransferItem = (item: TransferItem) => item.title;
-
 const loading = ref(false);
 const savingDepartment = ref(false);
 const savingDepartmentRoles = ref(false);
@@ -328,7 +416,7 @@ const selectedRoleId = ref<number>();
 const departmentKeyword = ref('');
 const activeTab = ref('departmentRoles');
 const checkedMenuKeys = ref<number[]>([]);
-const selectedDepartmentRoleKeys = ref<string[]>([]);
+const pendingDepartmentRoleId = ref<number>();
 const departmentDrawerOpen = ref(false);
 const roleDrawerOpen = ref(false);
 const editingDepartment = ref<RbacDepartment | null>(null);
@@ -358,12 +446,6 @@ const roleRules = {
   slug: [{ required: true, message: '请输入职位标识' }],
 };
 
-const roleColumns = [
-  { title: '职位', key: 'role', width: 260, fixed: 'left' },
-  { title: '权限概览', key: 'summary', width: 260 },
-  { title: '操作', key: 'action', width: 180, fixed: 'right' },
-];
-
 const filteredDepartments = computed(() => {
   const keyword = departmentKeyword.value.trim().toLowerCase();
   if (!keyword) return departments.value;
@@ -374,9 +456,34 @@ const filteredDepartments = computed(() => {
   );
 });
 
+const departmentRoles = computed(() => {
+  if (!selectedDepartment.value) return [];
+  return selectedDepartment.value.roleIds
+    .map((roleId) => roles.value.find((role) => role.id === roleId))
+    .filter((role): role is RbacRole => Boolean(role));
+});
+
+const availableRoleOptions = computed(() => {
+  const assignedRoleIds = new Set(selectedDepartment.value?.roleIds || []);
+  return roles.value
+    .filter((role) => !assignedRoleIds.has(role.id))
+    .map((role) => ({
+      label: `${role.name}（${role.slug}）`,
+      value: role.id,
+    }));
+});
+
 const selectedDepartment = computed(() =>
-  departments.value.find((department) => department.id === selectedDepartmentId.value),
+  departments.value.find(
+    (department) => department.id === selectedDepartmentId.value,
+  ),
 );
+
+const roleColumns = [
+  { title: '职位', key: 'role', width: 240, fixed: 'left' },
+  { title: '权限概览', key: 'summary', width: 220 },
+  { title: '操作', key: 'action', width: 380, fixed: 'right' },
+];
 
 const selectedRole = computed(() =>
   roles.value.find((role) => role.id === selectedRoleId.value),
@@ -384,29 +491,15 @@ const selectedRole = computed(() =>
 
 const menuTreeData = computed(() => toTreeData(menus.value));
 
-const transferRoles = computed(() =>
-  roles.value.map((role) => ({
-    key: String(role.id),
-    title: `${role.name}（${role.slug}）`,
-    description: `${role.menuIds.length} 个菜单权限`,
+const departmentRoleOptions = computed(() =>
+  departmentRoles.value.map((role) => ({
+    label: `${role.name}（${role.slug}）`,
+    value: role.id,
   })),
 );
 
-const departmentRoleOptions = computed(() => {
-  if (!selectedDepartment.value) return [];
-  return selectedDepartment.value.roleIds
-    .map((roleId) => roles.value.find((role) => role.id === roleId))
-    .filter((role): role is RbacRole => Boolean(role))
-    .map((role) => ({
-      label: `${role.name}（${role.slug}）`,
-      value: role.id,
-    }));
-});
-
 watch(selectedDepartment, (department) => {
-  selectedDepartmentRoleKeys.value = department?.roleIds
-    ? department.roleIds.map(String)
-    : [];
+  pendingDepartmentRoleId.value = undefined;
   if (!department || !department.roleIds.includes(selectedRoleId.value || 0)) {
     selectedRoleId.value = department?.roleIds[0];
   }
@@ -433,7 +526,9 @@ async function loadOverview() {
     menus.value = data.menus || [];
     if (
       !selectedDepartmentId.value ||
-      !departments.value.some((department) => department.id === selectedDepartmentId.value)
+      !departments.value.some(
+        (department) => department.id === selectedDepartmentId.value,
+      )
     ) {
       selectedDepartmentId.value = departments.value[0]?.id;
     }
@@ -502,22 +597,50 @@ async function removeDepartment() {
   }
 }
 
-async function saveDepartmentRoles() {
-  if (!selectedDepartment.value) return;
+async function addRoleToDepartment() {
+  const department = selectedDepartment.value;
+  const roleId = pendingDepartmentRoleId.value;
+  if (!department || !roleId) return;
   savingDepartmentRoles.value = true;
   try {
-    const roleIds = selectedDepartmentRoleKeys.value.map(Number);
-    await updateDepartmentRoles(selectedDepartment.value.id, roleIds);
+    await updateDepartmentRoles(department.id, [
+      ...new Set([...department.roleIds, roleId]),
+    ]);
     await loadOverview();
-    selectedRoleId.value = roleIds.includes(selectedRoleId.value || 0)
-      ? selectedRoleId.value
-      : roleIds[0];
-    message.success('部门职位已保存');
+    selectedDepartmentId.value = department.id;
+    selectedRoleId.value = roleId;
+    pendingDepartmentRoleId.value = undefined;
+    message.success('职位已加入当前部门');
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '保存部门职位失败');
+    message.error(error instanceof Error ? error.message : '添加部门职位失败');
   } finally {
     savingDepartmentRoles.value = false;
   }
+}
+
+async function removeRoleFromDepartment(role: RbacRole) {
+  const department = selectedDepartment.value;
+  if (!department) return;
+  savingDepartmentRoles.value = true;
+  try {
+    const roleIds = department.roleIds.filter((roleId) => roleId !== role.id);
+    await updateDepartmentRoles(department.id, roleIds);
+    await loadOverview();
+    selectedDepartmentId.value = department.id;
+    if (selectedRoleId.value === role.id) {
+      selectedRoleId.value = roleIds[0];
+    }
+    message.success('职位已移出当前部门');
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '移出部门职位失败');
+  } finally {
+    savingDepartmentRoles.value = false;
+  }
+}
+
+function selectRoleForMenus(role: RbacRole) {
+  selectedRoleId.value = role.id;
+  activeTab.value = 'roleMenus';
 }
 
 function openRoleDrawer(role?: RbacRole) {
@@ -531,7 +654,9 @@ async function submitRole() {
   await roleFormRef.value?.validate();
   savingRole.value = true;
   try {
-    const currentDepartmentId = editingRole.value ? undefined : selectedDepartment.value?.id;
+    const currentDepartmentId = editingRole.value
+      ? undefined
+      : selectedDepartment.value?.id;
     const currentDepartmentRoleIds = editingRole.value
       ? []
       : [...(selectedDepartment.value?.roleIds || [])];
@@ -579,7 +704,10 @@ async function saveMenus() {
   if (!selectedRole.value || selectedRole.value.isAdmin) return;
   savingMenus.value = true;
   try {
-    await updateRoleMenus(selectedRole.value.id, checkedMenuKeys.value.map(Number));
+    await updateRoleMenus(
+      selectedRole.value.id,
+      checkedMenuKeys.value.map(Number),
+    );
     await loadOverview();
     message.success('菜单权限已保存');
   } catch (error) {
@@ -598,3 +726,24 @@ function toTreeData(items: RbacMenu[]): TreeNode[] {
 }
 </script>
 
+<style scoped>
+.position-scroll-hint {
+  display: none;
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .rbac-layout {
+    margin-inline: 0 !important;
+  }
+
+  .rbac-layout > :deep(.ant-col) {
+    padding-inline: 0 !important;
+  }
+
+  .position-scroll-hint {
+    display: block;
+  }
+}
+</style>
