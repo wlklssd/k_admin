@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -59,5 +61,43 @@ func TestGinDebugErrorWriterOnlyFiltersNonErrorDebugMessages(t *testing.T) {
 	want := "[GIN-debug] [ERROR] listen failed\nKAdmin 后端服务启动成功\n"
 	if output.String() != want {
 		t.Fatalf("filtered output = %q, want %q", output.String(), want)
+	}
+}
+
+func TestLoadEnvironmentReadsFileWithoutOverridingProcess(t *testing.T) {
+	const loadedKey = "KADMIN_TEST_ENV_LOADED"
+	previousValue, previouslySet := os.LookupEnv(loadedKey)
+	if err := os.Unsetenv(loadedKey); err != nil {
+		t.Fatalf("unset test environment: %v", err)
+	}
+	t.Cleanup(func() {
+		if previouslySet {
+			_ = os.Setenv(loadedKey, previousValue)
+			return
+		}
+		_ = os.Unsetenv(loadedKey)
+	})
+	t.Setenv("KADMIN_TEST_ENV_EXISTING", "process")
+
+	path := filepath.Join(t.TempDir(), ".env")
+	content := loadedKey + "=file\nKADMIN_TEST_ENV_EXISTING=file\n"
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write test environment: %v", err)
+	}
+	if err := loadEnvironment(path); err != nil {
+		t.Fatalf("load environment: %v", err)
+	}
+	if got := os.Getenv(loadedKey); got != "file" {
+		t.Fatalf("loaded value = %q, want file", got)
+	}
+	if got := os.Getenv("KADMIN_TEST_ENV_EXISTING"); got != "process" {
+		t.Fatalf("existing value = %q, want process", got)
+	}
+}
+
+func TestLoadEnvironmentAllowsMissingFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".env")
+	if err := loadEnvironment(path); err != nil {
+		t.Fatalf("missing environment file should be optional: %v", err)
 	}
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/GoAdminGroup/go-admin/modules/config"
 	"github.com/GoAdminGroup/go-admin/modules/language"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -51,6 +52,10 @@ func main() {
 // @in header
 // @name Authorization
 func run() error {
+	if err := loadEnvironment(".env"); err != nil {
+		return fmt.Errorf("加载根目录 .env 失败: %w", err)
+	}
+
 	debug := getenvBool("KADMIN_APP_DEBUG", true)
 	swaggerEnabled := getenvBool("KADMIN_SWAGGER_ENABLED", debug)
 	if debug {
@@ -215,6 +220,13 @@ func closeDatabase(e *engine.Engine) {
 			log.Printf("关闭数据库连接失败：%v", err)
 		}
 	}
+}
+
+func loadEnvironment(path string) error {
+	if err := godotenv.Load(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func getenv(key string, fallback string) string {

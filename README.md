@@ -75,13 +75,13 @@ KAdmin 是一个前后端分离的后台管理项目。后端复用 [GoAdmin](ht
 docker compose up -d postgres redis
 ```
 
-如需调整端口或账号，可先创建 Docker Compose 使用的 `.env`：
+根目录 `.env` 同时供 Docker Compose 与本地 Go 后端使用，可从模板创建：
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-后端读取的是进程环境变量；未设置时使用与 `.env.example` 一致的本地开发默认值。生产环境必须替换数据库密码、Redis 密码、`KADMIN_JWT_SECRET` 等敏感配置。
+`go run .` 会自动加载根目录 `.env`，但不会覆盖已由操作系统或启动命令注入的环境变量。未创建 `.env` 时继续使用代码和 Docker Compose 中的本地默认值；生产环境必须显式替换数据库密码、Redis 密码、`KADMIN_JWT_SECRET` 等敏感配置。
 
 ### 2. 启动后端
 
