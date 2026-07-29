@@ -120,7 +120,10 @@
         @change="handleTableChange"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'account'">
+          <template v-if="column.key === 'occurredAt'">
+            {{ formatLoginTime(record.occurredAt) }}
+          </template>
+          <template v-else-if="column.key === 'account'">
             <div class="audit-two-line">
               <strong>{{ record.account || '-' }}</strong>
               <span>用户 ID：{{ record.userId ?? '-' }}</span>
@@ -240,7 +243,7 @@ import {
 } from '@ant-design/icons-vue';
 import { useAccess } from '@vben/access';
 import { message } from 'ant-design-vue';
-import type { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import {
@@ -465,6 +468,12 @@ function resultColor(result: LoginAuditResult) {
     return 'red';
   if (result === 'system_error') return 'magenta';
   return 'orange';
+}
+
+function formatLoginTime(value: string) {
+  if (!value) return '-';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : value;
 }
 
 function formatDuration(duration: number) {
