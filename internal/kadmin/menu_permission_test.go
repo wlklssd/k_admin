@@ -163,6 +163,11 @@ func TestUserAccessCodesIncludeMenuPermissions(t *testing.T) {
 func TestMenuPermissionSlugsCoverPermissionGatedMenus(t *testing.T) {
 	// 每个带权限保护的页面菜单都必须有映射，否则“菜单可见即接口可用”会再次失效。
 	for _, uri := range []string{
+		"/kadmin/users",
+		"/kadmin/rbac",
+		"/kadmin/menus",
+		"/kadmin/dictionary",
+		"/kadmin/settings",
 		"/kadmin/logs",
 		"/kadmin/login-audits",
 		"/kadmin/jobs",

@@ -11,8 +11,13 @@ import (
 )
 
 const (
-	logListPermission   = bootstrap.LogListPermission
-	logDeletePermission = bootstrap.LogDeletePermission
+	logListPermission            = bootstrap.LogListPermission
+	logDeletePermission          = bootstrap.LogDeletePermission
+	userManagePermission         = bootstrap.UserManagePermission
+	rbacManagePermission         = bootstrap.RbacManagePermission
+	menuManagePermission         = bootstrap.MenuManagePermission
+	dictionaryManagePermission   = bootstrap.DictionaryManagePermission
+	systemConfigManagePermission = bootstrap.SystemConfigManagePermission
 )
 
 var defaultPermissionSeeds = bootstrap.DefaultPermissions()

@@ -81,7 +81,7 @@ type departmentRolesPayload struct {
 }
 
 func registerRBACRoutes(api *gin.RouterGroup, s *Store) {
-	rbacGroup := api.Group("/rbac", s.requireAuth(), s.requireAdmin())
+	rbacGroup := api.Group("/rbac", s.requireAuth(), s.requirePermission(rbacManagePermission))
 	rbacGroup.GET("/overview", s.rbacOverview)
 	rbacGroup.GET("/departments", s.rbacDepartments)
 	rbacGroup.POST("/departments", s.createDepartment)

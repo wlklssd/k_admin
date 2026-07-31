@@ -9,8 +9,13 @@ import (
 )
 
 const (
-	LogListPermission   = "system:log:list"
-	LogDeletePermission = "system:log:delete"
+	LogListPermission            = "system:log:list"
+	LogDeletePermission          = "system:log:delete"
+	UserManagePermission         = "system:user:manage"
+	RbacManagePermission         = "system:rbac:manage"
+	MenuManagePermission         = "system:menu:manage"
+	DictionaryManagePermission   = "system:dict:manage"
+	SystemConfigManagePermission = "system:config:manage"
 )
 
 type PermissionSeed struct {
@@ -22,6 +27,11 @@ type PermissionSeed struct {
 
 func DefaultPermissions() []PermissionSeed {
 	return []PermissionSeed{
+		{Name: "用户管理", Slug: UserManagePermission, HTTPMethod: "GET,POST,PUT,DELETE", HTTPPath: "/api/users*"},
+		{Name: "权限管理", Slug: RbacManagePermission, HTTPMethod: "GET,POST,PUT,DELETE", HTTPPath: "/api/rbac*"},
+		{Name: "菜单管理", Slug: MenuManagePermission, HTTPMethod: "GET,POST,PUT,DELETE", HTTPPath: "/api/admin-menus*"},
+		{Name: "字典管理", Slug: DictionaryManagePermission, HTTPMethod: "GET,POST,PUT,DELETE", HTTPPath: "/api/dictionaries*"},
+		{Name: "参数配置", Slug: SystemConfigManagePermission, HTTPMethod: "GET,PUT", HTTPPath: "/api/system/config*"},
 		{Name: "查看请求日志", Slug: LogListPermission, HTTPMethod: "GET", HTTPPath: "/api/logs*"},
 		{Name: "删除请求日志", Slug: LogDeletePermission, HTTPMethod: "DELETE", HTTPPath: "/api/logs*"},
 		{Name: "查看登录审计", Slug: loginlogs.ListPermission, HTTPMethod: "GET", HTTPPath: "/api/login-audits*"},

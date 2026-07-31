@@ -14,6 +14,21 @@ import (
 // 在权限工作台为角色勾选菜单即授予对应页面的权限；取消勾选即收回。
 // 与 goadmin_role_permissions 直接配置的权限是叠加关系，互不影响。
 var menuPermissionSlugs = map[string][]string{
+	"/kadmin/users": {
+		userManagePermission,
+	},
+	"/kadmin/rbac": {
+		rbacManagePermission,
+	},
+	"/kadmin/menus": {
+		menuManagePermission,
+	},
+	"/kadmin/dictionary": {
+		dictionaryManagePermission,
+	},
+	"/kadmin/settings": {
+		systemConfigManagePermission,
+	},
 	"/kadmin/logs": {
 		logListPermission,
 		logDeletePermission,

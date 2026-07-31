@@ -58,7 +58,7 @@ type menuLayoutPayload struct {
 }
 
 func registerMenuManagementRoutes(api *gin.RouterGroup, s *Store) {
-	menuGroup := api.Group("/admin-menus", s.requireAuth(), s.requireAdmin())
+	menuGroup := api.Group("/admin-menus", s.requireAuth(), s.requirePermission(menuManagePermission))
 	menuGroup.GET("", s.adminMenus)
 	menuGroup.GET("/tree", s.adminMenuTree)
 	menuGroup.POST("", s.createAdminMenu)

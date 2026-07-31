@@ -167,7 +167,7 @@ func registerSystemConfigRoutes(api *gin.RouterGroup, s *Store) {
 	api.GET("/system/config/login", s.publicLoginConfig)
 	api.GET("/system/config/login/", s.publicLoginConfig)
 
-	group := api.Group("/system/config", s.requireAuth(), s.requireAdmin())
+	group := api.Group("/system/config", s.requireAuth(), s.requirePermission(systemConfigManagePermission))
 	group.GET("", s.systemConfig)
 	group.GET("/", s.systemConfig)
 	group.PUT("", s.updateSystemConfig)

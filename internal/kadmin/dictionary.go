@@ -62,7 +62,7 @@ type dictionaryDataPayload struct {
 }
 
 func registerDictionaryRoutes(api *gin.RouterGroup, s *Store) {
-	dictGroup := api.Group("/dictionaries", s.requireAuth(), s.requireAdmin())
+	dictGroup := api.Group("/dictionaries", s.requireAuth(), s.requirePermission(dictionaryManagePermission))
 	dictGroup.GET("/overview", s.dictionaryOverview)
 	dictGroup.GET("/types", s.listDictionaryTypes)
 	dictGroup.POST("/types", s.createDictionaryType)
