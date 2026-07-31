@@ -190,6 +190,9 @@ func setupBackend(r *gin.Engine, e *engine.Engine, cfg *config.Config) (requestL
 	if err != nil {
 		return nil, nil, fmt.Errorf("%s失败: %w", stage, err)
 	}
+	// Feed the request log listener into the interface load ranking sampler so
+	// every logged request is aggregated into the bounded metric buckets.
+	requestLogs.AttachMetricSink(appRuntime.LoadRankSampler())
 	return requestLogs, appRuntime, nil
 }
 

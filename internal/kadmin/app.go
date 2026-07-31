@@ -7,6 +7,7 @@ import (
 
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loadrank"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
 	"github.com/GoAdminGroup/go-admin/modules/db"
@@ -27,6 +28,7 @@ type Store struct {
 	jobs           *jobs.Manager
 	loginLogs      *loginlogs.Manager
 	monitor        *monitor.Manager
+	loadRank       *loadrank.Sampler
 }
 
 type Runtime struct {
@@ -34,6 +36,7 @@ type Runtime struct {
 	jobs      *jobs.Manager
 	loginLogs *loginlogs.Manager
 	monitor   *monitor.Manager
+	loadRank  *loadrank.Sampler
 }
 
 func (r *Runtime) Close() {
@@ -46,12 +49,24 @@ func (r *Runtime) Close() {
 	if r.monitor != nil {
 		r.monitor.Close()
 	}
+	if r.loadRank != nil {
+		r.loadRank.Close()
+	}
 	if r.jobs != nil {
 		r.jobs.Close()
 	}
 	if r.loginLogs != nil {
 		r.loginLogs.Close()
 	}
+}
+
+// LoadRankSampler exposes the HTTP metric sampler for wiring the request log
+// listener to the aggregation pipeline.
+func (r *Runtime) LoadRankSampler() *loadrank.Sampler {
+	if r == nil {
+		return nil
+	}
+	return r.loadRank
 }
 
 func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
@@ -108,8 +123,27 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 		return nil, fmt.Errorf("初始化系统监控失败: %w", err)
 	}
 	s.monitor = monitorManager
+	loadRankSampler, err := loadrank.Register(api, loadrank.Dependencies{
+		Connection:        s.conn,
+		RequireAuth:       s.requireAuth(),
+		RequirePermission: s.requirePermission,
+	})
+	if err != nil {
+		monitorManager.Close()
+		manager.Close()
+		loginLogManager.Close()
+		s.audit.Close()
+		return nil, fmt.Errorf("初始化接口负载排行失败: %w", err)
+	}
+	s.loadRank = loadRankSampler
 	registerApplicationRoutes(api, s)
-	return &Runtime{audit: s.audit, jobs: manager, loginLogs: loginLogManager, monitor: monitorManager}, nil
+	// Snapshot the route templates after every route is registered so the
+	// sampler groups requests by registered template instead of raw paths.
+	loadRankSampler.SetRouteIndex(loadrank.NewRouteIndex(r.Routes()))
+	return &Runtime{
+		audit: s.audit, jobs: manager, loginLogs: loginLogManager,
+		monitor: monitorManager, loadRank: loadRankSampler,
+	}, nil
 }
 
 func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
@@ -142,6 +176,12 @@ func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
 	}
 	if s.monitor == nil {
 		monitor.RegisterRoutes(api, nil, monitor.Dependencies{
+			RequireAuth:       s.requireAuth(),
+			RequirePermission: s.requirePermission,
+		})
+	}
+	if s.loadRank == nil {
+		loadrank.RegisterRoutes(api, nil, loadrank.Dependencies{
 			RequireAuth:       s.requireAuth(),
 			RequirePermission: s.requirePermission,
 		})

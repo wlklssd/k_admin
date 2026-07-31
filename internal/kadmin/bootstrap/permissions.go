@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loadrank"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
 )
@@ -37,5 +38,7 @@ func DefaultPermissions() []PermissionSeed {
 		{Name: "查看任务日志", Slug: jobs.LogListPermission, HTTPMethod: "GET", HTTPPath: "/api/job-logs*"},
 		{Name: "查看系统监控", Slug: monitor.ViewPermission, HTTPMethod: "GET", HTTPPath: "/api/system-monitor"},
 		{Name: "启停系统监控", Slug: monitor.UpdatePermission, HTTPMethod: "PATCH", HTTPPath: "/api/system-monitor/status"},
+		{Name: "查看接口负载排行", Slug: loadrank.ViewPermission, HTTPMethod: "GET", HTTPPath: "/api/load-ranking*"},
+		{Name: "启停接口采样", Slug: loadrank.UpdatePermission, HTTPMethod: "PATCH", HTTPPath: "/api/load-ranking/status"},
 	}
 }

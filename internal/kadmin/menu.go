@@ -130,6 +130,12 @@ var vbenMenuRouteBindings = map[string]menuRouteBinding{
 		Component: "/kadmin/components/SystemMonitorView",
 		Icon:      "lucide:monitor-cog",
 	},
+	"/kadmin/load-ranking": {
+		Name:      "KAdminLoadRanking",
+		Path:      "/kadmin/load-ranking",
+		Component: "/kadmin/components/InterfaceLoadRankingView",
+		Icon:      "lucide:bar-chart-3",
+	},
 }
 
 func registerMenuRoutes(api *gin.RouterGroup, s *Store) {

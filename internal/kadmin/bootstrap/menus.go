@@ -36,6 +36,7 @@ func DefaultMenus() []MenuSeed {
 				{Title: "登录审计", Icon: "lucide:shield-check", URI: "/kadmin/login-audits", Order: 8},
 				{Title: "定时任务", Icon: "lucide:clock-3", URI: "/kadmin/jobs", Order: 9},
 				{Title: "系统监控", Icon: "lucide:monitor-cog", URI: "/kadmin/monitor", Order: 10},
+				{Title: "接口负载排行", Icon: "lucide:bar-chart-3", URI: "/kadmin/load-ranking", Order: 11},
 			},
 		},
 	}

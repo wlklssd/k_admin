@@ -26,11 +26,19 @@ const (
 	requestLogWorkers    = 2
 )
 
+// metricSink receives sanitized request events for derived aggregations such
+// as the interface load ranking. It is optional and must never block the log
+// writer.
+type metricSink interface {
+	Observe(models.OperationLogEvent)
+}
+
 // RequestLogListener captures every Gin request and persists a sanitized event.
 type RequestLogListener struct {
 	auth      *authService
 	conn      db.Connection
 	events    chan models.OperationLogEvent
+	metrics   metricSink
 	closeOnce sync.Once
 	workers   sync.WaitGroup
 }
@@ -76,6 +84,12 @@ func (l *RequestLogListener) Middleware() gin.HandlerFunc {
 	}
 }
 
+// AttachMetricSink wires an optional derived aggregation consumer. Requests
+// observed before attaching are only persisted, never aggregated.
+func (l *RequestLogListener) AttachMetricSink(sink metricSink) {
+	l.metrics = sink
+}
+
 // Close flushes queued events before the database connection is closed.
 func (l *RequestLogListener) Close() {
 	if l == nil {
@@ -92,6 +106,9 @@ func (l *RequestLogListener) writeEvents() {
 	for event := range l.events {
 		if _, err := models.OperationLog().SetConn(l.conn).NewEvent(event); err != nil {
 			log.Printf("写入请求日志失败：%v", err)
+		}
+		if l.metrics != nil {
+			l.metrics.Observe(event)
 		}
 	}
 }
@@ -166,7 +183,17 @@ func (l *RequestLogListener) requestEvent(
 }
 
 func shouldSkipRequestLog(method string, path string, statusCode int) bool {
-	return method == http.MethodGet && path == "/api/logs" && statusCode < http.StatusBadRequest
+	if statusCode >= http.StatusBadRequest {
+		return false
+	}
+	if method == http.MethodGet && path == "/api/logs" {
+		return true
+	}
+	// Keep the load ranking page's own polls out of the aggregated metrics.
+	if method == http.MethodGet && (path == "/api/load-ranking/status" || path == "/api/load-ranking/rankings") {
+		return true
+	}
+	return false
 }
 
 func requestLogUserID(c *gin.Context, auth *authService) (int64, bool) {

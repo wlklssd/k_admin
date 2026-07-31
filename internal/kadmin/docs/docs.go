@@ -1457,6 +1457,171 @@ const docTemplate = `{
                 }
             }
         },
+        "/load-ranking/rankings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "接口负载排行"
+                ],
+                "summary": "查询接口负载排行",
+                "description": "按接口、方法或状态码聚合 HTTP 指标，支持时间范围与统计维度排序。QPS 为请求量除以数据覆盖窗口秒数；错误率为 4xx/5xx 占比；平均耗时为耗时总和除以请求量。",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始时间（RFC3339），默认最近 1 小时",
+                        "name": "startedAt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339），默认当前时间",
+                        "name": "endedAt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "按接口路径模糊筛选",
+                        "name": "route",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "按请求方法筛选",
+                        "name": "method",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "按状态码筛选（100-599）",
+                        "name": "statusCode",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "聚合维度：route / method / status",
+                        "name": "groupBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序维度：requestCount / qps / errorRate / avgDurationMs",
+                        "name": "dimension",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序方向：asc / desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页条数（最大 100）",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/load-ranking/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "接口负载排行"
+                ],
+                "summary": "获取接口采样状态",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "接口负载排行"
+                ],
+                "summary": "启用或关闭接口采样",
+                "parameters": [
+                    {
+                        "description": "采样开关，enabled 为布尔值",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/kadmin.SwaggerErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/login-audits": {
             "get": {
                 "security": [

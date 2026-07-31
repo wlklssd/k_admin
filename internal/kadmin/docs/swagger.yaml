@@ -1149,6 +1149,110 @@ paths:
       summary: 暂停或恢复定时任务
       tags:
       - 定时任务
+  /load-ranking/rankings:
+    get:
+      description: 按接口、方法或状态码聚合 HTTP 指标，支持时间范围与统计维度排序。QPS 为请求量除以数据覆盖窗口秒数；错误率为 4xx/5xx 占比；平均耗时为耗时总和除以请求量。
+      parameters:
+      - description: 开始时间（RFC3339），默认最近 1 小时
+        in: query
+        name: startedAt
+        type: string
+      - description: 结束时间（RFC3339），默认当前时间
+        in: query
+        name: endedAt
+        type: string
+      - description: 按接口路径模糊筛选
+        in: query
+        name: route
+        type: string
+      - description: 按请求方法筛选
+        in: query
+        name: method
+        type: string
+      - description: 按状态码筛选（100-599）
+        in: query
+        name: statusCode
+        type: integer
+      - description: 聚合维度：route / method / status
+        in: query
+        name: groupBy
+        type: string
+      - description: 排序维度：requestCount / qps / errorRate / avgDurationMs
+        in: query
+        name: dimension
+        type: string
+      - description: 排序方向：asc / desc
+        in: query
+        name: order
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页条数（最大 100）
+        in: query
+        name: pageSize
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 查询接口负载排行
+      tags:
+      - 接口负载排行
+  /load-ranking/status:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取接口采样状态
+      tags:
+      - 接口负载排行
+    patch:
+      parameters:
+      - description: 采样开关，enabled 为布尔值
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 启用或关闭接口采样
+      tags:
+      - 接口负载排行
   /login-audits:
     delete:
       parameters:

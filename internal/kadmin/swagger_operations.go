@@ -717,6 +717,47 @@ func swaggerSystemMonitor() {}
 // @Router /system-monitor/status [patch]
 func swaggerUpdateSystemMonitorStatus() {}
 
+// swaggerLoadRankingStatus documents GET /load-ranking/status.
+// @Summary 获取接口采样状态
+// @Tags 接口负载排行
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /load-ranking/status [get]
+func swaggerLoadRankingStatus() {}
+
+// swaggerUpdateLoadRankingStatus documents PATCH /load-ranking/status.
+// @Summary 启用或关闭接口采样
+// @Tags 接口负载排行
+// @Security BearerAuth
+// @Param payload body object true "采样开关，enabled 为布尔值"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /load-ranking/status [patch]
+func swaggerUpdateLoadRankingStatus() {}
+
+// swaggerLoadRankings documents GET /load-ranking/rankings.
+// @Summary 查询接口负载排行
+// @Description 按接口、方法或状态码聚合 HTTP 指标，支持时间范围与统计维度排序。QPS 为请求量除以数据覆盖窗口秒数；错误率为 4xx/5xx 占比；平均耗时为耗时总和除以请求量。
+// @Tags 接口负载排行
+// @Security BearerAuth
+// @Param startedAt query string false "开始时间（RFC3339），默认最近 1 小时"
+// @Param endedAt query string false "结束时间（RFC3339），默认当前时间"
+// @Param route query string false "按接口路径模糊筛选"
+// @Param method query string false "按请求方法筛选"
+// @Param statusCode query integer false "按状态码筛选（100-599）"
+// @Param groupBy query string false "聚合维度：route / method / status"
+// @Param dimension query string false "排序维度：requestCount / qps / errorRate / avgDurationMs"
+// @Param order query string false "排序方向：asc / desc"
+// @Param page query integer false "页码"
+// @Param pageSize query integer false "每页条数（最大 100）"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /load-ranking/rankings [get]
+func swaggerLoadRankings() {}
+
 // swaggerUploadManagedFile documents POST /files.
 // @Summary 上传文件
 // @Tags 文件管理
