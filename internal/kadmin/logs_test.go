@@ -201,7 +201,7 @@ func TestDefaultMonitorPermissionsAndMenu(t *testing.T) {
 func TestFilePermissionMiddlewareReturns403(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
-	engine.POST("/api/files", permissionRequired(func(*gin.Context) (models.UserModel, bool) {
+	engine.POST("/api/files", (&Store{}).permissionRequired(func(*gin.Context) (models.UserModel, bool) {
 		return models.UserModel{Permissions: []models.PermissionModel{{Slug: "system:file:other"}}}, true
 	}, files.UploadPermission), func(c *gin.Context) {
 		c.Status(http.StatusNoContent)

@@ -22,6 +22,12 @@ func (s *Store) userInfo(c *gin.Context) {
 		return
 	}
 
+	codes, err := s.userAccessCodes(user)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	success(c, gin.H{
 		"userId":      user.Id,
 		"username":    user.UserName,
@@ -29,7 +35,7 @@ func (s *Store) userInfo(c *gin.Context) {
 		"avatar":      user.Avatar,
 		"desc":        "",
 		"roles":       roleSlugs(user),
-		"accessCodes": accessCodes(user),
+		"accessCodes": codes,
 		"homePath":    defaultHomePath,
 	})
 }
@@ -40,7 +46,12 @@ func (s *Store) accessCodes(c *gin.Context) {
 		fail(c, http.StatusUnauthorized, "invalid token")
 		return
 	}
-	success(c, accessCodes(user))
+	codes, err := s.userAccessCodes(user)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, codes)
 }
 
 func roleSlugs(user models.UserModel) []string {

@@ -46,10 +46,10 @@ func (s *Store) syncDefaultPermissions() error {
 }
 
 func (s *Store) requirePermission(codes ...string) gin.HandlerFunc {
-	return permissionRequired(s.currentUser, codes...)
+	return s.permissionRequired(s.currentUser, codes...)
 }
 
-func permissionRequired(resolveUser func(*gin.Context) (models.UserModel, bool), codes ...string) gin.HandlerFunc {
+func (s *Store) permissionRequired(resolveUser func(*gin.Context) (models.UserModel, bool), codes ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, ok := resolveUser(c)
 		if !ok {
@@ -62,8 +62,20 @@ func permissionRequired(resolveUser func(*gin.Context) (models.UserModel, bool),
 			c.Next()
 			return
 		}
-		fail(c, http.StatusForbidden, "permission denied")
-		c.Abort()
+		// 菜单授权隐含页面权限：角色在权限工作台勾选菜单后即可访问该页面接口。
+		hasMenuPermission, menuErr := s.userHasMenuPermission(user, codes...)
+		if menuErr != nil {
+			fail(c, http.StatusInternalServerError, menuErr.Error())
+			c.Abort()
+			return
+		}
+		if !hasMenuPermission {
+			fail(c, http.StatusForbidden, "permission denied")
+			c.Abort()
+			return
+		}
+		c.Set("vben_user", user)
+		c.Next()
 	}
 }
 
