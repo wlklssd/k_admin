@@ -259,14 +259,31 @@
             </a-space>
           </div>
         </a-form-item>
+        <a-form-item label="部门">
+          <a-select
+            v-model:value="userForm.departmentIds"
+            mode="multiple"
+            allow-clear
+            :disabled="editingUser?.id === 1"
+            :options="departmentOptions"
+            placeholder="先选择部门，再选择该部门下的职位"
+          />
+        </a-form-item>
         <a-form-item label="职位">
           <a-select
             v-model:value="userForm.roleIds"
             mode="multiple"
             :disabled="editingUser?.id === 1"
             :options="roleOptions"
-            placeholder="请选择职位"
+            :placeholder="
+              userForm.departmentIds.length
+                ? '请选择所选部门下的职位（可跨部门多选）'
+                : '请选择职位'
+            "
           />
+          <div v-if="effectiveDepartments.length" class="muted-text form-hint">
+            将隶属部门：{{ effectiveDepartments.join('、') }}；担任多个职位时权限取并集
+          </div>
         </a-form-item>
         <a-form-item label="状态" name="status">
           <a-select
@@ -373,7 +390,7 @@ import {
   managedFileId,
   uploadFile,
 } from '#/api/kadmin/files';
-import { getRbacOverview, type RbacRole } from '#/api/kadmin/rbac';
+import { getRbacOverview, type RbacDepartment, type RbacRole } from '#/api/kadmin/rbac';
 import {
   createUser,
   deleteUser,
@@ -404,6 +421,7 @@ const avatarSources = ref<Record<string, string>>({});
 const avatarPreviewObjectUrl = ref('');
 const pendingAvatarFileId = ref<number>();
 const roles = ref<RbacRole[]>([]);
+const departments = ref<RbacDepartment[]>([]);
 const statusItems = ref<DictionaryData[]>([]);
 const userDrawerOpen = ref(false);
 const passwordModalOpen = ref(false);
@@ -431,6 +449,7 @@ const userForm = reactive({
   avatar: '',
   status: 'enable',
   roleIds: [] as number[],
+  departmentIds: [] as number[],
 });
 
 const passwordForm = reactive({
@@ -479,12 +498,53 @@ const passwordRules = {
   ],
 };
 
-const roleOptions = computed(() =>
-  roles.value.map((role) => ({
-    label: `${role.name}（${role.slug}）`,
-    value: role.id,
+const departmentOptions = computed(() =>
+  departments.value.map((department) => ({
+    label: department.name,
+    value: department.id,
   })),
 );
+
+const roleOptions = computed(() => {
+  const selectedDepartmentIds = new Set(userForm.departmentIds);
+  let allowedRoleIds: Set<number> | null = null;
+  if (selectedDepartmentIds.size > 0) {
+    allowedRoleIds = new Set<number>();
+    for (const department of departments.value) {
+      if (selectedDepartmentIds.has(department.id)) {
+        for (const roleId of department.roleIds || []) {
+          allowedRoleIds.add(roleId);
+        }
+      }
+    }
+  }
+  return roles.value
+    .filter((role) => !allowedRoleIds || allowedRoleIds.has(role.id))
+    .map((role) => ({
+      label: `${role.name}（${role.slug}）`,
+      value: role.id,
+    }));
+});
+
+// 用户隶属部门由所选职位的所属部门推导，跨部门选职即可同时隶属多个部门。
+const effectiveDepartments = computed(() => {
+  const selectedRoleIds = new Set(userForm.roleIds);
+  if (selectedRoleIds.size === 0) {
+    return [];
+  }
+  const names: string[] = [];
+  const seen = new Set<number>();
+  for (const department of departments.value) {
+    const hasRole = (department.roleIds || []).some((roleId) =>
+      selectedRoleIds.has(roleId),
+    );
+    if (hasRole && !seen.has(department.id)) {
+      seen.add(department.id);
+      names.push(department.name);
+    }
+  }
+  return names;
+});
 
 const statusOptions = computed(() =>
   statusItems.value.map((item) => ({
@@ -501,7 +561,7 @@ const avatarFormSource = computed(
 );
 
 onMounted(() => {
-  void Promise.all([loadUsers(), loadRoles(), loadStatusOptions()]);
+  void Promise.all([loadUsers(), loadRbacData(), loadStatusOptions()]);
 });
 
 onUnmounted(() => {
@@ -623,12 +683,14 @@ function handleUserDrawerOpenChange(open: boolean) {
   void discardPendingAvatar();
 }
 
-async function loadRoles() {
+async function loadRbacData() {
   try {
     const data = await getRbacOverview();
     roles.value = data.roles || [];
+    departments.value = data.departments || [];
   } catch {
     roles.value = [];
+    departments.value = [];
   }
 }
 
@@ -689,6 +751,7 @@ function openUserDrawer(record?: ManagedUser) {
   userForm.avatar = record?.avatar || '';
   userForm.status = record?.status || 'enable';
   userForm.roleIds = record?.roleIds ? [...record.roleIds] : [];
+  userForm.departmentIds = record?.departmentIds ? [...record.departmentIds] : [];
   clearAvatarPreview();
   userDrawerOpen.value = true;
 }
