@@ -9,6 +9,18 @@ export interface RbacMenu {
   children?: RbacMenu[];
 }
 
+export interface RbacPermission {
+  id: number;
+  name: string;
+  slug: string;
+  httpMethod: string;
+  httpPath: string;
+  pageUri?: string;
+  pageTitle?: string;
+  scope: 'page' | 'button' | 'api' | string;
+  button?: string;
+}
+
 export interface RbacUser {
   id: number;
   username: string;
@@ -24,8 +36,10 @@ export interface RbacRole {
   slug: string;
   isAdmin: boolean;
   menuIds: number[];
+  permissionIds: number[];
   userIds: number[];
   menus: RbacMenu[];
+  permissions: RbacPermission[];
   users: RbacUser[];
   createdAt?: string;
   updatedAt?: string;
@@ -49,6 +63,7 @@ export interface RbacOverview {
   menus: RbacMenu[];
   users: RbacUser[];
   departments: RbacDepartment[];
+  permissions: RbacPermission[];
 }
 
 export function getRbacOverview() {
@@ -76,7 +91,7 @@ export function updateDepartment(
     description?: string;
     sort?: number;
     status?: number;
-  },
+  }
 ) {
   return request<RbacDepartment>(`/api/rbac/departments/${id}`, {
     method: 'PUT',
@@ -121,6 +136,13 @@ export function updateRoleMenus(id: number, menuIds: number[]) {
   return request<RbacRole>(`/api/rbac/roles/${id}/menus`, {
     method: 'PUT',
     body: JSON.stringify({ menuIds }),
+  });
+}
+
+export function updateRolePermissions(id: number, permissionIds: number[]) {
+  return request<RbacRole>(`/api/rbac/roles/${id}/permissions`, {
+    method: 'PUT',
+    body: JSON.stringify({ permissionIds }),
   });
 }
 

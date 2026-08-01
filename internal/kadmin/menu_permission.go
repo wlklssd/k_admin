@@ -10,55 +10,21 @@ import (
 	"github.com/GoAdminGroup/go-admin/plugins/admin/models"
 )
 
-// menuPermissionSlugs 将菜单 URI 映射到该页面需要调用的接口权限。
-// 在权限工作台为角色勾选菜单即授予对应页面的权限；取消勾选即收回。
-// 与 goadmin_role_permissions 直接配置的权限是叠加关系，互不影响。
+// menuPermissionSlugs 将菜单 URI 映射到页面基础权限。
+// 勾选菜单只继承进入页面及读取基础数据所需的权限；按钮/API 操作权限必须显式授予。
+// 与 goadmin_role_permissions 中的显式权限是叠加关系。
 var menuPermissionSlugs = map[string][]string{
-	"/kadmin/users": {
-		userManagePermission,
-	},
-	"/kadmin/rbac": {
-		rbacManagePermission,
-	},
-	"/kadmin/menus": {
-		menuManagePermission,
-	},
-	"/kadmin/dictionary": {
-		dictionaryManagePermission,
-	},
-	"/kadmin/settings": {
-		systemConfigManagePermission,
-	},
-	"/kadmin/logs": {
-		logListPermission,
-		logDeletePermission,
-	},
-	"/kadmin/login-audits": {
-		loginlogs.ListPermission,
-		loginlogs.DeletePermission,
-		loginlogs.RetentionPermission,
-	},
-	"/kadmin/jobs": {
-		jobs.ListPermission,
-		jobs.CreatePermission,
-		jobs.UpdatePermission,
-		jobs.DeletePermission,
-		jobs.RunPermission,
-		jobs.LogListPermission,
-	},
-	"/kadmin/monitor": {
-		monitor.ViewPermission,
-		monitor.UpdatePermission,
-	},
-	"/kadmin/load-ranking": {
-		loadrank.ViewPermission,
-		loadrank.UpdatePermission,
-	},
-	"/kadmin/resources": {
-		files.UploadPermission,
-		files.ReadPermission,
-		files.DeletePermission,
-	},
+	"/kadmin/users":        {userManagePermission},
+	"/kadmin/rbac":         {rbacManagePermission},
+	"/kadmin/menus":        {menuManagePermission},
+	"/kadmin/dictionary":   {dictionaryManagePermission},
+	"/kadmin/settings":     {systemConfigManagePermission},
+	"/kadmin/logs":         {logListPermission},
+	"/kadmin/login-audits": {loginlogs.ListPermission},
+	"/kadmin/jobs":         {jobs.ListPermission},
+	"/kadmin/monitor":      {monitor.ViewPermission},
+	"/kadmin/load-ranking": {loadrank.ViewPermission},
+	"/kadmin/resources":    {files.ReadPermission},
 }
 
 // menuPermissionSlugsForUser 返回用户角色已授权菜单对应的页面权限 slug 集合。
@@ -87,7 +53,7 @@ func (s *Store) menuPermissionSlugsForUser(user models.UserModel) (map[string]bo
 	return slugs, nil
 }
 
-// userHasMenuPermission 判断用户是否通过菜单授权获得指定接口权限。
+// userHasMenuPermission 判断用户是否通过菜单授权获得指定页面基础权限。
 func (s *Store) userHasMenuPermission(user models.UserModel, codes ...string) (bool, error) {
 	slugs, err := s.menuPermissionSlugsForUser(user)
 	if err != nil {

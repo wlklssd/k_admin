@@ -183,6 +183,13 @@ definitions:
       slug:
         type: string
     type: object
+  kadmin.rolePermissionsPayload:
+    properties:
+      permissionIds:
+        items:
+          type: integer
+        type: array
+    type: object
   kadmin.roleUsersPayload:
     properties:
       userIds:
@@ -1151,7 +1158,8 @@ paths:
       - 定时任务
   /load-ranking/rankings:
     get:
-      description: 按接口、方法或状态码聚合 HTTP 指标，支持时间范围与统计维度排序。QPS 为请求量除以数据覆盖窗口秒数；错误率为 4xx/5xx 占比；平均耗时为耗时总和除以请求量。
+      description: 按接口、方法或状态码聚合 HTTP 指标，支持时间范围与统计维度排序。QPS 为请求量除以数据覆盖窗口秒数；错误率为 4xx/5xx
+        占比；平均耗时为耗时总和除以请求量。
       parameters:
       - description: 开始时间（RFC3339），默认最近 1 小时
         in: query
@@ -1838,6 +1846,38 @@ paths:
       security:
       - BearerAuth: []
       summary: 设置角色菜单
+      tags:
+      - 权限管理
+  /rbac/roles/{id}/permissions:
+    put:
+      parameters:
+      - description: 角色 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 权限标识 ID 列表
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/kadmin.rolePermissionsPayload'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 设置角色权限标识
       tags:
       - 权限管理
   /rbac/roles/{id}/users:

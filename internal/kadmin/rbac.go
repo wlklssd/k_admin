@@ -12,16 +12,18 @@ import (
 )
 
 type rbacRole struct {
-	ID        int64      `json:"id"`
-	Name      string     `json:"name"`
-	Slug      string     `json:"slug"`
-	IsAdmin   bool       `json:"isAdmin"`
-	MenuIDs   []int64    `json:"menuIds"`
-	UserIDs   []int64    `json:"userIds"`
-	Menus     []rbacMenu `json:"menus"`
-	Users     []rbacUser `json:"users"`
-	CreatedAt string     `json:"createdAt"`
-	UpdatedAt string     `json:"updatedAt"`
+	ID            int64            `json:"id"`
+	Name          string           `json:"name"`
+	Slug          string           `json:"slug"`
+	IsAdmin       bool             `json:"isAdmin"`
+	MenuIDs       []int64          `json:"menuIds"`
+	PermissionIDs []int64          `json:"permissionIds"`
+	UserIDs       []int64          `json:"userIds"`
+	Menus         []rbacMenu       `json:"menus"`
+	Permissions   []rbacPermission `json:"permissions"`
+	Users         []rbacUser       `json:"users"`
+	CreatedAt     string           `json:"createdAt"`
+	UpdatedAt     string           `json:"updatedAt"`
 }
 
 type rbacDepartment struct {
@@ -46,6 +48,18 @@ type rbacMenu struct {
 	Children []rbacMenu `json:"children,omitempty"`
 }
 
+type rbacPermission struct {
+	ID         int64  `json:"id"`
+	Name       string `json:"name"`
+	Slug       string `json:"slug"`
+	HTTPMethod string `json:"httpMethod"`
+	HTTPPath   string `json:"httpPath"`
+	PageURI    string `json:"pageUri"`
+	PageTitle  string `json:"pageTitle"`
+	Scope      string `json:"scope"`
+	Button     string `json:"button"`
+}
+
 type rbacUser struct {
 	ID       int64    `json:"id"`
 	Username string   `json:"username"`
@@ -66,6 +80,10 @@ type roleMenuPayload struct {
 
 type roleUsersPayload struct {
 	UserIDs []int64 `json:"userIds"`
+}
+
+type rolePermissionsPayload struct {
+	PermissionIDs []int64 `json:"permissionIds"`
 }
 
 type departmentPayload struct {
@@ -94,6 +112,7 @@ func registerRBACRoutes(api *gin.RouterGroup, s *Store) {
 	rbacGroup.DELETE("/roles/:id", s.deleteRole)
 	rbacGroup.PUT("/roles/:id/menus", s.updateRoleMenus)
 	rbacGroup.PUT("/roles/:id/users", s.updateRoleUsers)
+	rbacGroup.PUT("/roles/:id/permissions", s.updateRolePermissions)
 	rbacGroup.GET("/menus", s.rbacMenus)
 	rbacGroup.GET("/users", s.rbacUsers)
 }
@@ -141,11 +160,17 @@ func (s *Store) rbacOverview(c *gin.Context) {
 		fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	permissions, err := s.loadRBACPermissions()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	success(c, gin.H{
 		"roles":       roles,
 		"menus":       menus,
 		"users":       users,
 		"departments": departments,
+		"permissions": permissions,
 	})
 }
 
@@ -441,6 +466,65 @@ func (s *Store) updateRoleMenus(c *gin.Context) {
 	success(c, role)
 }
 
+func (s *Store) updateRolePermissions(c *gin.Context) {
+	roleID, ok := pathID(c)
+	if !ok {
+		return
+	}
+	if protectedAdminRole(roleID) {
+		fail(c, http.StatusBadRequest, "administrator role permissions are unrestricted")
+		return
+	}
+
+	var req rolePermissionsPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fail(c, http.StatusBadRequest, "invalid role permission payload")
+		return
+	}
+
+	permissions, err := s.loadRBACPermissions()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	valid := make(map[int64]bool, len(permissions))
+	for _, permission := range permissions {
+		valid[permission.ID] = true
+	}
+	permissionIDs := uniqueInt64(req.PermissionIDs)
+	for _, permissionID := range permissionIDs {
+		if !valid[permissionID] {
+			fail(c, http.StatusBadRequest, "invalid permission id")
+			return
+		}
+	}
+
+	existingPermissionIDsByRole, err := s.loadRolePermissionIDs()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if _, exists := existingPermissionIDsByRole[roleID]; exists {
+		if err := db.WithDriver(s.conn).Table("goadmin_role_permissions").Where("role_id", "=", roleID).Delete(); err != nil {
+			fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+	for _, permissionID := range permissionIDs {
+		if err := s.insertRolePermission(roleID, permissionID); err != nil {
+			fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	role, err := s.loadRBACRole(roleID)
+	if err != nil {
+		fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	success(c, role)
+}
+
 func (s *Store) updateRoleUsers(c *gin.Context) {
 	roleID, ok := pathID(c)
 	if !ok {
@@ -562,6 +646,10 @@ func (s *Store) loadRBACRoles() ([]rbacRole, error) {
 	if err != nil {
 		return nil, err
 	}
+	permissionIDsByRole, err := s.loadRolePermissionIDs()
+	if err != nil {
+		return nil, err
+	}
 	userIDsByRole, err := s.loadRoleUserIDs()
 	if err != nil {
 		return nil, err
@@ -569,6 +657,14 @@ func (s *Store) loadRBACRoles() ([]rbacRole, error) {
 	menusByID, err := s.loadMenuMap()
 	if err != nil {
 		return nil, err
+	}
+	permissions, err := s.loadRBACPermissions()
+	if err != nil {
+		return nil, err
+	}
+	permissionsByID := make(map[int64]rbacPermission, len(permissions))
+	for _, permission := range permissions {
+		permissionsByID[permission.ID] = permission
 	}
 	usersByID, err := s.loadUserMap()
 	if err != nil {
@@ -579,23 +675,34 @@ func (s *Store) loadRBACRoles() ([]rbacRole, error) {
 	for _, row := range rows {
 		id := toInt64(row["id"])
 		menuIDs := uniqueInt64(menuIDsByRole[id])
+		permissionIDs := uniqueInt64(permissionIDsByRole[id])
 		userIDs := uniqueInt64(userIDsByRole[id])
 		role := rbacRole{
-			ID:        id,
-			Name:      toString(row["name"]),
-			Slug:      toString(row["slug"]),
-			IsAdmin:   protectedAdminRole(id),
-			MenuIDs:   menuIDs,
-			UserIDs:   userIDs,
-			CreatedAt: toString(row["created_at"]),
-			UpdatedAt: toString(row["updated_at"]),
+			ID:            id,
+			Name:          toString(row["name"]),
+			Slug:          toString(row["slug"]),
+			IsAdmin:       protectedAdminRole(id),
+			MenuIDs:       menuIDs,
+			PermissionIDs: permissionIDs,
+			UserIDs:       userIDs,
+			CreatedAt:     toString(row["created_at"]),
+			UpdatedAt:     toString(row["updated_at"]),
 		}
 		if role.IsAdmin {
 			role.MenuIDs = mapKeys(menusByID)
+			role.PermissionIDs = make([]int64, 0, len(permissions))
+			for _, permission := range permissions {
+				role.PermissionIDs = append(role.PermissionIDs, permission.ID)
+			}
 		}
 		for _, menuID := range role.MenuIDs {
 			if menu, ok := menusByID[menuID]; ok {
 				role.Menus = append(role.Menus, menu)
+			}
+		}
+		for _, permissionID := range role.PermissionIDs {
+			if permission, ok := permissionsByID[permissionID]; ok {
+				role.Permissions = append(role.Permissions, permission)
 			}
 		}
 		for _, userID := range userIDs {
@@ -628,6 +735,43 @@ func (s *Store) loadRBACMenus() ([]rbacMenu, error) {
 		})
 	}
 	return buildRBACMenuTree(items, 0), nil
+}
+
+func (s *Store) loadRBACPermissions() ([]rbacPermission, error) {
+	rows, err := db.WithDriver(s.conn).
+		Table("goadmin_permissions").
+		OrderBy("id", "asc").
+		All()
+	if err != nil {
+		return nil, err
+	}
+
+	permissions := make([]rbacPermission, 0, len(rows))
+	for _, row := range rows {
+		slug := toString(row["slug"])
+		pageURI, pageTitle, scope, button := permissionMetadata(slug)
+		permissions = append(permissions, rbacPermission{
+			ID:         toInt64(row["id"]),
+			Name:       toString(row["name"]),
+			Slug:       slug,
+			HTTPMethod: toString(row["http_method"]),
+			HTTPPath:   toString(row["http_path"]),
+			PageURI:    pageURI,
+			PageTitle:  pageTitle,
+			Scope:      scope,
+			Button:     button,
+		})
+	}
+	return permissions, nil
+}
+
+func permissionMetadata(slug string) (pageURI, pageTitle, scope, button string) {
+	for _, seed := range defaultPermissionSeeds {
+		if seed.Slug == slug {
+			return seed.PageURI, seed.PageTitle, string(seed.Scope), seed.Button
+		}
+	}
+	return "", "其他 API", "api", ""
 }
 
 func (s *Store) loadRBACUsers() ([]rbacUser, error) {
@@ -668,6 +812,19 @@ func (s *Store) loadRoleMenuIDs() (map[int64][]int64, error) {
 	for _, row := range rows {
 		roleID := toInt64(row["role_id"])
 		res[roleID] = append(res[roleID], toInt64(row["menu_id"]))
+	}
+	return res, nil
+}
+
+func (s *Store) loadRolePermissionIDs() (map[int64][]int64, error) {
+	rows, err := db.WithDriver(s.conn).Table("goadmin_role_permissions").All()
+	if err != nil {
+		return nil, err
+	}
+	res := make(map[int64][]int64)
+	for _, row := range rows {
+		roleID := toInt64(row["role_id"])
+		res[roleID] = append(res[roleID], toInt64(row["permission_id"]))
 	}
 	return res, nil
 }
@@ -803,6 +960,15 @@ func (s *Store) insertRoleMenu(roleID, menuID int64) error {
 		"INSERT INTO `goadmin_role_menu` (`role_id`, `menu_id`) VALUES (?, ?)",
 		roleID,
 		menuID,
+	)
+	return err
+}
+
+func (s *Store) insertRolePermission(roleID, permissionID int64) error {
+	_, err := s.conn.Exec(
+		"INSERT INTO `goadmin_role_permissions` (`role_id`, `permission_id`) VALUES (?, ?)",
+		roleID,
+		permissionID,
 	)
 	return err
 }

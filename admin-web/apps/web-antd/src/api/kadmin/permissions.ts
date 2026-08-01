@@ -1,0 +1,27 @@
+export const KADMIN_PERMISSION = {
+  USER_MANAGE: 'system:user:manage',
+  RBAC_MANAGE: 'system:rbac:manage',
+  MENU_MANAGE: 'system:menu:manage',
+  DICTIONARY_MANAGE: 'system:dict:manage',
+  SYSTEM_CONFIG_MANAGE: 'system:config:manage',
+  LOG_LIST: 'system:log:list',
+  LOG_DELETE: 'system:log:delete',
+  LOGIN_LOG_LIST: 'system:login-log:list',
+  LOGIN_LOG_DELETE: 'system:login-log:delete',
+  LOGIN_LOG_RETENTION: 'system:login-log:retention',
+  FILE_UPLOAD: 'system:file:upload',
+  FILE_READ: 'system:file:read',
+  FILE_DELETE: 'system:file:delete',
+  JOB_LIST: 'system:job:list',
+  JOB_CREATE: 'system:job:create',
+  JOB_UPDATE: 'system:job:update',
+  JOB_DELETE: 'system:job:delete',
+  JOB_RUN: 'system:job:run',
+  JOB_LOG_LIST: 'system:job-log:list',
+  MONITOR_VIEW: 'system:monitor:view',
+  MONITOR_UPDATE: 'system:monitor:update',
+  LOAD_RANK_VIEW: 'system:load-rank:view',
+  LOAD_RANK_UPDATE: 'system:load-rank:update',
+} as const;
+
+export type KadminPermissionCode = (typeof KADMIN_PERMISSION)[keyof typeof KADMIN_PERMISSION];

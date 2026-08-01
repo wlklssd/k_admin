@@ -406,6 +406,18 @@ func swaggerDeleteRole() {}
 // @Router /rbac/roles/{id}/menus [put]
 func swaggerUpdateRoleMenus() {}
 
+// swaggerUpdateRolePermissions documents PUT /rbac/roles/{id}/permissions.
+// @Summary 设置角色权限标识
+// @Tags 权限管理
+// @Security BearerAuth
+// @Param id path int true "角色 ID"
+// @Param payload body rolePermissionsPayload true "权限标识 ID 列表"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /rbac/roles/{id}/permissions [put]
+func swaggerUpdateRolePermissions() {}
+
 // swaggerUpdateRoleUsers documents PUT /rbac/roles/{id}/users.
 // @Summary 设置角色用户
 // @Tags 权限管理

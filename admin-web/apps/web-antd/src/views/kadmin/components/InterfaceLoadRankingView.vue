@@ -46,12 +46,7 @@
       message="接口采样已关闭"
       description="关闭后服务端不再写入负载指标，排行只显示已保留的历史数据。"
     />
-    <a-alert
-      v-else-if="status.lastError"
-      type="warning"
-      show-icon
-      :message="status.lastError"
-    />
+    <a-alert v-else-if="status.lastError" type="warning" show-icon :message="status.lastError" />
 
     <section class="panel">
       <a-form :model="filters" layout="inline" class="search-form">
@@ -170,11 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ClearOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-} from '@ant-design/icons-vue';
+import { ClearOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons-vue';
 import { useAccess } from '@vben/access';
 import { message } from 'ant-design-vue';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -189,11 +180,10 @@ import {
   type LoadRankingStatus,
   updateLoadRankingStatus,
 } from '#/api/kadmin/loadRanking';
+import { KADMIN_PERMISSION } from '#/api/kadmin/permissions';
 
 const { hasAccessByCodes } = useAccess();
-const canUpdate = computed(() =>
-  hasAccessByCodes(['system:load-rank:update', '*']),
-);
+const canUpdate = computed(() => hasAccessByCodes([KADMIN_PERMISSION.LOAD_RANK_UPDATE, '*']));
 
 const status = reactive<LoadRankingStatus>({
   bucketSeconds: 60,
@@ -225,7 +215,7 @@ const filters = reactive<{
 });
 
 const methodOptions = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'].map(
-  (method) => ({ label: method, value: method }),
+  (method) => ({ label: method, value: method })
 );
 
 const rangePresets = [
@@ -241,7 +231,8 @@ const columns = computed(() => {
     {
       dataIndex: 'route',
       key: 'route',
-      title: filters.groupBy === 'method' ? '方法' : filters.groupBy === 'status' ? '状态码' : '接口',
+      title:
+        filters.groupBy === 'method' ? '方法' : filters.groupBy === 'status' ? '状态码' : '接口',
       ellipsis: true,
     },
     ...(filters.groupBy === 'route'
@@ -309,9 +300,7 @@ const summaryText = computed(() => {
 });
 
 const emptyDescription = computed(() =>
-  status.enabled
-    ? '当前时间范围内没有采样数据'
-    : '采样关闭期间没有新指标，开启采样后开始聚合',
+  status.enabled ? '当前时间范围内没有采样数据' : '采样关闭期间没有新指标，开启采样后开始聚合'
 );
 
 function disableFutureDate(date: Dayjs) {
@@ -397,10 +386,14 @@ function resetSearch() {
   void loadRankings();
 }
 
-function handleTableChange(next: {
-  current?: number;
-  pageSize?: number;
-}, _filters: unknown, sorter: unknown) {
+function handleTableChange(
+  next: {
+    current?: number;
+    pageSize?: number;
+  },
+  _filters: unknown,
+  sorter: unknown
+) {
   if (next.current) pagination.current = next.current;
   if (next.pageSize) pagination.pageSize = next.pageSize;
   const sort = sorter as { columnKey?: string; order?: string };
@@ -412,8 +405,7 @@ function handleTableChange(next: {
 }
 
 function rowKey(record: LoadRankingItem, index: number) {
-  const dimensionKey =
-    record.route || record.method || (record.statusCode ?? '') || '';
+  const dimensionKey = record.route || record.method || (record.statusCode ?? '') || '';
   return `${dimensionKey}:${index}`;
 }
 

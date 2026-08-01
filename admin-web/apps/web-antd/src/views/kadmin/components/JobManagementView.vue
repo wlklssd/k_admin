@@ -17,11 +17,7 @@
       </a-space>
     </section>
 
-    <a-tabs
-      v-model:active-key="activeTab"
-      class="job-tabs"
-      @change="handleTabChange"
-    >
+    <a-tabs v-model:active-key="activeTab" class="job-tabs" @change="handleTabChange">
       <a-tab-pane key="tasks" tab="任务管理">
         <section class="panel">
           <a-form :model="taskFilters" layout="inline" class="search-form">
@@ -56,12 +52,8 @@
             </a-form-item>
             <a-form-item>
               <a-space wrap>
-                <a-button type="primary" @click="searchTasks"
-                  ><SearchOutlined />查询</a-button
-                >
-                <a-button @click="resetTaskSearch"
-                  ><ClearOutlined />重置</a-button
-                >
+                <a-button type="primary" @click="searchTasks"><SearchOutlined />查询</a-button>
+                <a-button @click="resetTaskSearch"><ClearOutlined />重置</a-button>
               </a-space>
             </a-form-item>
           </a-form>
@@ -127,15 +119,10 @@
                 {{ record.lastRunAt || '-' }}
               </template>
               <template v-else-if="column.key === 'nextRunAt'">
-                {{
-                  record.status === 'enabled' ? record.nextRunAt || '-' : '-'
-                }}
+                {{ record.status === 'enabled' ? record.nextRunAt || '-' : '-' }}
               </template>
               <template v-else-if="column.key === 'description'">
-                <a-typography-text
-                  :content="record.description || '-'"
-                  ellipsis
-                />
+                <a-typography-text :content="record.description || '-'" ellipsis />
               </template>
               <template v-else-if="column.key === 'action'">
                 <a-space :size="2">
@@ -145,21 +132,13 @@
                     @confirm="executeNow(record)"
                   >
                     <a-tooltip title="立即执行">
-                      <a-button
-                        type="text"
-                        shape="circle"
-                        :loading="runningIds.has(record.id)"
-                      >
+                      <a-button type="text" shape="circle" :loading="runningIds.has(record.id)">
                         <PlayCircleOutlined />
                       </a-button>
                     </a-tooltip>
                   </a-popconfirm>
                   <a-tooltip v-if="canUpdate" title="编辑">
-                    <a-button
-                      type="text"
-                      shape="circle"
-                      @click="openEdit(record)"
-                    >
+                    <a-button type="text" shape="circle" @click="openEdit(record)">
                       <EditOutlined />
                     </a-button>
                   </a-tooltip>
@@ -169,9 +148,7 @@
                     @confirm="removeTask(record)"
                   >
                     <a-tooltip title="删除">
-                      <a-button type="text" shape="circle" danger
-                        ><DeleteOutlined
-                      /></a-button>
+                      <a-button type="text" shape="circle" danger><DeleteOutlined /></a-button>
                     </a-tooltip>
                   </a-popconfirm>
                 </a-space>
@@ -215,12 +192,8 @@
             </a-form-item>
             <a-form-item>
               <a-space wrap>
-                <a-button type="primary" @click="searchLogs"
-                  ><SearchOutlined />查询</a-button
-                >
-                <a-button @click="resetLogSearch"
-                  ><ClearOutlined />重置</a-button
-                >
+                <a-button type="primary" @click="searchLogs"><SearchOutlined />查询</a-button>
+                <a-button @click="resetLogSearch"><ClearOutlined />重置</a-button>
               </a-space>
             </a-form-item>
           </a-form>
@@ -275,11 +248,7 @@
               </template>
               <template v-else-if="column.key === 'action'">
                 <a-tooltip title="查看详情">
-                  <a-button
-                    type="text"
-                    shape="circle"
-                    @click="openExecution(record)"
-                  >
+                  <a-button type="text" shape="circle" @click="openExecution(record)">
                     <EyeOutlined />
                   </a-button>
                 </a-tooltip>
@@ -299,17 +268,9 @@
       @cancel="attemptCloseEditor"
       @ok="saveTask"
     >
-      <a-form
-        ref="editorFormRef"
-        :model="editor"
-        :rules="editorRules"
-        layout="vertical"
-      >
+      <a-form ref="editorFormRef" :model="editor" :rules="editorRules" layout="vertical">
         <a-form-item label="任务名称" name="name">
-          <a-input
-            v-model:value="editor.name"
-            :disabled="Boolean(editingTask?.builtIn)"
-          />
+          <a-input v-model:value="editor.name" :disabled="Boolean(editingTask?.builtIn)" />
         </a-form-item>
         <a-row :gutter="16">
           <a-col :xs="24" :sm="14">
@@ -323,19 +284,12 @@
           </a-col>
           <a-col :xs="24" :sm="10">
             <a-form-item label="状态" name="status">
-              <a-segmented
-                v-model:value="editor.status"
-                block
-                :options="editorStatusOptions"
-              />
+              <a-segmented v-model:value="editor.status" block :options="editorStatusOptions" />
             </a-form-item>
           </a-col>
         </a-row>
         <a-form-item label="Cron 表达式" name="cronExpression">
-          <a-input
-            v-model:value="editor.cronExpression"
-            class="job-code-input"
-          />
+          <a-input v-model:value="editor.cronExpression" class="job-code-input" />
         </a-form-item>
         <template v-if="editor.handler === 'log_cleanup'">
           <a-row :gutter="16">
@@ -362,12 +316,7 @@
           </a-row>
         </template>
         <a-form-item label="备注" name="description">
-          <a-textarea
-            v-model:value="editor.description"
-            :maxlength="500"
-            :rows="3"
-            show-count
-          />
+          <a-textarea v-model:value="editor.description" :maxlength="500" :rows="3" show-count />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -379,15 +328,8 @@
       @close="detailOpen = false"
     >
       <a-spin :spinning="detailLoading">
-        <a-descriptions
-          v-if="detailExecution"
-          bordered
-          size="small"
-          :column="1"
-        >
-          <a-descriptions-item label="任务">{{
-            detailExecution.jobName
-          }}</a-descriptions-item>
+        <a-descriptions v-if="detailExecution" bordered size="small" :column="1">
+          <a-descriptions-item label="任务">{{ detailExecution.jobName }}</a-descriptions-item>
           <a-descriptions-item label="任务类型">{{
             handlerLabel(detailExecution.handler)
           }}</a-descriptions-item>
@@ -409,14 +351,10 @@
             formatDuration(detailExecution.durationMs)
           }}</a-descriptions-item>
           <a-descriptions-item label="输出">
-            <pre class="log-detail-pre">{{
-              detailExecution.output || '-'
-            }}</pre>
+            <pre class="log-detail-pre">{{ detailExecution.output || '-' }}</pre>
           </a-descriptions-item>
           <a-descriptions-item v-if="detailExecution.error" label="错误">
-            <pre class="log-detail-pre job-error-pre">{{
-              detailExecution.error
-            }}</pre>
+            <pre class="log-detail-pre job-error-pre">{{ detailExecution.error }}</pre>
           </a-descriptions-item>
         </a-descriptions>
       </a-spin>
@@ -456,17 +394,16 @@ import {
   type JobTrigger,
   type ScheduledJob,
 } from '#/api/kadmin/jobs';
+import { KADMIN_PERMISSION } from '#/api/kadmin/permissions';
 
 type TablePagination = { current?: number; pageSize?: number };
 
 const { hasAccessByCodes } = useAccess();
-const canCreate = computed(() => hasAccessByCodes(['system:job:create', '*']));
-const canUpdate = computed(() => hasAccessByCodes(['system:job:update', '*']));
-const canDelete = computed(() => hasAccessByCodes(['system:job:delete', '*']));
-const canRun = computed(() => hasAccessByCodes(['system:job:run', '*']));
-const canViewLogs = computed(() =>
-  hasAccessByCodes(['system:job-log:list', '*']),
-);
+const canCreate = computed(() => hasAccessByCodes([KADMIN_PERMISSION.JOB_CREATE, '*']));
+const canUpdate = computed(() => hasAccessByCodes([KADMIN_PERMISSION.JOB_UPDATE, '*']));
+const canDelete = computed(() => hasAccessByCodes([KADMIN_PERMISSION.JOB_DELETE, '*']));
+const canRun = computed(() => hasAccessByCodes([KADMIN_PERMISSION.JOB_RUN, '*']));
+const canViewLogs = computed(() => hasAccessByCodes([KADMIN_PERMISSION.JOB_LOG_LIST, '*']));
 
 const activeTab = ref('tasks');
 const taskLoading = ref(false);
@@ -558,7 +495,7 @@ const taskSummary = computed(() => ({
   paused: tasks.value.filter((task) => task.status === 'paused').length,
 }));
 const activeLoading = computed(() =>
-  activeTab.value === 'tasks' ? taskLoading.value : logLoading.value,
+  activeTab.value === 'tasks' ? taskLoading.value : logLoading.value
 );
 
 const editorOpen = ref(false);
@@ -627,8 +564,7 @@ async function loadLogs() {
     executions.value = data.items || [];
     logPagination.total = data.total || 0;
   } catch (error) {
-    logError.value =
-      error instanceof Error ? error.message : '加载任务日志失败';
+    logError.value = error instanceof Error ? error.message : '加载任务日志失败';
   } finally {
     logLoading.value = false;
   }
@@ -678,10 +614,7 @@ function handleLogTableChange(pagination: TablePagination) {
   void loadLogs();
 }
 
-async function toggleStatus(
-  task: ScheduledJob,
-  checked: boolean | string | number,
-) {
+async function toggleStatus(task: ScheduledJob, checked: boolean | string | number) {
   statusUpdatingIds.value = new Set(statusUpdatingIds.value).add(task.id);
   try {
     await updateJobStatus(task.id, checked ? 'enabled' : 'paused');
@@ -700,8 +633,7 @@ async function executeNow(task: ScheduledJob) {
   runningIds.value = new Set(runningIds.value).add(task.id);
   try {
     const execution = await runJob(task.id);
-    if (execution.status === 'failed')
-      message.error(execution.error || '任务执行失败');
+    if (execution.status === 'failed') message.error(execution.error || '任务执行失败');
     else message.success(execution.output || '任务执行成功');
     await loadTasks();
     if (canViewLogs.value) await loadLogs();
@@ -718,8 +650,7 @@ async function removeTask(task: ScheduledJob) {
   try {
     await deleteJob(task.id);
     message.success('任务已删除');
-    if (tasks.value.length === 1 && taskPagination.current > 1)
-      taskPagination.current -= 1;
+    if (tasks.value.length === 1 && taskPagination.current > 1) taskPagination.current -= 1;
     await loadTasks();
   } catch (error) {
     message.error(error instanceof Error ? error.message : '删除任务失败');
@@ -829,9 +760,7 @@ function numberParameter(task: ScheduledJob, key: string, fallback: number) {
 }
 
 function handlerLabel(handler: JobHandler) {
-  return (
-    handlerOptions.find((option) => option.value === handler)?.label || handler
-  );
+  return handlerOptions.find((option) => option.value === handler)?.label || handler;
 }
 
 function executionStatusMeta(status: JobExecutionStatus) {

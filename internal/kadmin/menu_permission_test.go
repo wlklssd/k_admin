@@ -72,16 +72,18 @@ func TestMenuPermissionSlugsForUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, wanted := range []string{
-		jobs.ListPermission,
+	if !slugs[jobs.ListPermission] {
+		t.Errorf("expected menu /kadmin/jobs to grant page permission %q", jobs.ListPermission)
+	}
+	for _, action := range []string{
 		jobs.CreatePermission,
 		jobs.UpdatePermission,
 		jobs.DeletePermission,
 		jobs.RunPermission,
 		jobs.LogListPermission,
 	} {
-		if !slugs[wanted] {
-			t.Errorf("expected menu /kadmin/jobs to grant %q", wanted)
+		if slugs[action] {
+			t.Errorf("menu must not implicitly grant button permission %q", action)
 		}
 	}
 	if slugs[files.UploadPermission] {
@@ -131,7 +133,7 @@ func TestPermissionRequiredDeniesUserWithoutMenuOrPermission(t *testing.T) {
 	}
 }
 
-func TestUserAccessCodesIncludeMenuPermissions(t *testing.T) {
+func TestUserAccessCodesIncludeMenuPagePermission(t *testing.T) {
 	store := &Store{conn: &fakeMenuPermissionConnection{uris: []string{"/kadmin/logs"}}}
 	user := models.UserModel{Roles: []models.RoleModel{{Id: 2, Slug: "operator"}}}
 
@@ -139,20 +141,17 @@ func TestUserAccessCodesIncludeMenuPermissions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wanted := map[string]bool{
-		"operator":       false,
-		logListPermission:   false,
-		logDeletePermission: false,
-	}
+	set := make(map[string]bool, len(codes))
 	for _, code := range codes {
-		if _, ok := wanted[code]; ok {
-			wanted[code] = true
+		set[code] = true
+	}
+	for _, wanted := range []string{"operator", logListPermission} {
+		if !set[wanted] {
+			t.Errorf("access code %q was not returned", wanted)
 		}
 	}
-	for code, found := range wanted {
-		if !found {
-			t.Errorf("access code %q was not returned", code)
-		}
+	if set[logDeletePermission] {
+		t.Fatal("button permission must require an explicit role or user grant")
 	}
 
 	if codes, err := store.userAccessCodes(models.UserModel{}); err != nil || len(codes) != 0 {
@@ -181,41 +180,52 @@ func TestMenuPermissionSlugsCoverPermissionGatedMenus(t *testing.T) {
 	}
 }
 
-func TestMenuPermissionSlugsGrantAllModulePermissions(t *testing.T) {
-	// 菜单授权应覆盖对应模块的全部接口权限，保证页面操作按钮与后端一致。
-	moduleSlugs := map[string]map[string]bool{
-		"/kadmin/logs": {
-			logListPermission:   false,
-			logDeletePermission: false,
-		},
-		"/kadmin/login-audits": {
-			loginlogs.ListPermission:      false,
-			loginlogs.DeletePermission:    false,
-			loginlogs.RetentionPermission: false,
-		},
-		"/kadmin/jobs": {
-			jobs.ListPermission:    false,
-			jobs.CreatePermission:  false,
-			jobs.UpdatePermission:  false,
-			jobs.DeletePermission:  false,
-			jobs.RunPermission:     false,
-			jobs.LogListPermission: false,
-		},
-		"/kadmin/monitor": {
-			monitor.ViewPermission:   false,
-			monitor.UpdatePermission: false,
-		},
+func TestMenuPermissionSlugsGrantOnlyPagePermissions(t *testing.T) {
+	wanted := map[string]string{
+		"/kadmin/users":        userManagePermission,
+		"/kadmin/rbac":         rbacManagePermission,
+		"/kadmin/menus":        menuManagePermission,
+		"/kadmin/dictionary":   dictionaryManagePermission,
+		"/kadmin/settings":     systemConfigManagePermission,
+		"/kadmin/logs":         logListPermission,
+		"/kadmin/login-audits": loginlogs.ListPermission,
+		"/kadmin/jobs":         jobs.ListPermission,
+		"/kadmin/monitor":      monitor.ViewPermission,
+		"/kadmin/load-ranking": "system:load-rank:view",
+		"/kadmin/resources":    files.ReadPermission,
 	}
-	for uri, wanted := range moduleSlugs {
-		for _, slug := range menuPermissionSlugs[uri] {
-			if _, ok := wanted[slug]; ok {
-				wanted[slug] = true
-			}
+	for uri, slug := range wanted {
+		actual := menuPermissionSlugs[uri]
+		if len(actual) != 1 || actual[0] != slug {
+			t.Errorf("menu %q page permissions = %v, want [%s]", uri, actual, slug)
 		}
-		for slug, found := range wanted {
-			if !found {
-				t.Errorf("menu %q does not grant %q", uri, slug)
+	}
+}
+
+func TestPermissionCatalogLinksPageButtonAndAPI(t *testing.T) {
+	seen := make(map[string]bool, len(defaultPermissionSeeds))
+	for _, seed := range defaultPermissionSeeds {
+		if seen[seed.Slug] {
+			t.Errorf("duplicate permission slug %q", seed.Slug)
+		}
+		seen[seed.Slug] = true
+		if seed.PageURI == "" || seed.PageTitle == "" {
+			t.Errorf("permission %q is not linked to a page", seed.Slug)
+		}
+		if seed.HTTPMethod == "" || seed.HTTPPath == "" {
+			t.Errorf("permission %q is not linked to an API", seed.Slug)
+		}
+		switch seed.Scope {
+		case "page":
+			if seed.Button != "" {
+				t.Errorf("page permission %q must not declare a button", seed.Slug)
 			}
+		case "button":
+			if seed.Button == "" {
+				t.Errorf("button permission %q has no button identifier", seed.Slug)
+			}
+		default:
+			t.Errorf("permission %q has invalid scope %q", seed.Slug, seed.Scope)
 		}
 	}
 }

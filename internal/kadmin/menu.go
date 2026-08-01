@@ -300,6 +300,9 @@ func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
 			meta[key] = value
 		}
 	}
+	if pagePermissions := menuPermissionSlugs[normalizeMenuURI(m.URI)]; len(pagePermissions) > 0 {
+		meta["authority"] = append([]string(nil), pagePermissions...)
+	}
 	icon := normalizeMenuIcon(m.Icon)
 	if icon == "" && hasBinding {
 		icon = binding.Icon

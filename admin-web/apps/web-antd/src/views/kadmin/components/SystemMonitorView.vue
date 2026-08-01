@@ -46,12 +46,7 @@
       message="系统监控已关闭"
       description="关闭后服务端不会采集系统指标，页面也不会自动轮询，可减少不必要的性能开销。"
     />
-    <a-alert
-      v-else-if="status.lastError"
-      type="warning"
-      show-icon
-      :message="status.lastError"
-    />
+    <a-alert v-else-if="status.lastError" type="warning" show-icon :message="status.lastError" />
 
     <a-spin :spinning="initialLoading">
       <template v-if="status.enabled && metrics">
@@ -68,7 +63,10 @@
                 :show-info="false"
                 :status="progressStatus(metrics.cpu.usagePercent)"
               />
-              <small>物理 {{ metrics.cpu.physicalCores }} 核 / 逻辑 {{ metrics.cpu.logicalCores }} 核</small>
+              <small
+                >物理 {{ metrics.cpu.physicalCores }} 核 / 逻辑
+                {{ metrics.cpu.logicalCores }} 核</small
+              >
             </section>
           </a-col>
           <a-col :xs="24" :sm="12" :xl="6">
@@ -83,7 +81,10 @@
                 :show-info="false"
                 :status="progressStatus(metrics.memory.usagePercent)"
               />
-              <small>{{ formatBytes(metrics.memory.usedBytes) }} / {{ formatBytes(metrics.memory.totalBytes) }}</small>
+              <small
+                >{{ formatBytes(metrics.memory.usedBytes) }} /
+                {{ formatBytes(metrics.memory.totalBytes) }}</small
+              >
             </section>
           </a-col>
           <a-col :xs="24" :sm="12" :xl="6">
@@ -113,15 +114,27 @@
             <section class="panel detail-panel">
               <div class="panel-title"><h2>服务器信息</h2></div>
               <a-descriptions bordered size="small" :column="descriptionColumns">
-                <a-descriptions-item label="主机名">{{ metrics.host.hostname || '-' }}</a-descriptions-item>
-                <a-descriptions-item label="服务器 IP">{{ metrics.host.serverIp || '-' }}</a-descriptions-item>
+                <a-descriptions-item label="主机名">{{
+                  metrics.host.hostname || '-'
+                }}</a-descriptions-item>
+                <a-descriptions-item label="服务器 IP">{{
+                  metrics.host.serverIp || '-'
+                }}</a-descriptions-item>
                 <a-descriptions-item label="操作系统">{{ operatingSystem }}</a-descriptions-item>
-                <a-descriptions-item label="系统架构">{{ metrics.host.architecture || '-' }}</a-descriptions-item>
-                <a-descriptions-item label="内核版本">{{ metrics.host.kernelVersion || '-' }}</a-descriptions-item>
-                <a-descriptions-item label="启动时间">{{ formatDateTime(metrics.host.bootTime) }}</a-descriptions-item>
+                <a-descriptions-item label="系统架构">{{
+                  metrics.host.architecture || '-'
+                }}</a-descriptions-item>
+                <a-descriptions-item label="内核版本">{{
+                  metrics.host.kernelVersion || '-'
+                }}</a-descriptions-item>
+                <a-descriptions-item label="启动时间">{{
+                  formatDateTime(metrics.host.bootTime)
+                }}</a-descriptions-item>
                 <a-descriptions-item label="全部 IP" :span="descriptionColumns">
                   <a-space wrap>
-                    <a-tag v-for="address in metrics.host.ipAddresses" :key="address">{{ address }}</a-tag>
+                    <a-tag v-for="address in metrics.host.ipAddresses" :key="address">{{
+                      address
+                    }}</a-tag>
                     <span v-if="metrics.host.ipAddresses.length === 0">-</span>
                   </a-space>
                 </a-descriptions-item>
@@ -132,25 +145,35 @@
             <section class="panel detail-panel">
               <div class="panel-title"><h2>服务进程</h2></div>
               <a-descriptions bordered size="small" :column="descriptionColumns">
-                <a-descriptions-item label="进程 ID">{{ metrics.application.pid }}</a-descriptions-item>
-                <a-descriptions-item label="Go 版本">{{ metrics.application.goVersion }}</a-descriptions-item>
-                <a-descriptions-item label="协程数量">{{ metrics.application.goroutines }}</a-descriptions-item>
-                <a-descriptions-item label="内存占用">{{ formatBytes(metrics.application.memoryBytes) }}</a-descriptions-item>
-                <a-descriptions-item label="堆内存">{{ formatBytes(metrics.application.heapAllocBytes) }}</a-descriptions-item>
-                <a-descriptions-item label="GC 次数">{{ metrics.application.gcCount }}</a-descriptions-item>
+                <a-descriptions-item label="进程 ID">{{
+                  metrics.application.pid
+                }}</a-descriptions-item>
+                <a-descriptions-item label="Go 版本">{{
+                  metrics.application.goVersion
+                }}</a-descriptions-item>
+                <a-descriptions-item label="协程数量">{{
+                  metrics.application.goroutines
+                }}</a-descriptions-item>
+                <a-descriptions-item label="内存占用">{{
+                  formatBytes(metrics.application.memoryBytes)
+                }}</a-descriptions-item>
+                <a-descriptions-item label="堆内存">{{
+                  formatBytes(metrics.application.heapAllocBytes)
+                }}</a-descriptions-item>
+                <a-descriptions-item label="GC 次数">{{
+                  metrics.application.gcCount
+                }}</a-descriptions-item>
               </a-descriptions>
             </section>
           </a-col>
         </a-row>
 
         <div class="sample-time">
-          指标采样于 {{ formatDateTime(metrics.sampledAt) }}，每 {{ status.samplingIntervalSeconds }} 秒更新
+          指标采样于 {{ formatDateTime(metrics.sampledAt) }}，每
+          {{ status.samplingIntervalSeconds }} 秒更新
         </div>
       </template>
-      <a-empty
-        v-else-if="status.enabled && !initialLoading"
-        description="正在等待首次指标采样"
-      />
+      <a-empty v-else-if="status.enabled && !initialLoading" description="正在等待首次指标采样" />
     </a-spin>
   </div>
 </template>
@@ -172,11 +195,10 @@ import {
   updateSystemMonitorStatus,
   type SystemMonitorStatus,
 } from '#/api/kadmin/systemMonitor';
+import { KADMIN_PERMISSION } from '#/api/kadmin/permissions';
 
 const { hasAccessByCodes } = useAccess();
-const canUpdate = computed(() =>
-  hasAccessByCodes(['system:monitor:update', '*']),
-);
+const canUpdate = computed(() => hasAccessByCodes([KADMIN_PERMISSION.MONITOR_UPDATE, '*']));
 const status = reactive<SystemMonitorStatus>({
   enabled: false,
   lastError: '',
@@ -192,9 +214,11 @@ const metrics = computed(() => status.metrics);
 const descriptionColumns = computed(() => (viewportWidth.value < 768 ? 1 : 2));
 const operatingSystem = computed(() => {
   if (!metrics.value) return '-';
-  return [metrics.value.host.platform, metrics.value.host.platformVersion]
-    .filter(Boolean)
-    .join(' ') || metrics.value.host.os || '-';
+  return (
+    [metrics.value.host.platform, metrics.value.host.platformVersion].filter(Boolean).join(' ') ||
+    metrics.value.host.os ||
+    '-'
+  );
 });
 let pollTimer: number | undefined;
 
@@ -269,10 +293,7 @@ function formatPercent(value: number) {
 function formatBytes(value: number) {
   if (!Number.isFinite(value) || value <= 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const exponent = Math.min(
-    Math.floor(Math.log(value) / Math.log(1024)),
-    units.length - 1,
-  );
+  const exponent = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
   return `${(value / 1024 ** exponent).toFixed(exponent === 0 ? 0 : 2)} ${units[exponent]}`;
 }
 

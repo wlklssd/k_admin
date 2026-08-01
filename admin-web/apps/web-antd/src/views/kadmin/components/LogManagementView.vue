@@ -289,18 +289,13 @@ import { message } from 'ant-design-vue';
 import type { Dayjs } from 'dayjs';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 
-import {
-  deleteLog,
-  deleteLogs,
-  getLog,
-  getLogs,
-  type ManagedLog,
-} from '#/api/kadmin/logs';
+import { deleteLog, deleteLogs, getLog, getLogs, type ManagedLog } from '#/api/kadmin/logs';
+import { KADMIN_PERMISSION } from '#/api/kadmin/permissions';
 
 type TablePagination = { current?: number; pageSize?: number };
 
 const { hasAccessByCodes } = useAccess();
-const canDelete = computed(() => hasAccessByCodes(['system:log:delete', '*']));
+const canDelete = computed(() => hasAccessByCodes([KADMIN_PERMISSION.LOG_DELETE, '*']));
 const loading = ref(false);
 const deleting = ref(false);
 const detailLoading = ref(false);
@@ -376,7 +371,7 @@ const rowSelection = computed(() =>
         },
         selectedRowKeys: selectedRowKeys.value,
       }
-    : undefined,
+    : undefined
 );
 
 onMounted(() => void loadLogs());
@@ -409,7 +404,7 @@ async function loadLogs(silent = false) {
     logs.value = data.items || [];
     pagination.total = data.total || 0;
     selectedRowKeys.value = selectedRowKeys.value.filter((id) =>
-      logs.value.some((log) => log.id === id),
+      logs.value.some((log) => log.id === id)
     );
   } catch (error) {
     message.error(error instanceof Error ? error.message : '加载日志失败');
@@ -502,9 +497,7 @@ function levelMeta(level: string) {
 }
 
 function eventTypeLabel(eventType: string) {
-  return (
-    eventTypeOptions.find((item) => item.value === eventType)?.label || eventType || '-'
-  );
+  return eventTypeOptions.find((item) => item.value === eventType)?.label || eventType || '-';
 }
 
 function methodColor(method: string) {

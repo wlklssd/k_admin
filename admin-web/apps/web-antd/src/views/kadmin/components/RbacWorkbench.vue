@@ -18,11 +18,7 @@
         <section class="panel">
           <div class="panel-title">
             <h2>部门</h2>
-            <a-button
-              size="small"
-              type="primary"
-              @click="openDepartmentDrawer()"
-            >
+            <a-button size="small" type="primary" @click="openDepartmentDrawer()">
               <PlusOutlined />
               新建部门
             </a-button>
@@ -45,10 +41,7 @@
           >
             <template #renderItem="{ item }">
               <a-list-item
-                :class="[
-                  'role-list-item',
-                  { active: item.id === selectedDepartmentId },
-                ]"
+                :class="['role-list-item', { active: item.id === selectedDepartmentId }]"
                 @click="selectDepartment(item.id)"
               >
                 <a-list-item-meta>
@@ -71,8 +64,7 @@
                     </a-space>
                   </template>
                   <template #description>
-                    {{ item.code || '未设置编码' }} ·
-                    {{ item.roleIds.length }} 个职位
+                    {{ item.code || '未设置编码' }} · {{ item.roleIds.length }} 个职位
                   </template>
                 </a-list-item-meta>
               </a-list-item>
@@ -100,10 +92,7 @@
                   <EditOutlined />
                   编辑部门
                 </a-button>
-                <a-popconfirm
-                  title="确认删除该部门？"
-                  @confirm="removeDepartment"
-                >
+                <a-popconfirm title="确认删除该部门？" @confirm="removeDepartment">
                   <a-button danger>
                     <DeleteOutlined />
                     删除
@@ -117,9 +106,7 @@
                 <div class="table-toolbar department-role-toolbar">
                   <div>
                     <strong>部门下的职位</strong>
-                    <p class="muted-text">
-                      选择已有职位加入当前部门，或直接新建职位
-                    </p>
+                    <p class="muted-text">选择已有职位加入当前部门，或直接新建职位</p>
                   </div>
                   <a-space wrap>
                     <a-select
@@ -148,10 +135,7 @@
                   </p>
                 </div>
 
-                <a-empty
-                  v-if="departmentRoles.length === 0"
-                  description="当前部门暂无职位"
-                />
+                <a-empty v-if="departmentRoles.length === 0" description="当前部门暂无职位" />
                 <a-table
                   v-else
                   row-key="id"
@@ -182,10 +166,9 @@
                     <template v-else-if="column.key === 'summary'">
                       <a-space :size="4" wrap>
                         <a-tag>{{ record.menuIds.length }} 菜单</a-tag>
+                        <a-tag>{{ record.permissionIds.length }} 标识</a-tag>
                         <a-tag>{{ record.userIds.length }} 人</a-tag>
-                        <a-tag v-if="record.isAdmin" color="gold"
-                          >最高权限</a-tag
-                        >
+                        <a-tag v-if="record.isAdmin" color="gold">最高权限</a-tag>
                       </a-space>
                     </template>
                     <template v-else-if="column.key === 'action'">
@@ -196,7 +179,15 @@
                           ghost
                           @click="selectRoleForMenus(record)"
                         >
-                          配置权限
+                          配置菜单
+                        </a-button>
+                        <a-button
+                          size="small"
+                          type="primary"
+                          ghost
+                          @click="selectRoleForPermissions(record)"
+                        >
+                          配置标识
                         </a-button>
                         <a-button
                           size="small"
@@ -209,10 +200,7 @@
                           title="确认将该职位移出当前部门？职位本身不会被删除。"
                           @confirm="removeRoleFromDepartment(record)"
                         >
-                          <a-button
-                            size="small"
-                            :disabled="savingDepartmentRoles"
-                          >
+                          <a-button size="small" :disabled="savingDepartmentRoles">
                             移出部门
                           </a-button>
                         </a-popconfirm>
@@ -220,13 +208,7 @@
                           title="确认全局删除该职位？所有部门、人员和菜单权限关联将同步删除。"
                           @confirm="removeRole(record)"
                         >
-                          <a-button
-                            size="small"
-                            danger
-                            :disabled="record.isAdmin"
-                          >
-                            删除
-                          </a-button>
+                          <a-button size="small" danger :disabled="record.isAdmin"> 删除 </a-button>
                         </a-popconfirm>
                       </a-space>
                     </template>
@@ -251,10 +233,7 @@
                     保存菜单权限
                   </a-button>
                 </div>
-                <a-empty
-                  v-if="!selectedRole"
-                  description="请先在部门职位中选择或添加职位"
-                />
+                <a-empty v-if="!selectedRole" description="请先在部门职位中选择或添加职位" />
                 <template v-else>
                   <a-alert
                     v-if="selectedRole.isAdmin"
@@ -270,6 +249,85 @@
                     :disabled="selectedRole.isAdmin"
                     :tree-data="menuTreeData"
                   />
+                </template>
+              </a-tab-pane>
+
+              <a-tab-pane key="rolePermissions" tab="职位权限标识">
+                <div class="table-toolbar">
+                  <a-select
+                    v-model:value="selectedRoleId"
+                    class="control-lg"
+                    :options="departmentRoleOptions"
+                    placeholder="选择部门下的职位"
+                  />
+                  <a-button
+                    type="primary"
+                    :disabled="!selectedRole || selectedRole.isAdmin"
+                    :loading="savingPermissions"
+                    @click="savePermissions"
+                  >
+                    保存权限标识
+                  </a-button>
+                </div>
+                <a-empty v-if="!selectedRole" description="请先在部门职位中选择或添加职位" />
+                <template v-else>
+                  <a-alert
+                    class="form-alert"
+                    type="info"
+                    show-icon
+                    :message="
+                      selectedRole.isAdmin
+                        ? 'admin 最高权限职位拥有全部权限标识。'
+                        : '页面权限随菜单自动继承；按钮与 API 使用同一权限标识，需要在此显式授权。'
+                    "
+                  />
+                  <a-collapse class="permission-groups" :bordered="false">
+                    <a-collapse-panel v-for="group in permissionGroups" :key="group.key">
+                      <template #header>
+                        <div class="permission-group-title">
+                          <strong>{{ group.title }}</strong>
+                          <span class="muted-text">
+                            {{ group.pageUri || '未关联页面' }} · {{ group.items.length }} 个标识
+                          </span>
+                        </div>
+                      </template>
+                      <div class="permission-list">
+                        <div
+                          v-for="permission in group.items"
+                          :key="permission.id"
+                          class="permission-item"
+                        >
+                          <a-checkbox
+                            :checked="isPermissionChecked(permission.id)"
+                            :disabled="selectedRole.isAdmin || permission.scope === 'page'"
+                            @change="
+                              togglePermission(permission.id, Boolean($event.target?.checked))
+                            "
+                          >
+                            {{ permission.name }}
+                          </a-checkbox>
+                          <a-space :size="4" wrap>
+                            <a-tag :color="permission.scope === 'page' ? 'blue' : 'purple'">
+                              {{ permissionScopeLabel(permission.scope) }}
+                            </a-tag>
+                            <a-tag v-if="isPermissionInherited(permission.id)" color="cyan">
+                              随菜单继承
+                            </a-tag>
+                            <code class="permission-code">
+                              {{ permission.slug }}
+                            </code>
+                          </a-space>
+                          <div class="permission-meta">
+                            <span v-if="permission.button"> 按钮：{{ permission.button }} </span>
+                            <span>
+                              API：{{ permission.httpMethod || '—' }}
+                              {{ permission.httpPath || '—' }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </a-collapse-panel>
+                  </a-collapse>
                 </template>
               </a-tab-pane>
             </a-tabs>
@@ -291,23 +349,13 @@
         layout="vertical"
       >
         <a-form-item label="部门名称" name="name">
-          <a-input
-            v-model:value="departmentForm.name"
-            placeholder="例如：运营部"
-          />
+          <a-input v-model:value="departmentForm.name" placeholder="例如：运营部" />
         </a-form-item>
         <a-form-item label="部门编码" name="code">
-          <a-input
-            v-model:value="departmentForm.code"
-            placeholder="例如：operation"
-          />
+          <a-input v-model:value="departmentForm.code" placeholder="例如：operation" />
         </a-form-item>
         <a-form-item label="排序" name="sort">
-          <a-input-number
-            v-model:value="departmentForm.sort"
-            class="full-width"
-            :min="0"
-          />
+          <a-input-number v-model:value="departmentForm.sort" class="full-width" :min="0" />
         </a-form-item>
         <a-form-item label="状态" name="status">
           <a-select
@@ -329,11 +377,7 @@
       <template #extra>
         <a-space>
           <a-button @click="departmentDrawerOpen = false">取消</a-button>
-          <a-button
-            type="primary"
-            :loading="savingDepartment"
-            @click="submitDepartment"
-          >
+          <a-button type="primary" :loading="savingDepartment" @click="submitDepartment">
             保存
           </a-button>
         </a-space>
@@ -346,12 +390,7 @@
       width="420"
       :destroy-on-close="true"
     >
-      <a-form
-        ref="roleFormRef"
-        :model="roleForm"
-        :rules="roleRules"
-        layout="vertical"
-      >
+      <a-form ref="roleFormRef" :model="roleForm" :rules="roleRules" layout="vertical">
         <a-form-item label="职位名称" name="name">
           <a-input v-model:value="roleForm.name" placeholder="例如：运营人员" />
         </a-form-item>
@@ -362,9 +401,7 @@
       <template #extra>
         <a-space>
           <a-button @click="roleDrawerOpen = false">取消</a-button>
-          <a-button type="primary" :loading="savingRole" @click="submitRole"
-            >保存</a-button
-          >
+          <a-button type="primary" :loading="savingRole" @click="submitRole">保存</a-button>
         </a-space>
       </template>
     </a-drawer>
@@ -392,8 +429,10 @@ import {
   updateDepartmentRoles,
   updateRole,
   updateRoleMenus,
+  updateRolePermissions,
   type RbacDepartment,
   type RbacMenu,
+  type RbacPermission,
   type RbacRole,
 } from '#/api/kadmin/rbac';
 
@@ -408,14 +447,17 @@ const savingDepartment = ref(false);
 const savingDepartmentRoles = ref(false);
 const savingRole = ref(false);
 const savingMenus = ref(false);
+const savingPermissions = ref(false);
 const departments = ref<RbacDepartment[]>([]);
 const roles = ref<RbacRole[]>([]);
 const menus = ref<RbacMenu[]>([]);
+const permissions = ref<RbacPermission[]>([]);
 const selectedDepartmentId = ref<number>();
 const selectedRoleId = ref<number>();
 const departmentKeyword = ref('');
 const activeTab = ref('departmentRoles');
 const checkedMenuKeys = ref<number[]>([]);
+const checkedPermissionKeys = ref<number[]>([]);
 const pendingDepartmentRoleId = ref<number>();
 const departmentDrawerOpen = ref(false);
 const roleDrawerOpen = ref(false);
@@ -452,7 +494,7 @@ const filteredDepartments = computed(() => {
   return departments.value.filter(
     (department) =>
       department.name.toLowerCase().includes(keyword) ||
-      department.code.toLowerCase().includes(keyword),
+      department.code.toLowerCase().includes(keyword)
   );
 });
 
@@ -474,9 +516,7 @@ const availableRoleOptions = computed(() => {
 });
 
 const selectedDepartment = computed(() =>
-  departments.value.find(
-    (department) => department.id === selectedDepartmentId.value,
-  ),
+  departments.value.find((department) => department.id === selectedDepartmentId.value)
 );
 
 const roleColumns = [
@@ -485,9 +525,63 @@ const roleColumns = [
   { title: '操作', key: 'action', width: 380, fixed: 'right' },
 ];
 
-const selectedRole = computed(() =>
-  roles.value.find((role) => role.id === selectedRoleId.value),
-);
+const selectedRole = computed(() => roles.value.find((role) => role.id === selectedRoleId.value));
+
+const permissionGroups = computed(() => {
+  const groups = new Map<
+    string,
+    { key: string; title: string; pageUri: string; items: RbacPermission[] }
+  >();
+  for (const permission of permissions.value) {
+    const pageUri = permission.pageUri || '';
+    const key = pageUri || 'other-api';
+    const group = groups.get(key) || {
+      key,
+      title: permission.pageTitle || '其他 API',
+      pageUri,
+      items: [],
+    };
+    group.items.push(permission);
+    groups.set(key, group);
+  }
+  return [...groups.values()].map((group) => ({
+    ...group,
+    items: [...group.items].sort((left, right) => {
+      if (left.scope === right.scope) return left.id - right.id;
+      return left.scope === 'page' ? -1 : 1;
+    }),
+  }));
+});
+
+const inheritedPermissionIds = computed(() => {
+  const menuUris = new Set((selectedRole.value?.menus || []).map((menu) => menu.uri || ''));
+  return new Set(
+    permissions.value
+      .filter(
+        (permission) =>
+          permission.scope === 'page' && !!permission.pageUri && menuUris.has(permission.pageUri)
+      )
+      .map((permission) => permission.id)
+  );
+});
+
+function isPermissionChecked(permissionId: number) {
+  return (
+    selectedRole.value?.isAdmin ||
+    inheritedPermissionIds.value.has(permissionId) ||
+    checkedPermissionKeys.value.includes(permissionId)
+  );
+}
+
+function isPermissionInherited(permissionId: number) {
+  return inheritedPermissionIds.value.has(permissionId);
+}
+
+function permissionScopeLabel(scope: string) {
+  if (scope === 'page') return '页面';
+  if (scope === 'button') return '按钮';
+  return 'API';
+}
 
 const menuTreeData = computed(() => toTreeData(menus.value));
 
@@ -495,7 +589,7 @@ const departmentRoleOptions = computed(() =>
   departmentRoles.value.map((role) => ({
     label: `${role.name}（${role.slug}）`,
     value: role.id,
-  })),
+  }))
 );
 
 watch(selectedDepartment, (department) => {
@@ -509,8 +603,9 @@ watch(
   selectedRole,
   (role) => {
     checkedMenuKeys.value = role?.menuIds ? [...role.menuIds] : [];
+    checkedPermissionKeys.value = role?.permissionIds ? [...role.permissionIds] : [];
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 onMounted(() => {
@@ -522,13 +617,18 @@ async function loadOverview() {
   try {
     const data = await getRbacOverview();
     departments.value = data.departments || [];
-    roles.value = data.roles || [];
+    roles.value = (data.roles || []).map((role) => ({
+      ...role,
+      menuIds: role.menuIds || [],
+      permissionIds: role.permissionIds || [],
+      permissions: role.permissions || [],
+      userIds: role.userIds || [],
+    }));
     menus.value = data.menus || [];
+    permissions.value = data.permissions || [];
     if (
       !selectedDepartmentId.value ||
-      !departments.value.some(
-        (department) => department.id === selectedDepartmentId.value,
-      )
+      !departments.value.some((department) => department.id === selectedDepartmentId.value)
     ) {
       selectedDepartmentId.value = departments.value[0]?.id;
     }
@@ -603,9 +703,7 @@ async function addRoleToDepartment() {
   if (!department || !roleId) return;
   savingDepartmentRoles.value = true;
   try {
-    await updateDepartmentRoles(department.id, [
-      ...new Set([...department.roleIds, roleId]),
-    ]);
+    await updateDepartmentRoles(department.id, [...new Set([...department.roleIds, roleId])]);
     await loadOverview();
     selectedDepartmentId.value = department.id;
     selectedRoleId.value = roleId;
@@ -643,6 +741,11 @@ function selectRoleForMenus(role: RbacRole) {
   activeTab.value = 'roleMenus';
 }
 
+function selectRoleForPermissions(role: RbacRole) {
+  selectedRoleId.value = role.id;
+  activeTab.value = 'rolePermissions';
+}
+
 function openRoleDrawer(role?: RbacRole) {
   editingRole.value = role || null;
   roleForm.name = role?.name || '';
@@ -654,9 +757,7 @@ async function submitRole() {
   await roleFormRef.value?.validate();
   savingRole.value = true;
   try {
-    const currentDepartmentId = editingRole.value
-      ? undefined
-      : selectedDepartment.value?.id;
+    const currentDepartmentId = editingRole.value ? undefined : selectedDepartment.value?.id;
     const currentDepartmentRoleIds = editingRole.value
       ? []
       : [...(selectedDepartment.value?.roleIds || [])];
@@ -704,16 +805,42 @@ async function saveMenus() {
   if (!selectedRole.value || selectedRole.value.isAdmin) return;
   savingMenus.value = true;
   try {
-    await updateRoleMenus(
-      selectedRole.value.id,
-      checkedMenuKeys.value.map(Number),
-    );
+    await updateRoleMenus(selectedRole.value.id, checkedMenuKeys.value.map(Number));
     await loadOverview();
     message.success('菜单权限已保存');
   } catch (error) {
     message.error(error instanceof Error ? error.message : '保存菜单权限失败');
   } finally {
     savingMenus.value = false;
+  }
+}
+
+function togglePermission(permissionId: number, checked: boolean) {
+  if (inheritedPermissionIds.value.has(permissionId)) return;
+  const next = new Set(checkedPermissionKeys.value);
+  if (checked) {
+    next.add(permissionId);
+  } else {
+    next.delete(permissionId);
+  }
+  checkedPermissionKeys.value = [...next];
+}
+
+async function savePermissions() {
+  if (!selectedRole.value || selectedRole.value.isAdmin) return;
+  const explicitPermissionIds = checkedPermissionKeys.value.filter(
+    (permissionId) =>
+      permissions.value.find((permission) => permission.id === permissionId)?.scope !== 'page'
+  );
+  savingPermissions.value = true;
+  try {
+    await updateRolePermissions(selectedRole.value.id, explicitPermissionIds);
+    await loadOverview();
+    message.success('权限标识已保存');
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '保存权限标识失败');
+  } finally {
+    savingPermissions.value = false;
   }
 }
 
@@ -731,6 +858,46 @@ function toTreeData(items: RbacMenu[]): TreeNode[] {
   display: none;
   margin: 0 0 8px;
   font-size: 12px;
+}
+
+.permission-groups {
+  margin-top: 12px;
+  background: transparent;
+}
+
+.permission-group-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.permission-list {
+  display: grid;
+  gap: 8px;
+}
+
+.permission-item {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--kadmin-soft-bg);
+  border: 1px solid var(--kadmin-border);
+  border-radius: 8px;
+}
+
+.permission-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: var(--kadmin-muted);
+  font-size: 12px;
+}
+
+.permission-code {
+  overflow-wrap: anywhere;
+  color: var(--kadmin-text);
 }
 
 @media (max-width: 768px) {
