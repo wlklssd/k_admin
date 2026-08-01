@@ -742,23 +742,40 @@ function getMenuDepth(
 }
 
 :deep(.menu-row-child > td) {
-  background-color: #f1f5f9;
+  background-color: color-mix(
+    in srgb,
+    var(--kadmin-soft-bg) 60%,
+    var(--kadmin-bg)
+  );
 }
 
 :deep(.menu-row-level-2 > td) {
-  background-color: #e8eef7;
+  background-color: color-mix(
+    in srgb,
+    var(--kadmin-soft-bg) 78%,
+    var(--kadmin-bg)
+  );
 }
 
 :deep(.menu-row-level-3 > td) {
-  background-color: #dee8f3;
+  background-color: color-mix(
+    in srgb,
+    var(--kadmin-soft-bg) 94%,
+    var(--kadmin-bg)
+  );
 }
 
 :deep(.menu-row-child > td:first-child) {
-  box-shadow: inset 3px 0 0 #8aa4c8;
+  box-shadow: inset 3px 0 0
+    color-mix(
+      in srgb,
+      var(--kadmin-active-text) 55%,
+      var(--kadmin-border)
+    );
 }
 
 :deep(.menu-row-child:hover > td) {
-  background-color: #dfeaf7 !important;
+  background-color: var(--kadmin-hover-bg) !important;
 }
 
 @keyframes menu-child-slide-in {
