@@ -166,13 +166,13 @@ func (r *repository) deleteJob(id int64) error {
 }
 
 func (r *repository) updateNextRun(id int64, next *time.Time) error {
-	_, err := r.conn.Exec("UPDATE public.kadmin_jobs SET next_run_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", next, id)
+	_, err := r.conn.Exec("UPDATE public.kadmin_jobs SET next_run_at = ?::timestamptz, updated_at = CURRENT_TIMESTAMP WHERE id = ?", next, id)
 	return err
 }
 
 func (r *repository) updateRunTimes(id int64, last time.Time, next *time.Time) error {
-	_, err := r.conn.Exec(`UPDATE public.kadmin_jobs SET last_run_at = ?,
-		next_run_at = CASE WHEN status = 'enabled' THEN ? ELSE NULL END,
+	_, err := r.conn.Exec(`UPDATE public.kadmin_jobs SET last_run_at = ?::timestamptz,
+		next_run_at = CASE WHEN status = 'enabled' THEN ?::timestamptz ELSE NULL END,
 		updated_at = CURRENT_TIMESTAMP WHERE id = ?`, last, next, id)
 	return err
 }
