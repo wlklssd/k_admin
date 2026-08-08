@@ -17,6 +17,7 @@ export interface AdminMenu {
   title: string;
   icon: string;
   uri: string;
+  component?: string;
   header?: string;
   pluginName?: string;
   uuid?: string;
@@ -32,6 +33,7 @@ export interface AdminMenuPayload {
   title: string;
   icon?: string;
   uri?: string;
+  component?: string;
   header?: string;
   pluginName?: string;
   uuid?: string;

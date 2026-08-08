@@ -30,21 +30,23 @@ type managedMenu struct {
 	Header     string        `json:"header"`
 	PluginName string        `json:"pluginName"`
 	UUID       string        `json:"uuid"`
+	Component  string        `json:"component"`
 	CreatedAt  string        `json:"createdAt"`
 	UpdatedAt  string        `json:"updatedAt"`
 	Children   []managedMenu `json:"children,omitempty"`
 }
 
 type menuPayload struct {
-	ParentID   int64  `json:"parentId"`
-	Type       *int64 `json:"type"`
-	Order      int64  `json:"order"`
-	Title      string `json:"title"`
-	Icon       string `json:"icon"`
-	URI        string `json:"uri"`
-	Header     string `json:"header"`
-	PluginName string `json:"pluginName"`
-	UUID       string `json:"uuid"`
+	ParentID   int64   `json:"parentId"`
+	Type       *int64  `json:"type"`
+	Order      int64   `json:"order"`
+	Title      string  `json:"title"`
+	Icon       string  `json:"icon"`
+	URI        string  `json:"uri"`
+	Header     string  `json:"header"`
+	PluginName string  `json:"pluginName"`
+	UUID       string  `json:"uuid"`
+	Component  *string `json:"component"`
 }
 
 type menuPosition struct {
@@ -104,6 +106,11 @@ func (s *Store) createAdminMenu(c *gin.Context) {
 		fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	component, err := resolveMenuComponent(*req.Type, req.URI, "", req.Component)
+	if err != nil {
+		fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	s.menuMutationMu.Lock()
 	defer s.menuMutationMu.Unlock()
 
@@ -125,6 +132,7 @@ func (s *Store) createAdminMenu(c *gin.Context) {
 		"header":      req.Header,
 		"plugin_name": req.PluginName,
 		"uuid":        req.UUID,
+		"component":   component,
 		"created_at":  nowString(),
 		"updated_at":  nowString(),
 	})
@@ -214,6 +222,11 @@ func (s *Store) updateAdminMenu(c *gin.Context) {
 			return
 		}
 	}
+	component, err := resolveMenuComponent(*req.Type, req.URI, existingMenu.Component, req.Component)
+	if err != nil {
+		fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	_, err = db.WithDriver(s.conn).
 		Table("goadmin_menu").
@@ -228,6 +241,7 @@ func (s *Store) updateAdminMenu(c *gin.Context) {
 			"header":      req.Header,
 			"plugin_name": req.PluginName,
 			"uuid":        req.UUID,
+			"component":   component,
 			"updated_at":  nowString(),
 		})
 	if err != nil {
@@ -405,6 +419,7 @@ func managedMenuFromRow(row map[string]interface{}) managedMenu {
 		Header:     toString(row["header"]),
 		PluginName: toString(row["plugin_name"]),
 		UUID:       toString(row["uuid"]),
+		Component:  toString(row["component"]),
 		CreatedAt:  toDateTimeString(row["created_at"]),
 		UpdatedAt:  toDateTimeString(row["updated_at"]),
 	}
@@ -429,6 +444,10 @@ func normalizeMenuPayload(req *menuPayload) {
 	req.Header = strings.TrimSpace(req.Header)
 	req.PluginName = strings.TrimSpace(req.PluginName)
 	req.UUID = strings.TrimSpace(req.UUID)
+	if req.Component != nil {
+		component := strings.TrimSpace(*req.Component)
+		req.Component = &component
+	}
 	// type 未传时默认为菜单(1)；显式传 0 表示目录/分组，需原样保留。
 	if req.Type == nil {
 		t := menuTypeItem
@@ -451,6 +470,58 @@ func validateMenuURI(menuType int64, uri string) error {
 		return fmt.Errorf("external link must use http or https")
 	}
 	return nil
+}
+
+func validateMenuComponent(menuType int64, uri string, component string) error {
+	if component == "" {
+		return nil
+	}
+	if menuType != menuTypeItem {
+		return fmt.Errorf("only menu items may define a component")
+	}
+	normalizedURI := normalizeMenuURI(uri)
+	if normalizedURI == "" || normalizedURI == "#" || isExternalHTTPURL(normalizedURI) {
+		return fmt.Errorf("menu component requires an internal menu URI")
+	}
+	if len(component) > 255 {
+		return fmt.Errorf("menu component must not exceed 255 characters")
+	}
+	if !strings.HasPrefix(component, "/") {
+		return fmt.Errorf("menu component must start with /")
+	}
+	if strings.HasSuffix(component, "/") || strings.Contains(component, "//") ||
+		strings.Contains(component, "..") || strings.ContainsAny(component, `\\?#`) {
+		return fmt.Errorf("menu component contains an invalid path segment")
+	}
+	for _, char := range component {
+		if char == '/' || char == '-' || char == '_' ||
+			(char >= '0' && char <= '9') ||
+			(char >= 'A' && char <= 'Z') ||
+			(char >= 'a' && char <= 'z') {
+			continue
+		}
+		return fmt.Errorf("menu component contains an invalid character")
+	}
+	return nil
+}
+
+func resolveMenuComponent(menuType int64, uri string, existing string, requested *string) (string, error) {
+	if requested != nil {
+		if err := validateMenuComponent(menuType, uri, *requested); err != nil {
+			return "", err
+		}
+	}
+	if menuType != menuTypeItem {
+		return "", nil
+	}
+	component := existing
+	if requested != nil {
+		component = *requested
+	}
+	if err := validateMenuComponent(menuType, uri, component); err != nil {
+		return "", err
+	}
+	return component, nil
 }
 
 func isExternalHTTPURL(value string) bool {

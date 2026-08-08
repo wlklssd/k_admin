@@ -161,6 +161,81 @@ func TestValidateExternalMenuURI(t *testing.T) {
 	}
 }
 
+func TestValidateMenuComponent(t *testing.T) {
+	valid := []string{
+		"",
+		"/kadmin/generated/ProductManagementView",
+		"/dashboard/analytics/index",
+	}
+	for _, component := range valid {
+		if err := validateMenuComponent(menuTypeItem, "/kadmin/products", component); err != nil {
+			t.Fatalf("expected component %q to be valid: %v", component, err)
+		}
+	}
+
+	invalid := []string{
+		"/",
+		"//kadmin",
+		"/kadmin//ProductManagementView",
+		"/kadmin/generated/",
+		"kadmin/generated/ProductManagementView",
+		"/kadmin/../secrets",
+		"/kadmin/generated/ProductManagementView.vue",
+		"/kadmin\\generated\\ProductManagementView",
+		"/kadmin/generated/ProductManagementView?debug=1",
+	}
+	for _, component := range invalid {
+		if err := validateMenuComponent(menuTypeItem, "/kadmin/products", component); err == nil {
+			t.Fatalf("expected component %q to be rejected", component)
+		}
+	}
+
+	if err := validateMenuComponent(menuTypeDirectory, "/kadmin", "/kadmin/generated/DirectoryView"); err == nil {
+		t.Fatal("expected directory component to be rejected")
+	}
+	if err := validateMenuComponent(menuTypeExternal, "https://example.com", "/kadmin/generated/ExternalView"); err == nil {
+		t.Fatal("expected external component to be rejected")
+	}
+	if err := validateMenuComponent(menuTypeItem, "https://example.com", "/kadmin/generated/ExternalView"); err == nil {
+		t.Fatal("expected a component with an external menu URI to be rejected")
+	}
+}
+
+func TestResolveMenuComponent(t *testing.T) {
+	existing := "/kadmin/generated/ProductManagementView"
+	component, err := resolveMenuComponent(menuTypeItem, "/kadmin/products", existing, nil)
+	if err != nil || component != existing {
+		t.Fatalf("omitted component = %q, %v; want preserved %q", component, err, existing)
+	}
+
+	empty := ""
+	component, err = resolveMenuComponent(menuTypeItem, "/kadmin/products", existing, &empty)
+	if err != nil || component != "" {
+		t.Fatalf("explicit empty component = %q, %v; want cleared", component, err)
+	}
+
+	invalid := "/kadmin/generated/ExternalView"
+	if _, err = resolveMenuComponent(menuTypeExternal, "https://example.com", existing, &invalid); err == nil {
+		t.Fatal("expected explicit external-menu component to be rejected")
+	}
+
+	component, err = resolveMenuComponent(menuTypeDirectory, "/kadmin", existing, nil)
+	if err != nil || component != "" {
+		t.Fatalf("directory component = %q, %v; want cleared", component, err)
+	}
+}
+
+func TestManagedMenuFromRowReadsComponent(t *testing.T) {
+	menu := managedMenuFromRow(map[string]interface{}{
+		"id":        int64(1),
+		"component": []byte("/kadmin/generated/ProductManagementView"),
+	})
+
+	if menu.Component != "/kadmin/generated/ProductManagementView" {
+		t.Fatalf("managed menu component = %q", menu.Component)
+	}
+}
+
 func TestMenuSeedType(t *testing.T) {
 	leaf := menuSeed{Title: "leaf"}
 	directory := menuSeed{Title: "directory", Children: []menuSeed{leaf}}

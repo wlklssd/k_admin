@@ -83,20 +83,130 @@ func TestBuildMenuTreePreservesSortedHierarchyOrder(t *testing.T) {
 
 func TestDirectoryWithoutChildrenDoesNotBecomePage(t *testing.T) {
 	menu := menuItem{
-		ID:    1,
-		Type:  menuTypeDirectory,
-		Title: "Empty directory",
-		URI:   "/custom-directory",
+		ID:        1,
+		Type:      menuTypeDirectory,
+		Title:     "Empty directory",
+		URI:       "/custom-directory",
+		Component: "/kadmin/generated/InvalidDirectoryView",
 	}.toVbenMenu(nil)
 
 	if menu.Component != "" {
 		t.Fatalf("expected directory component to be empty, got %q", menu.Component)
 	}
+	if menu.Path != "/goadmin/custom-directory" {
+		t.Fatalf("invalid directory component changed route path to %q", menu.Path)
+	}
+}
+
+func TestDatabaseComponentCreatesNativeVbenRoute(t *testing.T) {
+	menu := menuItem{
+		ID:        41,
+		Type:      menuTypeItem,
+		Title:     "Products",
+		URI:       "/kadmin/products",
+		Component: "/kadmin/generated/ProductManagementView",
+	}.toVbenMenu(nil)
+
+	if menu.Path != "/kadmin/products" {
+		t.Fatalf("database-backed component path = %q, want %q", menu.Path, "/kadmin/products")
+	}
+	if menu.Component != "/kadmin/generated/ProductManagementView" {
+		t.Fatalf("database-backed component = %q", menu.Component)
+	}
+	if _, exists := menu.Meta["iframeSrc"]; exists {
+		t.Fatalf("database-backed component must not use iframe metadata: %#v", menu.Meta)
+	}
+}
+
+func TestDatabaseComponentOverridesStaticBindingComponent(t *testing.T) {
+	menu := menuItem{
+		ID:        42,
+		Type:      menuTypeItem,
+		Title:     "Users",
+		URI:       "/kadmin/users",
+		Component: "/kadmin/generated/CustomUserManagementView",
+	}.toVbenMenu(nil)
+
+	if menu.Path != "/kadmin/users" {
+		t.Fatalf("bound menu path = %q, want %q", menu.Path, "/kadmin/users")
+	}
+	if menu.Component != "/kadmin/generated/CustomUserManagementView" {
+		t.Fatalf("database component must override the static fallback, got %q", menu.Component)
+	}
+}
+
+func TestDatabaseComponentKeepsNativeURIOverStaticAlias(t *testing.T) {
+	menu := menuItem{
+		ID:        43,
+		Type:      menuTypeItem,
+		Title:     "Generated root",
+		URI:       "/",
+		Component: "/kadmin/generated/GeneratedRootView",
+	}.toVbenMenu(nil)
+
+	if menu.Path != "/" {
+		t.Fatalf("database-backed alias path = %q, want native URI %q", menu.Path, "/")
+	}
+	if menu.Component != "/kadmin/generated/GeneratedRootView" {
+		t.Fatalf("database-backed alias component = %q", menu.Component)
+	}
+}
+
+func TestEmptyDatabaseComponentUsesStaticBindingFallback(t *testing.T) {
+	menu := menuItem{
+		ID:    44,
+		Type:  menuTypeItem,
+		Title: "Users",
+		URI:   "/kadmin/users",
+	}.toVbenMenu(nil)
+
+	if menu.Path != "/kadmin/users" || menu.Component != "/kadmin/components/UserManagementView" {
+		t.Fatalf("static binding fallback = path %q, component %q", menu.Path, menu.Component)
+	}
+}
+
+func TestEmptyDatabaseComponentUsesLegacyIframeFallback(t *testing.T) {
+	menu := menuItem{
+		ID:    45,
+		Type:  menuTypeItem,
+		Title: "Legacy report",
+		URI:   "/reports/daily",
+	}.toVbenMenu(nil)
+
+	if menu.Path != "/goadmin/reports/daily" || menu.Component != "IFrameView" {
+		t.Fatalf("iframe fallback = path %q, component %q", menu.Path, menu.Component)
+	}
+	if menu.Meta["iframeSrc"] != "/admin/reports/daily" {
+		t.Fatalf("iframe fallback metadata = %#v", menu.Meta)
+	}
+}
+
+func TestHTTPMenuItemUsesLegacyIframeFallback(t *testing.T) {
+	menu := menuItem{
+		ID:    46,
+		Type:  menuTypeItem,
+		Title: "Embedded report",
+		URI:   "https://example.com/reports/daily",
+	}.toVbenMenu(nil)
+
+	if menu.Component != "IFrameView" {
+		t.Fatalf("HTTP menu item component = %q, want IFrameView", menu.Component)
+	}
+	if menu.Meta["iframeSrc"] != "https://example.com/reports/daily" {
+		t.Fatalf("HTTP menu item iframe metadata = %#v", menu.Meta)
+	}
+	if _, exists := menu.Meta["link"]; exists {
+		t.Fatalf("legacy iframe menu must not become an external-link menu: %#v", menu.Meta)
+	}
 }
 
 func TestExternalMenuRequiresConfirmationMetadata(t *testing.T) {
 	menu := menuItem{
-		ID: 31, Type: menuTypeExternal, Title: "Docs", URI: "https://example.com/docs",
+		ID:        31,
+		Type:      menuTypeExternal,
+		Title:     "Docs",
+		URI:       "https://example.com/docs",
+		Component: "/kadmin/generated/InvalidExternalView",
 	}.toVbenMenu(nil)
 
 	if menu.Meta["link"] != "https://example.com/docs" {

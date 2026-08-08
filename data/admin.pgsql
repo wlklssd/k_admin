@@ -62,6 +62,7 @@ CREATE TABLE public.goadmin_menu (
     icon character varying(50) NOT NULL,
     uri character varying(3000) NOT NULL,
     uuid character varying(100),
+    component character varying(255) NOT NULL DEFAULT ''::character varying,
     created_at timestamp without time zone DEFAULT now(),
     updated_at timestamp without time zone DEFAULT now()
 );

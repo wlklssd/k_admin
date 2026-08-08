@@ -131,6 +131,8 @@ definitions:
     type: object
   kadmin.menuPayload:
     properties:
+      component:
+        type: string
       header:
         type: string
       icon:

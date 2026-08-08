@@ -11,13 +11,14 @@ import (
 )
 
 type menuItem struct {
-	ID       int64
-	ParentID int64
-	Type     int64
-	Order    int64
-	Title    string
-	Icon     string
-	URI      string
+	ID        int64
+	ParentID  int64
+	Type      int64
+	Order     int64
+	Title     string
+	Icon      string
+	URI       string
+	Component string
 }
 
 type vbenMenu struct {
@@ -163,13 +164,14 @@ func (s *Store) menus(c *gin.Context) {
 	items := make([]menuItem, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, menuItem{
-			ID:       toInt64(row["id"]),
-			ParentID: toInt64(row["parent_id"]),
-			Type:     toInt64(row["type"]),
-			Order:    toInt64(row["order"]),
-			Title:    toString(row["title"]),
-			Icon:     toString(row["icon"]),
-			URI:      toString(row["uri"]),
+			ID:        toInt64(row["id"]),
+			ParentID:  toInt64(row["parent_id"]),
+			Type:      toInt64(row["type"]),
+			Order:     toInt64(row["order"]),
+			Title:     toString(row["title"]),
+			Icon:      toString(row["icon"]),
+			URI:       toString(row["uri"]),
+			Component: toString(row["component"]),
 		})
 	}
 	sortMenuItems(items)
@@ -282,9 +284,10 @@ func applyExternalLinkTarget(menus []vbenMenu, target string) {
 }
 
 func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
+	component := m.pageComponent()
 	path, iframeSrc := menuPath(m)
 	binding, hasBinding := vbenMenuBinding(m.URI)
-	if hasBinding {
+	if hasBinding && component == "" {
 		path = binding.Path
 	}
 
@@ -341,6 +344,10 @@ func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
 		return menu
 	}
 
+	if component != "" {
+		menu.Component = component
+		return menu
+	}
 	if hasBinding {
 		menu.Component = binding.Component
 		return menu
@@ -355,14 +362,26 @@ func (m menuItem) toVbenMenu(children []vbenMenu) vbenMenu {
 	return menu
 }
 
+func (m menuItem) pageComponent() string {
+	if m.Type != menuTypeItem {
+		return ""
+	}
+	return strings.TrimSpace(m.Component)
+}
+
 func menuPath(m menuItem) (path string, iframeSrc string) {
 	uri := normalizeMenuURI(m.URI)
 	if uri == "" || uri == "#" {
 		return "/goadmin/menu-" + strconv.FormatInt(m.ID, 10), ""
 	}
 
+	// HTTP(S) on a menu item is the existing embedded-IFrame mode. Only
+	// menuTypeExternal is emitted as a confirmed external navigation link.
 	if isExternalHTTPURL(uri) {
 		return "/goadmin/external-" + strconv.FormatInt(m.ID, 10), uri
+	}
+	if m.pageComponent() != "" {
+		return uri, ""
 	}
 
 	return "/goadmin" + strings.TrimSuffix(uri, "/"), "/admin" + uri

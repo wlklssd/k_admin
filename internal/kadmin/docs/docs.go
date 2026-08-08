@@ -3634,6 +3634,9 @@ const docTemplate = `{
         "kadmin.menuPayload": {
             "type": "object",
             "properties": {
+                "component": {
+                    "type": "string"
+                },
                 "header": {
                     "type": "string"
                 },
