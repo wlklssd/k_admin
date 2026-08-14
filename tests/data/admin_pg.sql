@@ -523,20 +523,28 @@ ALTER TABLE public.goadmin_users OWNER TO postgres;
 -- Data for Name: goadmin_menu; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.goadmin_menu (id, parent_id, type, "order", title, plugin_name, header, icon, uri, created_at, updated_at) FROM stdin;
-1	0	0	1	Dashboard		\N	lucide:layout-dashboard	/dashboard	2019-09-10 00:00:00	2019-09-10 00:00:00
-2	1	1	1	分析页		\N	lucide:area-chart	/dashboard/analytics	2019-09-10 00:00:00	2019-09-10 00:00:00
-3	1	1	2	工作台		\N	carbon:workspace	/dashboard/workspace	2019-09-10 00:00:00	2019-09-10 00:00:00
-4	0	0	10	KAdmin 管理		\N	lucide:settings-2	/kadmin	2019-09-10 00:00:00	2019-09-10 00:00:00
-5	4	1	1	用户管理		\N	lucide:users	/kadmin/users	2019-09-10 00:00:00	2019-09-10 00:00:00
-6	4	1	2	权限管理		\N	lucide:shield-check	/kadmin/rbac	2019-09-10 00:00:00	2019-09-10 00:00:00
-7	4	1	3	菜单管理		\N	lucide:menu	/kadmin/menus	2019-09-10 00:00:00	2019-09-10 00:00:00
-8	4	1	4	字典管理		\N	lucide:book-open	/kadmin/dictionary	2019-09-10 00:00:00	2019-09-10 00:00:00
-9	4	1	5	参数配置		\N	lucide:sliders-horizontal	/kadmin/settings	2019-09-10 00:00:00	2019-09-10 00:00:00
-10	4	1	6	资源工作台		\N	lucide:folder-kanban	/kadmin/resources	2019-09-10 00:00:00	2019-09-10 00:00:00
-11	4	1	7	日志管理		\N	lucide:scroll-text	/kadmin/logs	2026-07-22 00:00:00	2026-07-22 00:00:00
-12	4	1	8	定时任务		\N	lucide:clock-3	/kadmin/jobs	2026-07-26 00:00:00	2026-07-26 00:00:00
-13	4	1	9	系统监控		\N	lucide:monitor-cog	/kadmin/monitor	2026-07-26 00:00:00	2026-07-26 00:00:00
+COPY public.goadmin_menu (id, parent_id, type, "order", title, header, icon, uri, uuid, plugin_name, component, created_at, updated_at) FROM stdin;
+1	0	0	0	Dashboard		lucide:layout-dashboard	/dashboard				2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+2	1	1	0	分析页		lucide:area-chart	/dashboard/analytics				2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+3	1	1	1	工作台		carbon:workspace	/dashboard/workspace				2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+4	0	0	2	KAdmin 管理		lucide:settings-2	/kadmin				2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+5	14	1	1	用户管理		lucide:users	/kadmin/users				2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+6	14	1	0	权限管理	\N	lucide:shield-check	/kadmin/rbac	\N			2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+7	4	1	1	菜单管理	\N	lucide:menu	/kadmin/menus	\N			2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+8	18	1	0	字典管理	\N	lucide:book-open	/kadmin/dictionary	\N			2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+9	18	1	2	参数配置	\N	lucide:sliders-horizontal	/kadmin/settings	\N			2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+10	4	1	0	资源工作台		lucide:folder-kanban	/kadmin/resources				2026-07-08 17:03:06.37182	2026-07-31 22:22:52
+12	4	1	2	日志管理	\N	lucide:scroll-text	/kadmin/logs	\N			2026-07-22 15:15:48.436343	2026-07-31 22:22:52
+14	0	0	3	用户管理		lucide:user-cog					2026-07-25 12:25:36	2026-07-31 22:22:52
+17	18	1	1	定时任务	\N	lucide:clock-3	/kadmin/jobs	\N			2026-07-26 14:31:43	2026-07-31 22:22:52
+18	0	0	1	系统设置		lucide:settings					2026-07-26 15:33:16	2026-07-31 22:22:52
+19	18	1	3	系统监控	\N	lucide:monitor-cog	/kadmin/monitor	\N			2026-07-26 16:54:52	2026-07-31 22:22:52
+21	0	2	4	项目支持		carbon:api	https://github.com/wlklssd/k_admin				2026-07-27 17:15:30	2026-07-31 22:22:52
+22	4	1	3	登录审计	\N	lucide:shield-check	/kadmin/login-audits	\N			2026-07-28 14:08:47	2026-07-31 22:22:52
+23	0	2	5	Swagger		carbon:api	http://127.0.0.1:9033/swagger/index.html				2026-07-28 14:51:46	2026-07-31 22:22:52
+24	18	1	4	接口负载排行	\N	lucide:bar-chart-3	/kadmin/load-ranking	\N			2026-07-31 21:26:39	2026-07-31 22:22:52
+25	4	1	12	代码生成	\N	lucide:wand-2	/kadmin/codegen	\N			2026-08-14 17:21:05	2026-08-14 17:21:05
+26	0	0	20	业务模块	\N	lucide:package	/business	\N			2026-08-14 17:21:05	2026-08-14 17:21:05
 \.
 
 
@@ -552,7 +560,75 @@ COPY public.goadmin_operation_log (id, user_id, path, method, ip, input, created
 -- Data for Name: goadmin_site; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.goadmin_site (id, key, value, description, state, created_at, updated_at) FROM stdin;
+COPY public.goadmin_site (id, key, value, type, description, state, created_at, updated_at) FROM stdin;
+2	logger_encoder_level_key		0	\N	1	2026-07-01 20:24:07.273426	2026-07-01 20:24:07.273426
+3	info_log_path		0	\N	1	2026-07-01 20:24:07.280002	2026-07-01 20:24:07.280002
+4	logger_encoder_time_key		0	\N	1	2026-07-01 20:24:07.282358	2026-07-01 20:24:07.282358
+5	logger_encoder_encoding		0	\N	1	2026-07-01 20:24:07.284424	2026-07-01 20:24:07.284424
+6	auth_user_table	goadmin_users	0	\N	1	2026-07-01 20:24:07.286519	2026-07-01 20:24:07.286519
+7	hide_visitor_user_center_entrance	false	0	\N	1	2026-07-01 20:24:07.288581	2026-07-01 20:24:07.288581
+8	color_scheme	skin-black	0	\N	1	2026-07-01 20:24:07.290634	2026-07-01 20:24:07.290634
+9	custom_head_html		0	\N	1	2026-07-01 20:24:07.292934	2026-07-01 20:24:07.292934
+10	hide_plugin_entrance	false	0	\N	1	2026-07-01 20:24:07.295007	2026-07-01 20:24:07.295007
+11	open_admin_api	false	0	\N	1	2026-07-01 20:24:07.296498	2026-07-01 20:24:07.296498
+12	bootstrap_file_path		0	\N	1	2026-07-01 20:24:07.298193	2026-07-01 20:24:07.298193
+13	url_prefix	admin	0	\N	1	2026-07-01 20:24:07.299736	2026-07-01 20:24:07.299736
+14	logo	<b>Go</b>Admin	0	\N	1	2026-07-01 20:24:07.30126	2026-07-01 20:24:07.30126
+15	custom_foot_html		0	\N	1	2026-07-01 20:24:07.302996	2026-07-01 20:24:07.302996
+16	animation_delay	0.00	0	\N	1	2026-07-01 20:24:07.304648	2026-07-01 20:24:07.304648
+17	hide_config_center_entrance	false	0	\N	1	2026-07-01 20:24:07.306233	2026-07-01 20:24:07.306233
+18	login_logo		0	\N	1	2026-07-01 20:24:07.307674	2026-07-01 20:24:07.307674
+19	hide_app_info_entrance	false	0	\N	1	2026-07-01 20:24:07.309322	2026-07-01 20:24:07.309322
+20	allow_del_operation_log	false	0	\N	1	2026-07-01 20:24:07.310917	2026-07-01 20:24:07.310917
+21	access_assets_log_off	false	0	\N	1	2026-07-01 20:24:07.31247	2026-07-01 20:24:07.31247
+22	sql_log	false	0	\N	1	2026-07-01 20:24:07.314264	2026-07-01 20:24:07.314264
+23	error_log_off	false	0	\N	1	2026-07-01 20:24:07.315725	2026-07-01 20:24:07.315725
+24	logger_rotate_max_size	0	0	\N	1	2026-07-01 20:24:07.317216	2026-07-01 20:24:07.317216
+25	logger_encoder_caller		0	\N	1	2026-07-01 20:24:07.319006	2026-07-01 20:24:07.319006
+26	hide_tool_entrance	false	0	\N	1	2026-07-01 20:24:07.320511	2026-07-01 20:24:07.320511
+27	asset_root_path	./public/	0	\N	1	2026-07-01 20:24:07.322177	2026-07-01 20:24:07.322177
+28	app_id	MVIUTh0rSJQb	0	\N	1	2026-07-01 20:24:07.323694	2026-07-01 20:24:07.323694
+29	domain		0	\N	1	2026-07-01 20:24:07.325377	2026-07-01 20:24:07.325377
+30	logger_encoder_caller_key		0	\N	1	2026-07-01 20:24:07.326993	2026-07-01 20:24:07.326993
+31	logger_encoder_stacktrace_key		0	\N	1	2026-07-01 20:24:07.328616	2026-07-01 20:24:07.328616
+32	no_limit_login_ip	false	0	\N	1	2026-07-01 20:24:07.330547	2026-07-01 20:24:07.330547
+33	access_log_off	false	0	\N	1	2026-07-01 20:24:07.332667	2026-07-01 20:24:07.332667
+34	logger_rotate_max_age	0	0	\N	1	2026-07-01 20:24:07.334416	2026-07-01 20:24:07.334416
+35	animation_type		0	\N	1	2026-07-01 20:24:07.335977	2026-07-01 20:24:07.335977
+36	logger_encoder_name_key		0	\N	1	2026-07-01 20:24:07.337402	2026-07-01 20:24:07.337402
+37	info_log_off	false	0	\N	1	2026-07-01 20:24:07.338858	2026-07-01 20:24:07.338858
+38	logger_rotate_compress	false	0	\N	1	2026-07-01 20:24:07.340716	2026-07-01 20:24:07.340716
+39	logger_encoder_level		0	\N	1	2026-07-01 20:24:07.342389	2026-07-01 20:24:07.342389
+40	extra		0	\N	1	2026-07-01 20:24:07.344244	2026-07-01 20:24:07.344244
+41	go_mod_file_path		0	\N	1	2026-07-01 20:24:07.345776	2026-07-01 20:24:07.345776
+42	mini_logo	<b>G</b>A	0	\N	1	2026-07-01 20:24:07.347309	2026-07-01 20:24:07.347309
+43	error_log_path		0	\N	1	2026-07-01 20:24:07.34876	2026-07-01 20:24:07.34876
+44	custom_404_html		0	\N	1	2026-07-01 20:24:07.350098	2026-07-01 20:24:07.350098
+45	index_url	/info/manager	0	\N	1	2026-07-01 20:24:07.351598	2026-07-01 20:24:07.351598
+46	language	zh	0	\N	1	2026-07-01 20:24:07.352894	2026-07-01 20:24:07.352894
+47	footer_info		0	\N	1	2026-07-01 20:24:07.35435	2026-07-01 20:24:07.35435
+48	theme	adminlte	0	\N	1	2026-07-01 20:24:07.355843	2026-07-01 20:24:07.355843
+49	login_url	/login	0	\N	1	2026-07-01 20:24:07.357279	2026-07-01 20:24:07.357279
+50	logger_encoder_duration		0	\N	1	2026-07-01 20:24:07.3586	2026-07-01 20:24:07.3586
+51	logger_level	0	0	\N	1	2026-07-01 20:24:07.359916	2026-07-01 20:24:07.359916
+52	login_title	GoAdmin	0	\N	1	2026-07-01 20:24:07.361232	2026-07-01 20:24:07.361232
+53	prohibit_config_modification	false	0	\N	1	2026-07-01 20:24:07.362593	2026-07-01 20:24:07.362593
+54	operation_log_off	false	0	\N	1	2026-07-01 20:24:07.364016	2026-07-01 20:24:07.364016
+55	env	local	0	\N	1	2026-07-01 20:24:07.36558	2026-07-01 20:24:07.36558
+56	logger_rotate_max_backups	0	0	\N	1	2026-07-01 20:24:07.367055	2026-07-01 20:24:07.367055
+57	logger_encoder_message_key		0	\N	1	2026-07-01 20:24:07.368565	2026-07-01 20:24:07.368565
+58	session_life_time	7200	0	\N	1	2026-07-01 20:24:07.370026	2026-07-01 20:24:07.370026
+59	access_log_path		0	\N	1	2026-07-01 20:24:07.371413	2026-07-01 20:24:07.371413
+60	logger_encoder_time		0	\N	1	2026-07-01 20:24:07.372975	2026-07-01 20:24:07.372975
+61	asset_url		0	\N	1	2026-07-01 20:24:07.374487	2026-07-01 20:24:07.374487
+62	file_upload_engine	{"name":"local"}	0	\N	1	2026-07-01 20:24:07.375984	2026-07-01 20:24:07.375984
+63	animation_duration	0.00	0	\N	1	2026-07-01 20:24:07.377476	2026-07-01 20:24:07.377476
+64	custom_403_html		0	\N	1	2026-07-01 20:24:07.379553	2026-07-01 20:24:07.379553
+65	exclude_theme_components	null	0	\N	1	2026-07-01 20:24:07.381548	2026-07-01 20:24:07.381548
+66	title	GoAdmin	0	\N	1	2026-07-01 20:24:07.383427	2026-07-01 20:24:07.383427
+67	debug	true	0	\N	1	2026-07-01 20:24:07.38536	2026-07-01 20:24:07.38536
+68	site_off	false	0	\N	1	2026-07-01 20:24:07.386805	2026-07-01 20:24:07.386805
+69	custom_500_html		0	\N	1	2026-07-01 20:24:07.388173	2026-07-01 20:24:07.388173
 \.
 
 
@@ -585,19 +661,34 @@ COPY public.goadmin_dict_data (id, dict_type, label, value, color, css_class, is
 COPY public.goadmin_permissions (id, name, slug, http_method, http_path, created_at, updated_at) FROM stdin;
 1	All permission	*		*	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	Dashboard	dashboard	GET,PUT,POST,DELETE	/	2019-09-10 00:00:00	2019-09-10 00:00:00
-3	查看请求日志	system:log:list	GET	/api/logs*	2026-07-22 00:00:00	2026-07-22 00:00:00
-4	删除请求日志	system:log:delete	DELETE	/api/logs*	2026-07-22 00:00:00	2026-07-22 00:00:00
-5	上传文件	system:file:upload	POST	/api/files	2026-07-25 00:00:00	2026-07-25 00:00:00
-6	读取文件	system:file:read	GET	/api/files*	2026-07-25 00:00:00	2026-07-25 00:00:00
-7	删除文件	system:file:delete	DELETE	/api/files/*	2026-07-25 00:00:00	2026-07-25 00:00:00
-8	查看定时任务	system:job:list	GET	/api/jobs*	2026-07-26 00:00:00	2026-07-26 00:00:00
-9	创建定时任务	system:job:create	POST	/api/jobs	2026-07-26 00:00:00	2026-07-26 00:00:00
-10	修改定时任务	system:job:update	PUT,PATCH	/api/jobs/*	2026-07-26 00:00:00	2026-07-26 00:00:00
-11	删除定时任务	system:job:delete	DELETE	/api/jobs/*	2026-07-26 00:00:00	2026-07-26 00:00:00
-12	立即执行任务	system:job:run	POST	/api/jobs/*/run	2026-07-26 00:00:00	2026-07-26 00:00:00
-13	查看任务日志	system:job-log:list	GET	/api/job-logs*	2026-07-26 00:00:00	2026-07-26 00:00:00
-14	查看系统监控	system:monitor:view	GET	/api/system-monitor	2026-07-26 00:00:00	2026-07-26 00:00:00
-15	启停系统监控	system:monitor:update	PATCH	/api/system-monitor/status	2026-07-26 00:00:00	2026-07-26 00:00:00
+3	查看请求日志	system:log:list	GET	/api/logs*	2026-07-22 15:15:48.436343	2026-07-22 15:15:48.436343
+4	删除请求日志	system:log:delete	DELETE	/api/logs*	2026-07-22 15:15:48.436343	2026-07-22 15:15:48.436343
+8	上传文件	system:file:upload	POST	/api/files	2026-07-25 18:28:17.964672	2026-07-25 18:28:17.964672
+9	读取文件	system:file:read	GET	/api/files*	2026-07-25 18:28:17.964672	2026-07-25 18:28:17.964672
+10	删除文件	system:file:delete	DELETE	/api/files/*	2026-07-25 18:28:17.964672	2026-07-25 18:28:17.964672
+11	查看定时任务	system:job:list	GET	/api/jobs*	2026-07-26 14:30:31	2026-07-26 14:30:31
+12	创建定时任务	system:job:create	POST	/api/jobs	2026-07-26 14:30:31	2026-07-26 14:30:31
+13	修改定时任务	system:job:update	PUT,PATCH	/api/jobs/*	2026-07-26 14:30:31	2026-07-26 14:30:31
+14	删除定时任务	system:job:delete	DELETE	/api/jobs/*	2026-07-26 14:30:31	2026-07-26 14:30:31
+15	立即执行任务	system:job:run	POST	/api/jobs/*/run	2026-07-26 14:30:31	2026-07-26 14:30:31
+16	查看任务日志	system:job-log:list	GET	/api/job-logs*	2026-07-26 14:30:31	2026-07-26 14:30:31
+17	查看系统监控	system:monitor:view	GET	/api/system-monitor	2026-07-26 16:54:52	2026-07-26 16:54:52
+18	启停系统监控	system:monitor:update	PATCH	/api/system-monitor/status	2026-07-26 16:54:52	2026-07-26 16:54:52
+19	查看登录审计	system:login-log:list	GET	/api/login-audits*	2026-07-28 14:08:47	2026-07-28 14:08:47
+20	清理登录审计	system:login-log:delete	DELETE,POST	/api/login-audits*	2026-07-28 14:08:47	2026-07-28 14:08:47
+21	设置登录审计保留周期	system:login-log:retention	PATCH	/api/login-audits/retention	2026-07-28 14:08:47	2026-07-28 14:08:47
+22	查看接口负载排行	system:load-rank:view	GET	/api/load-ranking*	2026-07-31 21:26:39	2026-07-31 21:26:39
+23	启停接口采样	system:load-rank:update	PATCH	/api/load-ranking/status	2026-07-31 21:26:39	2026-07-31 21:26:39
+24	用户管理	system:user:manage	GET,POST,PUT,DELETE	/api/users*	2026-07-31 22:16:55	2026-07-31 22:16:55
+25	权限管理	system:rbac:manage	GET,POST,PUT,DELETE	/api/rbac*	2026-07-31 22:16:55	2026-07-31 22:16:55
+26	菜单管理	system:menu:manage	GET,POST,PUT,DELETE	/api/admin-menus*	2026-07-31 22:16:55	2026-07-31 22:16:55
+27	字典管理	system:dict:manage	GET,POST,PUT,DELETE	/api/dictionaries*	2026-07-31 22:16:55	2026-07-31 22:16:55
+28	参数配置	system:config:manage	GET,PUT	/api/system/config*	2026-07-31 22:16:55	2026-07-31 22:16:55
+29	查看代码生成	system:codegen:list	GET	/api/codegen*	2026-08-14 17:21:05	2026-08-14 17:21:05
+30	导入与配置代码生成	system:codegen:import	POST,PUT,DELETE	/api/codegen*	2026-08-14 17:21:05	2026-08-14 17:21:05
+31	预览与生成代码	system:codegen:generate	POST	/api/codegen*	2026-08-14 17:21:05	2026-08-14 17:21:05
+36	查看站内通知	system:notification:list	GET,PATCH,DELETE	/api/notifications*	2026-08-14 18:23:04	2026-08-14 18:23:04
+37	发送站内通知	system:notification:create	POST	/api/notifications*	2026-08-14 18:23:04	2026-08-14 18:23:04
 \.
 
 
@@ -606,22 +697,25 @@ COPY public.goadmin_permissions (id, name, slug, http_method, http_path, created
 --
 
 COPY public.goadmin_role_menu (role_id, menu_id, created_at, updated_at) FROM stdin;
-1	1	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	2	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	3	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	4	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	5	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	6	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	7	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	8	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	9	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	10	2019-09-10 00:00:00	2019-09-10 00:00:00
-1	11	2026-07-22 00:00:00	2026-07-22 00:00:00
-1	12	2026-07-26 00:00:00	2026-07-26 00:00:00
-1	13	2026-07-26 00:00:00	2026-07-26 00:00:00
-2	1	2019-09-10 00:00:00	2019-09-10 00:00:00
-2	2	2019-09-10 00:00:00	2019-09-10 00:00:00
-2	3	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	1	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	2	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	3	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	4	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	5	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	6	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	7	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	8	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	9	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	10	2026-07-08 17:03:06.37182	2026-07-08 17:03:06.37182
+1	12	2026-07-22 15:15:48.436343	2026-07-22 15:15:48.436343
+2	1	2026-07-31 21:42:02.064686	2026-07-31 21:42:02.064686
+2	2	2026-07-31 21:42:02.066442	2026-07-31 21:42:02.066442
+2	3	2026-07-31 21:42:02.067796	2026-07-31 21:42:02.067796
+2	8	2026-07-31 21:42:02.069223	2026-07-31 21:42:02.069223
+2	17	2026-07-31 21:42:02.070832	2026-07-31 21:42:02.070832
+2	9	2026-07-31 21:42:02.072427	2026-07-31 21:42:02.072427
+2	19	2026-07-31 21:42:02.073807	2026-07-31 21:42:02.073807
+2	18	2026-07-31 21:42:02.075527	2026-07-31 21:42:02.075527
 \.
 
 
@@ -633,6 +727,26 @@ COPY public.goadmin_role_permissions (role_id, permission_id, created_at, update
 1	1	2019-09-10 00:00:00	2019-09-10 00:00:00
 1	2	2019-09-10 00:00:00	2019-09-10 00:00:00
 2	2	2019-09-10 00:00:00	2019-09-10 00:00:00
+1	3	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	4	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	8	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	9	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	10	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	24	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	25	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	26	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	27	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+1	28	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	11	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	12	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	13	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	14	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	15	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	16	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	17	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	18	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	27	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
+2	28	2026-08-01 13:22:54.958637	2026-08-01 13:22:54.958637
 \.
 
 
@@ -707,7 +821,7 @@ COPY public.goadmin_users (id, username, password, name, avatar, status, remembe
 -- Name: goadmin_menu_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.goadmin_menu_myid_seq', 13, true);
+SELECT pg_catalog.setval('public.goadmin_menu_myid_seq', 26, true);
 
 
 --
@@ -721,7 +835,7 @@ SELECT pg_catalog.setval('public.goadmin_operation_log_myid_seq', 1, true);
 -- Name: goadmin_permissions_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.goadmin_permissions_myid_seq', 15, true);
+SELECT pg_catalog.setval('public.goadmin_permissions_myid_seq', 37, true);
 
 
 --
@@ -741,7 +855,7 @@ SELECT pg_catalog.setval('public.goadmin_session_myid_seq', 1, true);
 -- Name: goadmin_site_myid_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.goadmin_site_myid_seq', 1, true);
+SELECT pg_catalog.setval('public.goadmin_site_myid_seq', 69, true);
 
 
 --
@@ -1058,6 +1172,167 @@ CREATE INDEX goadmin_department_code_index ON public.goadmin_department USING bt
 --
 
 CREATE INDEX goadmin_department_roles_role_id_index ON public.goadmin_department_roles USING btree (role_id);
+
+
+--
+-- Name: kadmin_login_audits; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.kadmin_login_audits (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    account character varying(100) DEFAULT ''::character varying NOT NULL,
+    user_id bigint,
+    ip character varying(45) DEFAULT ''::character varying NOT NULL,
+    user_agent character varying(1024) DEFAULT ''::character varying NOT NULL,
+    browser character varying(100) DEFAULT ''::character varying NOT NULL,
+    os character varying(100) DEFAULT ''::character varying NOT NULL,
+    status character varying(16) NOT NULL,
+    result character varying(32) NOT NULL,
+    failure_reason character varying(255) DEFAULT ''::character varying NOT NULL,
+    duration_ms bigint DEFAULT 0 NOT NULL,
+    occurred_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT kadmin_login_audits_status_check CHECK (((status)::text = ANY ((ARRAY['success'::character varying, 'failed'::character varying])::text[]))),
+    CONSTRAINT kadmin_login_audits_result_check CHECK (((result)::text = ANY ((ARRAY['success'::character varying, 'account_not_found'::character varying, 'invalid_password'::character varying, 'account_disabled'::character varying, 'account_locked'::character varying, 'account_unlocked'::character varying, 'captcha_invalid'::character varying, 'system_error'::character varying])::text[]))),
+    CONSTRAINT kadmin_login_audits_duration_check CHECK ((duration_ms >= 0))
+);
+
+ALTER TABLE public.kadmin_login_audits OWNER TO postgres;
+
+
+--
+-- Name: kadmin_login_audits_account_time_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX kadmin_login_audits_account_time_index ON public.kadmin_login_audits USING btree (account, occurred_at DESC, id DESC);
+
+
+--
+-- Name: kadmin_login_audits_ip_time_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX kadmin_login_audits_ip_time_index ON public.kadmin_login_audits USING btree (ip, occurred_at DESC, id DESC);
+
+
+--
+-- Name: kadmin_login_audits_status_time_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX kadmin_login_audits_status_time_index ON public.kadmin_login_audits USING btree (status, occurred_at DESC, id DESC);
+
+
+--
+-- Name: kadmin_login_audits_result_time_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX kadmin_login_audits_result_time_index ON public.kadmin_login_audits USING btree (result, occurred_at DESC, id DESC);
+
+
+--
+-- Name: kadmin_login_audit_settings; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.kadmin_login_audit_settings (
+    id smallint NOT NULL,
+    retention_days integer DEFAULT 90 NOT NULL,
+    updated_by bigint DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT kadmin_login_audit_settings_pkey PRIMARY KEY (id),
+    CONSTRAINT kadmin_login_audit_settings_singleton_check CHECK ((id = 1)),
+    CONSTRAINT kadmin_login_audit_settings_retention_check CHECK (((retention_days >= 1) AND (retention_days <= 3650)))
+);
+
+ALTER TABLE public.kadmin_login_audit_settings OWNER TO postgres;
+
+INSERT INTO public.kadmin_login_audit_settings (id, retention_days)
+VALUES (1, 90);
+
+
+--
+-- Name: kadmin_loadrank_settings; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.kadmin_loadrank_settings (
+    id smallint NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    updated_by bigint DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT kadmin_loadrank_settings_pkey PRIMARY KEY (id),
+    CONSTRAINT kadmin_loadrank_settings_singleton_check CHECK ((id = 1))
+);
+
+ALTER TABLE public.kadmin_loadrank_settings OWNER TO postgres;
+
+INSERT INTO public.kadmin_loadrank_settings (id, enabled, updated_by)
+VALUES (1, false, 0);
+
+
+--
+-- Name: kadmin_http_metric_buckets; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.kadmin_http_metric_buckets (
+    bucket_start timestamp with time zone NOT NULL,
+    route character varying(512) NOT NULL,
+    method character varying(16) NOT NULL,
+    status_code smallint NOT NULL,
+    request_count bigint DEFAULT 0 NOT NULL,
+    error_count bigint DEFAULT 0 NOT NULL,
+    total_duration_ms bigint DEFAULT 0 NOT NULL,
+    max_duration_ms bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT kadmin_http_metric_buckets_pkey PRIMARY KEY (bucket_start, route, method, status_code),
+    CONSTRAINT kadmin_http_metric_buckets_status_code_check CHECK (((status_code >= 100) AND (status_code <= 599))),
+    CONSTRAINT kadmin_http_metric_buckets_counts_check CHECK (((request_count >= 0) AND (error_count >= 0) AND (total_duration_ms >= 0) AND (max_duration_ms >= 0)))
+);
+
+ALTER TABLE public.kadmin_http_metric_buckets OWNER TO postgres;
+
+
+--
+-- Name: kadmin_codegen_tables; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.kadmin_codegen_tables (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    table_name character varying(128) NOT NULL UNIQUE,
+    module_name character varying(64) NOT NULL,
+    class_name character varying(64) NOT NULL,
+    business_name character varying(128) NOT NULL,
+    route_prefix character varying(64) NOT NULL,
+    columns jsonb DEFAULT '[]'::jsonb NOT NULL,
+    generated boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT kadmin_codegen_tables_columns_check CHECK ((jsonb_typeof(columns) = 'array'::text))
+);
+
+ALTER TABLE public.kadmin_codegen_tables OWNER TO postgres;
+
+
+--
+-- Name: kadmin_notifications; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.kadmin_notifications (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    title character varying(200) NOT NULL,
+    content character varying(1000) DEFAULT ''::character varying NOT NULL,
+    link character varying(500) DEFAULT ''::character varying NOT NULL,
+    type character varying(16) DEFAULT 'info'::character varying NOT NULL,
+    is_read boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT kadmin_notifications_type_check CHECK (((type)::text = ANY ((ARRAY['info'::character varying, 'success'::character varying, 'warning'::character varying])::text[])))
+);
+
+ALTER TABLE public.kadmin_notifications OWNER TO postgres;
+
+
+--
+-- Name: kadmin_notifications_read_time_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX kadmin_notifications_read_time_index ON public.kadmin_notifications USING btree (is_read, created_at DESC, id DESC);
+
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
 --
 
