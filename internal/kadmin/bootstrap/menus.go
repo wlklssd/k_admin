@@ -6,6 +6,8 @@ type MenuSeed struct {
 	URI      string
 	Order    int64
 	Children []MenuSeed
+	// IsDirectory forces a directory menu even without children.
+	IsDirectory bool
 }
 
 func DefaultMenus() []MenuSeed {
@@ -37,7 +39,15 @@ func DefaultMenus() []MenuSeed {
 				{Title: "定时任务", Icon: "lucide:clock-3", URI: "/kadmin/jobs", Order: 9},
 				{Title: "系统监控", Icon: "lucide:monitor-cog", URI: "/kadmin/monitor", Order: 10},
 				{Title: "接口负载排行", Icon: "lucide:bar-chart-3", URI: "/kadmin/load-ranking", Order: 11},
+				{Title: "代码生成", Icon: "lucide:wand-2", URI: "/kadmin/codegen", Order: 12},
 			},
+		},
+		{
+			Title:       "业务模块",
+			Icon:        "lucide:package",
+			URI:         "/business",
+			Order:       20,
+			IsDirectory: true,
 		},
 	}
 }

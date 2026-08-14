@@ -29,6 +29,15 @@ const authenticatedUtilityRoutes: RouteRecordRaw[] = [
       title: $t('page.auth.profile'),
     },
   },
+  {
+    name: 'CodegenConfig',
+    path: '/kadmin/codegen-config',
+    component: () => import('#/views/kadmin/components/CodegenConfigView.vue'),
+    meta: {
+      hideInMenu: true,
+      title: '生成配置',
+    },
+  },
 ];
 
 // 工具页随根布局静态注册，但不加入 coreRouteNames，仍会经过登录校验。

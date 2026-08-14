@@ -24,6 +24,9 @@ type fakeLogConnection struct {
 	execQueries  []string
 	queryQueries []string
 	bucketRows   []map[string]interface{}
+	// menuRows feeds the generated modules' menu lookups; seeded with the
+	// /business directory row in route registration tests.
+	menuRows []map[string]interface{}
 }
 
 func (f *fakeLogConnection) Name() string { return "sqlite" }
@@ -64,6 +67,9 @@ func (f *fakeLogConnection) Query(query string, args ...interface{}) ([]map[stri
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.queryQueries = append(f.queryQueries, query)
+	if strings.Contains(query, "FROM goadmin_menu") {
+		return f.menuRows, nil
+	}
 	if strings.Contains(query, "SELECT enabled FROM public.kadmin_loadrank_settings") {
 		return []map[string]interface{}{{"enabled": false}}, nil
 	}

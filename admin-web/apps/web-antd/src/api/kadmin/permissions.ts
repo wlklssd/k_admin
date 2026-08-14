@@ -22,6 +22,9 @@ export const KADMIN_PERMISSION = {
   MONITOR_UPDATE: 'system:monitor:update',
   LOAD_RANK_VIEW: 'system:load-rank:view',
   LOAD_RANK_UPDATE: 'system:load-rank:update',
+  CODEGEN_LIST: 'system:codegen:list',
+  CODEGEN_IMPORT: 'system:codegen:import',
+  CODEGEN_GENERATE: 'system:codegen:generate',
 } as const;
 
 export type KadminPermissionCode = (typeof KADMIN_PERMISSION)[keyof typeof KADMIN_PERMISSION];

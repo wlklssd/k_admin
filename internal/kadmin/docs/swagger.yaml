@@ -254,6 +254,23 @@ definitions:
       status:
         type: string
     type: object
+  product.ProductPayload:
+    properties:
+      active:
+        type: boolean
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      publishedAt:
+        type: string
+      sku:
+        type: string
+      stock:
+        type: integer
+    type: object
 info:
   contact: {}
   description: KAdmin 前后端分离接口文档。除登录、刷新令牌和公开配置外，请使用 Bearer Token 调用接口。
@@ -507,6 +524,282 @@ paths:
       summary: 刷新令牌
       tags:
       - 认证
+  /codegen/candidates:
+    get:
+      parameters:
+      - description: 表名关键词
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 查询可导入的数据库表
+      tags:
+      - 代码生成
+  /codegen/configs/{id}:
+    delete:
+      parameters:
+      - description: 配置 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除代码生成配置
+      tags:
+      - 代码生成
+    get:
+      parameters:
+      - description: 配置 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取代码生成配置详情
+      tags:
+      - 代码生成
+    put:
+      parameters:
+      - description: 配置 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 模块名、类名、业务名、路由前缀与列配置
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 修改代码生成配置
+      tags:
+      - 代码生成
+  /codegen/configs/{id}/download:
+    get:
+      parameters:
+      - description: 配置 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 打包下载生成的代码
+      tags:
+      - 代码生成
+  /codegen/configs/{id}/generate:
+    post:
+      parameters:
+      - description: 配置 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: confirmOverwrite 是否覆盖无生成标记的冲突文件
+        in: body
+        name: payload
+        schema:
+          type: object
+      - description: 幂等键（8-128 位）
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 生成代码到项目目录
+      tags:
+      - 代码生成
+  /codegen/configs/{id}/preview:
+    post:
+      parameters:
+      - description: 配置 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 预览生成的代码文件
+      tags:
+      - 代码生成
+  /codegen/tables:
+    get:
+      parameters:
+      - description: 表名或业务名关键词
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 查询代码生成配置列表
+      tags:
+      - 代码生成
+  /codegen/tables/import:
+    post:
+      parameters:
+      - description: 表名与可选生成配置
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      - description: 幂等键（8-128 位）
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 导入数据库表
+      tags:
+      - 代码生成
   /dictionaries/data:
     get:
       parameters:
@@ -1538,6 +1831,176 @@ paths:
       summary: 获取全部可访问菜单
       tags:
       - 菜单
+  /product:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 关键词
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 查询Products列表
+      tags:
+      - 生成业务
+    post:
+      parameters:
+      - description: Products信息
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/product.ProductPayload'
+      - description: 幂等键（8-128 位）
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 新增Products
+      tags:
+      - 生成业务
+  /product/{id}:
+    delete:
+      parameters:
+      - description: 记录 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除Products
+      tags:
+      - 生成业务
+    get:
+      parameters:
+      - description: 记录 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取Products详情
+      tags:
+      - 生成业务
+    put:
+      parameters:
+      - description: 记录 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Products信息
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/product.ProductPayload'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 修改Products
+      tags:
+      - 生成业务
   /rbac/departments:
     get:
       responses:

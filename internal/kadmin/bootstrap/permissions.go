@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/codegen"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loadrank"
@@ -134,6 +135,18 @@ func DefaultPermissions() []PermissionSeed {
 		{
 			Name: "启停接口采样", Slug: loadrank.UpdatePermission, HTTPMethod: "PATCH", HTTPPath: "/api/load-ranking/status",
 			PageURI: "/kadmin/load-ranking", PageTitle: "接口负载排行", Scope: PermissionScopeButton, Button: "load-ranking.update",
+		},
+		{
+			Name: "查看代码生成", Slug: codegen.ListPermission, HTTPMethod: "GET", HTTPPath: "/api/codegen*",
+			PageURI: "/kadmin/codegen", PageTitle: "代码生成", Scope: PermissionScopePage,
+		},
+		{
+			Name: "导入与配置代码生成", Slug: codegen.ImportPermission, HTTPMethod: "POST,PUT,DELETE", HTTPPath: "/api/codegen*",
+			PageURI: "/kadmin/codegen", PageTitle: "代码生成", Scope: PermissionScopeButton, Button: "codegen.import",
+		},
+		{
+			Name: "预览与生成代码", Slug: codegen.GeneratePermission, HTTPMethod: "POST", HTTPPath: "/api/codegen*",
+			PageURI: "/kadmin/codegen", PageTitle: "代码生成", Scope: PermissionScopeButton, Button: "codegen.generate",
 		},
 	}
 }

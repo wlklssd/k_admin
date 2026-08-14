@@ -13,6 +13,12 @@ type menuSeed = bootstrap.MenuSeed
 var defaultMenuSeeds = bootstrap.DefaultMenus()
 
 func (s *Store) syncDefaultMenus() error {
+	// Menu component binding expects the component column, which older
+	// databases created from the original seed script do not have.
+	if _, err := s.conn.Exec(`ALTER TABLE public.goadmin_menu
+		ADD COLUMN IF NOT EXISTS component character varying(255) NOT NULL DEFAULT ''`); err != nil {
+		return err
+	}
 	rows, err := db.WithDriver(s.conn).Table("goadmin_menu").All()
 	if err != nil {
 		return err
@@ -68,7 +74,7 @@ func (s *Store) ensureMenuSeed(seed menuSeed, parentID int64, idsByURI map[strin
 }
 
 func menuSeedType(seed menuSeed) int64 {
-	if len(seed.Children) > 0 {
+	if seed.IsDirectory || len(seed.Children) > 0 {
 		return menuTypeDirectory
 	}
 	return menuTypeItem

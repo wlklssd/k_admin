@@ -71,7 +71,10 @@ func TestSwaggerDocumentsAllKAdminRoutes(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
-	registerApplicationRoutes(engine.Group("/api"), &Store{})
+	store := &Store{conn: &fakeLogConnection{menuRows: []map[string]interface{}{{"id": int64(99)}}}}
+	if err := registerApplicationRoutes(engine.Group("/api"), store); err != nil {
+		t.Fatalf("register application routes: %v", err)
+	}
 	aliases := map[string]string{
 		"GET /menu/list":            "/menu/all",
 		"GET /system/config/":       "/system/config",

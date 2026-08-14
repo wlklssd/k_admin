@@ -714,6 +714,10 @@ func requiresIdempotency(method, path string) bool {
 		return true
 	case len(segments) == 3 && segments[0] == "jobs" && segments[2] == "run":
 		return true
+	case len(segments) == 3 && segments[0] == "codegen" && segments[1] == "tables" && segments[2] == "import":
+		return true
+	case len(segments) == 4 && segments[0] == "codegen" && segments[1] == "configs" && segments[3] == "generate":
+		return true
 	case len(segments) == 1:
 		idempotentRouteRegistryMu.RLock()
 		_, registered := idempotentRouteRegistry[segments[0]]

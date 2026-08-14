@@ -893,3 +893,112 @@ func swaggerUploadedFile() {}
 // @Failure 403 {object} SwaggerErrorResponse
 // @Router /users/avatar [post]
 func swaggerUploadAvatar() {}
+
+// swaggerCodegenCandidates documents GET /codegen/candidates.
+// @Summary 查询可导入的数据库表
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param keyword query string false "表名关键词"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /codegen/candidates [get]
+func swaggerCodegenCandidates() {}
+
+// swaggerCodegenTables documents GET /codegen/tables.
+// @Summary 查询代码生成配置列表
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param keyword query string false "表名或业务名关键词"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /codegen/tables [get]
+func swaggerCodegenTables() {}
+
+// swaggerCodegenImportTable documents POST /codegen/tables/import.
+// @Summary 导入数据库表
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param payload body object true "表名与可选生成配置"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
+// @Router /codegen/tables/import [post]
+func swaggerCodegenImportTable() {}
+
+// swaggerCodegenGetTable documents GET /codegen/configs/{id}.
+// @Summary 获取代码生成配置详情
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param id path int true "配置 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /codegen/configs/{id} [get]
+func swaggerCodegenGetTable() {}
+
+// swaggerCodegenUpdateTable documents PUT /codegen/configs/{id}.
+// @Summary 修改代码生成配置
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param id path int true "配置 ID"
+// @Param payload body object true "模块名、类名、业务名、路由前缀与列配置"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
+// @Router /codegen/configs/{id} [put]
+func swaggerCodegenUpdateTable() {}
+
+// swaggerCodegenDeleteTable documents DELETE /codegen/configs/{id}.
+// @Summary 删除代码生成配置
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param id path int true "配置 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /codegen/configs/{id} [delete]
+func swaggerCodegenDeleteTable() {}
+
+// swaggerCodegenPreview documents POST /codegen/configs/{id}/preview.
+// @Summary 预览生成的代码文件
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param id path int true "配置 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /codegen/configs/{id}/preview [post]
+func swaggerCodegenPreview() {}
+
+// swaggerCodegenGenerate documents POST /codegen/configs/{id}/generate.
+// @Summary 生成代码到项目目录
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param id path int true "配置 ID"
+// @Param payload body object false "confirmOverwrite 是否覆盖无生成标记的冲突文件"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Failure 409 {object} SwaggerErrorResponse
+// @Router /codegen/configs/{id}/generate [post]
+func swaggerCodegenGenerate() {}
+
+// swaggerCodegenDownload documents GET /codegen/configs/{id}/download.
+// @Summary 打包下载生成的代码
+// @Tags 代码生成
+// @Security BearerAuth
+// @Param id path int true "配置 ID"
+// @Success 200 {file} file
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /codegen/configs/{id}/download [get]
+func swaggerCodegenDownload() {}

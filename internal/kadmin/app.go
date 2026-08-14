@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/generated"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/codegen"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/files"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/jobs"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loadrank"
@@ -136,7 +138,14 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 		return nil, fmt.Errorf("初始化接口负载排行失败: %w", err)
 	}
 	s.loadRank = loadRankSampler
-	registerApplicationRoutes(api, s)
+	if err := registerApplicationRoutes(api, s); err != nil {
+		loadRankSampler.Close()
+		monitorManager.Close()
+		manager.Close()
+		loginLogManager.Close()
+		s.audit.Close()
+		return nil, fmt.Errorf("初始化应用路由失败: %w", err)
+	}
 	// Snapshot the route templates after every route is registered so the
 	// sampler groups requests by registered template instead of raw paths.
 	loadRankSampler.SetRouteIndex(loadrank.NewRouteIndex(r.Routes()))
@@ -146,7 +155,7 @@ func Register(r *gin.Engine, conn db.Connection) (*Runtime, error) {
 	}, nil
 }
 
-func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
+func registerApplicationRoutes(api *gin.RouterGroup, s *Store) error {
 	registerAuthRoutes(api, s)
 	registerUserRoutes(api, s)
 	registerMenuRoutes(api, s)
@@ -162,6 +171,24 @@ func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
 	})
 	registerSystemConfigRoutes(api, s)
 	registerLogRoutes(api, s)
+	if err := codegen.Register(api, codegen.Dependencies{
+		Connection:        s.conn,
+		RequireAuth:       s.requireAuth(),
+		RequirePermission: s.requirePermission,
+	}); err != nil {
+		return fmt.Errorf("初始化代码生成失败: %w", err)
+	}
+	if err := generated.RegisterAll(api, generated.Dependencies{
+		Connection:        s.conn,
+		RequireAuth:       s.requireAuth(),
+		RequirePermission: s.requirePermission,
+		RegisterAuditResource: func(prefix, resource string, loader func(string) interface{}) {
+			RegisterBusinessAuditResource(prefix, resource, AuditSnapshotLoader(loader))
+		},
+		RegisterIdempotentRoute: RegisterIdempotentCreateRoute,
+	}); err != nil {
+		return fmt.Errorf("初始化生成模块失败: %w", err)
+	}
 	if s.loginLogs == nil {
 		loginlogs.RegisterRoutes(api, nil, loginlogs.Dependencies{
 			RequireAuth:       s.requireAuth(),
@@ -186,6 +213,7 @@ func registerApplicationRoutes(api *gin.RouterGroup, s *Store) {
 			RequirePermission: s.requirePermission,
 		})
 	}
+	return nil
 }
 
 func (s *Store) refreshBuiltInCache() error {
