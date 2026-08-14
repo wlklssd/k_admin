@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/csv"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/notifications"
 	"github.com/GoAdminGroup/go-admin/modules/auth"
 	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/GoAdminGroup/go-admin/modules/db/dialect"
@@ -155,7 +157,24 @@ func (s *Store) createManagedUser(c *gin.Context) {
 		fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	s.pushSystemNotification(
+		"新用户创建",
+		"管理员创建了新用户 "+user.Username+"（"+user.Name+"）",
+		"/kadmin/users",
+		notifications.TypeInfo,
+	)
 	success(c, user)
+}
+
+// pushSystemNotification writes an in-site notification without failing the
+// caller when the notification pipeline itself errors.
+func (s *Store) pushSystemNotification(title, content, link, notificationType string) {
+	notifier := notifications.NewNotifier(s.conn)
+	if _, err := notifier.Push(notifications.Payload{
+		Title: title, Content: content, Link: link, Type: notificationType,
+	}); err != nil {
+		log.Printf("写入站内通知失败: %v", err)
+	}
 }
 
 func (s *Store) updateManagedUser(c *gin.Context) {

@@ -38,6 +38,15 @@ const authenticatedUtilityRoutes: RouteRecordRaw[] = [
       title: '生成配置',
     },
   },
+  {
+    name: 'NotificationCenter',
+    path: '/kadmin/notifications',
+    component: () => import('#/views/kadmin/components/NotificationCenterView.vue'),
+    meta: {
+      hideInMenu: true,
+      title: '站内通知',
+    },
+  },
 ];
 
 // 工具页随根布局静态注册，但不加入 coreRouteNames，仍会经过登录校验。

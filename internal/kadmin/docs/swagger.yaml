@@ -1831,6 +1831,150 @@ paths:
       summary: 获取全部可访问菜单
       tags:
       - 菜单
+  /notification-batch/read:
+    delete:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 清空已读通知
+      tags:
+      - 站内通知
+  /notification-batch/read-all:
+    patch:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 全部标记已读
+      tags:
+      - 站内通知
+  /notifications:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 仅未读
+        in: query
+        name: unreadOnly
+        type: boolean
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 查询站内通知
+      tags:
+      - 站内通知
+    post:
+      parameters:
+      - description: 标题、内容、跳转链接与类型（info/success/warning）
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      - description: 幂等键（8-128 位）
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 发送站内通知
+      tags:
+      - 站内通知
+  /notifications/{id}:
+    delete:
+      parameters:
+      - description: 通知 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除站内通知
+      tags:
+      - 站内通知
+  /notifications/{id}/read:
+    patch:
+      parameters:
+      - description: 通知 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/kadmin.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 标记通知已读
+      tags:
+      - 站内通知
   /product:
     get:
       parameters:

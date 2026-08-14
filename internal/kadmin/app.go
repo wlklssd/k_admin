@@ -12,6 +12,7 @@ import (
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loadrank"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/notifications"
 	"github.com/GoAdminGroup/go-admin/modules/db"
 	"github.com/gin-gonic/gin"
 )
@@ -188,6 +189,13 @@ func registerApplicationRoutes(api *gin.RouterGroup, s *Store) error {
 		RegisterIdempotentRoute: RegisterIdempotentCreateRoute,
 	}); err != nil {
 		return fmt.Errorf("初始化生成模块失败: %w", err)
+	}
+	if err := notifications.Register(api, notifications.Dependencies{
+		Connection:        s.conn,
+		RequireAuth:       s.requireAuth(),
+		RequirePermission: s.requirePermission,
+	}); err != nil {
+		return fmt.Errorf("初始化站内通知失败: %w", err)
 	}
 	if s.loginLogs == nil {
 		loginlogs.RegisterRoutes(api, nil, loginlogs.Dependencies{

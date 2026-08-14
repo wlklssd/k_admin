@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { NotificationItem } from '@vben/layouts';
 
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
@@ -18,64 +18,73 @@ import {
 import { preferences, usePreferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { openWindow } from '@vben/utils';
-import { Modal } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 
+import {
+  clearReadNotifications,
+  deleteNotification,
+  getNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type KadminNotification,
+} from '#/api/kadmin/notifications';
 import { $t } from '#/locales';
 import { useAuthStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
 
-const notifications = ref<NotificationItem[]>([
-  {
-    id: 1,
-    avatar: 'https://avatar.vercel.sh/vercel.svg?text=VB',
-    date: '3小时前',
-    isRead: true,
-    message: '描述信息描述信息描述信息',
-    title: '收到了 14 份新周报',
-  },
-  {
-    id: 2,
-    avatar: 'https://avatar.vercel.sh/1',
-    date: '刚刚',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '朱偏右 回复了你',
-  },
-  {
-    id: 3,
-    avatar: 'https://avatar.vercel.sh/1',
-    date: '2024-01-01',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '曲丽丽 评论了你',
-  },
-  {
-    id: 4,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '代办提醒',
-  },
-  {
-    id: 5,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '跳转Workspace示例',
-    link: '/workspace',
-  },
-  {
-    id: 6,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '跳转外部链接示例',
-    link: 'https://doc.vben.pro',
-  },
-]);
+const notifications = ref<NotificationItem[]>([]);
+const unreadCount = ref(0);
+
+function toNotificationItem(item: KadminNotification): NotificationItem {
+  return {
+    id: item.id,
+    avatar: preferences.app.defaultAvatar,
+    date: relativeDate(item.createdAt),
+    isRead: item.isRead,
+    message: item.content,
+    title: item.title,
+    link: item.link || undefined,
+  };
+}
+
+function relativeDate(value: string): string {
+  if (!value) {
+    return '';
+  }
+  const parsed = new Date(value.replace(' ', 'T'));
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  const diffMs = Date.now() - parsed.getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) {
+    return '刚刚';
+  }
+  if (minutes < 60) {
+    return `${minutes}分钟前`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}小时前`;
+  }
+  const days = Math.floor(hours / 24);
+  if (days < 7) {
+    return `${days}天前`;
+  }
+  return value.slice(0, 16);
+}
+
+async function fetchNotifications() {
+  try {
+    const page = await getNotifications({ page: 1, pageSize: 20 });
+    notifications.value = page.items.map(toNotificationItem);
+    unreadCount.value = page.unread;
+  } catch {
+    // 铃铛拉取失败保持静默，避免轮询反复打扰用户。
+  }
+}
+
+let pollTimer: null | ReturnType<typeof setInterval> = null;
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -83,9 +92,7 @@ const authStore = useAuthStore();
 const accessStore = useAccessStore();
 const { destroyWatermark, updateWatermark } = useWatermark();
 const { isDark } = usePreferences();
-const showDot = computed(() =>
-  notifications.value.some((item) => !item.isRead),
-);
+const showDot = computed(() => unreadCount.value > 0);
 
 const removeExternalNavigationGuard = setExternalNavigationGuard(
   ({ openInNewWindow, title, url }) =>
@@ -110,7 +117,20 @@ const removeExternalNavigationGuard = setExternalNavigationGuard(
     }),
 );
 
-onBeforeUnmount(removeExternalNavigationGuard);
+onBeforeUnmount(() => {
+  removeExternalNavigationGuard();
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+});
+
+onMounted(() => {
+  void fetchNotifications();
+  pollTimer = setInterval(() => {
+    void fetchNotifications();
+  }, 60_000);
+});
 
 const menus = computed(() => [
   {
@@ -157,26 +177,45 @@ async function handleLogout() {
   await authStore.logout(false);
 }
 
-function handleNoticeClear() {
-  notifications.value = [];
-}
-
-function markRead(id: number | string) {
-  const item = notifications.value.find((item) => item.id === id);
-  if (item) {
-    item.isRead = true;
+async function handleNoticeClear() {
+  try {
+    await clearReadNotifications();
+    await fetchNotifications();
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '清空失败');
   }
 }
 
-function remove(id: number | string) {
-  notifications.value = notifications.value.filter((item) => item.id !== id);
+async function markRead(id: number | string) {
+  try {
+    await markNotificationRead(Number(id));
+    await fetchNotifications();
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '标记已读失败');
+  }
 }
 
-function handleMakeAll() {
-  notifications.value.forEach((item) => (item.isRead = true));
+async function remove(id: number | string) {
+  try {
+    await deleteNotification(Number(id));
+    await fetchNotifications();
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '删除失败');
+  }
 }
 
-const viewAll = () => {};
+async function handleMakeAll() {
+  try {
+    await markAllNotificationsRead();
+    await fetchNotifications();
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '标记已读失败');
+  }
+}
+
+const viewAll = () => {
+  void router.push('/kadmin/notifications');
+};
 
 const handleClick = (item: NotificationItem) => {
   // 如果通知项有链接，点击时跳转

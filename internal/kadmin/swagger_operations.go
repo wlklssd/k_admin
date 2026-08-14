@@ -1002,3 +1002,67 @@ func swaggerCodegenGenerate() {}
 // @Failure 404 {object} SwaggerErrorResponse
 // @Router /codegen/configs/{id}/download [get]
 func swaggerCodegenDownload() {}
+
+// swaggerListNotifications documents GET /notifications.
+// @Summary 查询站内通知
+// @Tags 站内通知
+// @Security BearerAuth
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Param unreadOnly query boolean false "仅未读"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /notifications [get]
+func swaggerListNotifications() {}
+
+// swaggerCreateNotification documents POST /notifications.
+// @Summary 发送站内通知
+// @Tags 站内通知
+// @Security BearerAuth
+// @Param payload body object true "标题、内容、跳转链接与类型（info/success/warning）"
+// @Param Idempotency-Key header string true "幂等键（8-128 位）"
+// @Success 200 {object} SwaggerResponse
+// @Failure 400 {object} SwaggerErrorResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /notifications [post]
+func swaggerCreateNotification() {}
+
+// swaggerMarkNotificationRead documents PATCH /notifications/{id}/read.
+// @Summary 标记通知已读
+// @Tags 站内通知
+// @Security BearerAuth
+// @Param id path int true "通知 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /notifications/{id}/read [patch]
+func swaggerMarkNotificationRead() {}
+
+// swaggerDeleteNotification documents DELETE /notifications/{id}.
+// @Summary 删除站内通知
+// @Tags 站内通知
+// @Security BearerAuth
+// @Param id path int true "通知 ID"
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Failure 404 {object} SwaggerErrorResponse
+// @Router /notifications/{id} [delete]
+func swaggerDeleteNotification() {}
+
+// swaggerMarkAllNotificationsRead documents PATCH /notification-batch/read-all.
+// @Summary 全部标记已读
+// @Tags 站内通知
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /notification-batch/read-all [patch]
+func swaggerMarkAllNotificationsRead() {}
+
+// swaggerClearReadNotifications documents DELETE /notification-batch/read.
+// @Summary 清空已读通知
+// @Tags 站内通知
+// @Security BearerAuth
+// @Success 200 {object} SwaggerResponse
+// @Failure 403 {object} SwaggerErrorResponse
+// @Router /notification-batch/read [delete]
+func swaggerClearReadNotifications() {}

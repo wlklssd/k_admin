@@ -7,6 +7,7 @@ import (
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loadrank"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/loginlogs"
 	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/monitor"
+	"github.com/GoAdminGroup/go-admin/internal/kadmin/modules/notifications"
 )
 
 const (
@@ -147,6 +148,14 @@ func DefaultPermissions() []PermissionSeed {
 		{
 			Name: "预览与生成代码", Slug: codegen.GeneratePermission, HTTPMethod: "POST", HTTPPath: "/api/codegen*",
 			PageURI: "/kadmin/codegen", PageTitle: "代码生成", Scope: PermissionScopeButton, Button: "codegen.generate",
+		},
+		{
+			Name: "查看站内通知", Slug: notifications.ListPermission, HTTPMethod: "GET,PATCH,DELETE", HTTPPath: "/api/notifications*",
+			PageURI: "/kadmin/notifications", PageTitle: "站内通知", Scope: PermissionScopePage,
+		},
+		{
+			Name: "发送站内通知", Slug: notifications.CreatePermission, HTTPMethod: "POST", HTTPPath: "/api/notifications*",
+			PageURI: "/kadmin/notifications", PageTitle: "站内通知", Scope: PermissionScopeButton, Button: "notifications.create",
 		},
 	}
 }

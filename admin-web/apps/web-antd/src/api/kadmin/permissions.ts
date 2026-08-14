@@ -25,6 +25,8 @@ export const KADMIN_PERMISSION = {
   CODEGEN_LIST: 'system:codegen:list',
   CODEGEN_IMPORT: 'system:codegen:import',
   CODEGEN_GENERATE: 'system:codegen:generate',
+  NOTIFICATION_LIST: 'system:notification:list',
+  NOTIFICATION_CREATE: 'system:notification:create',
 } as const;
 
 export type KadminPermissionCode = (typeof KADMIN_PERMISSION)[keyof typeof KADMIN_PERMISSION];
