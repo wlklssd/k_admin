@@ -673,6 +673,27 @@ func (s *securityService) releaseIdempotency(reservation idempotencyReservation)
 	return err
 }
 
+var (
+	idempotentRouteRegistryMu sync.RWMutex
+	idempotentRouteRegistry   = make(map[string]struct{})
+)
+
+// RegisterIdempotentCreateRoute marks POST /api/<prefix> as a high-risk
+// create operation that requires the Idempotency-Key header, so generated
+// CRUD modules reuse the existing duplicate-submission protection without
+// editing the built-in whitelist. Built-in whitelist entries keep their
+// existing behavior and take precedence. Registration is intended for
+// startup wiring before the server begins serving requests.
+func RegisterIdempotentCreateRoute(prefix string) {
+	prefix = strings.Trim(strings.TrimSpace(prefix), "/")
+	if prefix == "" || strings.Contains(prefix, "/") {
+		panic(fmt.Sprintf("invalid idempotent create route prefix %q: must be a single path segment", prefix))
+	}
+	idempotentRouteRegistryMu.Lock()
+	defer idempotentRouteRegistryMu.Unlock()
+	idempotentRouteRegistry[prefix] = struct{}{}
+}
+
 func requiresIdempotency(method, path string) bool {
 	if method != http.MethodPost {
 		return false
@@ -693,6 +714,11 @@ func requiresIdempotency(method, path string) bool {
 		return true
 	case len(segments) == 3 && segments[0] == "jobs" && segments[2] == "run":
 		return true
+	case len(segments) == 1:
+		idempotentRouteRegistryMu.RLock()
+		_, registered := idempotentRouteRegistry[segments[0]]
+		idempotentRouteRegistryMu.RUnlock()
+		return registered
 	default:
 		return false
 	}

@@ -33,6 +33,9 @@ type businessAuditDescriptor struct {
 	Action     string
 	Resource   string
 	ResourceID string
+	// Loader optionally loads the resource snapshot for before/after diffing.
+	// When nil, the built-in snapshot switch is consulted.
+	Loader AuditSnapshotLoader
 }
 
 func newBusinessAuditRecorder(conn db.Connection) *businessAuditRecorder {
@@ -160,6 +163,11 @@ func describeBusinessMutation(method, path string) (businessAuditDescriptor, boo
 	if len(parts) == 0 {
 		return businessAuditDescriptor{}, false
 	}
+	if resolver := businessAuditResolverFor(parts[0]); resolver != nil {
+		if descriptor, ok := resolver(method, parts); ok {
+			return descriptor, true
+		}
+	}
 	action := strings.ToLower(method)
 	resource := parts[0]
 	resourceID := ""
@@ -241,6 +249,9 @@ func describeBusinessMutation(method, path string) (businessAuditDescriptor, boo
 }
 
 func (s *Store) loadBusinessAuditSnapshot(descriptor businessAuditDescriptor, path string) interface{} {
+	if descriptor.Loader != nil {
+		return descriptor.Loader(descriptor.ResourceID)
+	}
 	id, _ := strconv.ParseInt(descriptor.ResourceID, 10, 64)
 	switch descriptor.Resource {
 	case "user":
